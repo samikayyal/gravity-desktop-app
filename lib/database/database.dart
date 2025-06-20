@@ -1,3 +1,4 @@
+import 'package:gravity_desktop_app/models/player.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
 
@@ -23,36 +24,41 @@ class DatabaseHelper {
   // This runs only the first time the database is created
   Future<void> _createDB(Database db, int version) async {
     // any date is stored as TEXT in ISO 8601 format
+
+    // players table stores player information
     await db.execute('''
       CREATE TABLE IF NOT EXISTS players (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY, -- UUID for each player
         name TEXT NOT NULL,
         age INTEGER NOT NULL,
-        last_played TEXT NOT NULL
+        last_modified TEXT NOT NULL,
       )
     ''');
 
+    // The state (current/past) is determined by 'check_out_time'.
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS current_players(
-        player_id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        age INTEGER NOT NULL,
-        start_time TEXT NOT NULL,
-        time_reserved TEXT NOT NULL,
-        amount_owed INTEGER NOT NULL,
-        amount_paid INTEGER NOT NULL,
-        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
-      )
-      ''');
+    CREATE TABLE IF NOT EXISTS player_sessions (
+      session_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      player_id TEXT NOT NULL,
+      check_in_time TEXT NOT NULL,
+      check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
+      amount_owed INTEGER NOT NULL,         
+      amount_paid INTEGER NOT NULL,
+      last_modified TEXT NOT NULL,       --  for syncing new sessions.
+      FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+    )
+  ''');
 
+    // phone_numbers table stores phone numbers for players
     await db.execute('''
       CREATE TABLE IF NOT EXISTS phone_numbers(
-        player_id INTEGER NOT NULL,
+        player_id TEXT NOT NULL,
         phone_number TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
       )
     ''');
 
+    // prices table stores the prices for different time slices
     await db.execute('''
       CREATE TABLE IF NOT EXISTS prices(
         time_slice TEXT PRIMARY KEY,
@@ -68,5 +74,23 @@ class DatabaseHelper {
       ('additional_hour', 0),
       ('additional_half_hour', 0)
     ''');
+  }
+
+  // get the  current players
+  Future<List<Player>> getCurrentPlayers() async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT ps.player_id,
+              p.name,
+              p.age,
+              ps.check_in_time,
+              ps.amount_owed,
+              ps.amount_paid,
+              ps.session_id
+      FROM player_sessions ps
+      JOIN players p ON ps.player_id = p.id
+      WHERE ps.check_out_time IS NULL
+    ''');
+    return result.map((map) => Player.fromMap(map)).toList();
   }
 }
