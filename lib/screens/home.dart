@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/current_players_table.dart';
+import 'package:gravity_desktop_app/screens/add_player.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -30,7 +31,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: const Text('Add Player'),
                       onPressed: () {
                         // TODO: Implement add player functionality
-                        debugPrint('Add Player button pressed');
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AddPlayerScreen()));
                       }),
 
                   // players table

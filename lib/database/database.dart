@@ -2,6 +2,13 @@ import 'package:gravity_desktop_app/models/player.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+enum TimeSlice {
+  hour,
+  halfHour,
+  additionalHour,
+  additionalHalfHour,
+}
+
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
@@ -130,5 +137,34 @@ class DatabaseHelper {
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
     );
+  }
+
+  Future<Map<TimeSlice, int>> getPrices() async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      'SELECT time_slice, price FROM prices',
+    );
+    final Map<TimeSlice, int> prices = {};
+    for (var row in result) {
+      final timeSlice = row['time_slice'] as String;
+      final price = row['price'] as int;
+
+      switch (timeSlice) {
+        case 'hour':
+          prices[TimeSlice.hour] = price;
+          break;
+        case 'half_hour':
+          prices[TimeSlice.halfHour] = price;
+          break;
+        case 'additional_hour':
+          prices[TimeSlice.additionalHour] = price;
+          break;
+        case 'additional_half_hour':
+          prices[TimeSlice.additionalHalfHour] = price;
+          break;
+      }
+    }
+    return prices;
   }
 }
