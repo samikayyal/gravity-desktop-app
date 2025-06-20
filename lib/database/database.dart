@@ -1,6 +1,6 @@
 import 'package:gravity_desktop_app/models/player.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -31,7 +31,7 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY, -- UUID for each player
         name TEXT NOT NULL,
         age INTEGER NOT NULL,
-        last_modified TEXT NOT NULL,
+        last_modified TEXT NOT NULL
       )
     ''');
 
@@ -41,6 +41,9 @@ class DatabaseHelper {
       session_id INTEGER PRIMARY KEY AUTOINCREMENT,
       player_id TEXT NOT NULL,
       check_in_time TEXT NOT NULL,
+      time_reserved_hours INTEGER NOT NULL,
+      time_reserved_minutes INTEGER NOT NULL,
+      is_open_time INTEGER NOT NULL,     -- 0 for false, 1 for true
       check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
       amount_owed INTEGER NOT NULL,         
       amount_paid INTEGER NOT NULL,
@@ -84,6 +87,9 @@ class DatabaseHelper {
               p.name,
               p.age,
               ps.check_in_time,
+              ps.time_reserved_hours,
+              ps.time_reserved_minutes,
+              ps.is_open_time,
               ps.amount_owed,
               ps.amount_paid,
               ps.session_id
@@ -92,5 +98,37 @@ class DatabaseHelper {
       WHERE ps.check_out_time IS NULL
     ''');
     return result.map((map) => Player.fromMap(map)).toList();
+  }
+
+  // Check out a player by session ID
+  Future<void> checkOutPlayer(int sessionId) async {
+    final db = await database;
+    await db.update(
+      'player_sessions',
+      {
+        'check_out_time': DateTime.now().toUtc().toIso8601String(),
+        'last_modified': DateTime.now().toUtc().toIso8601String()
+      },
+      where: 'session_id = ?',
+      whereArgs: [sessionId],
+    );
+  }
+
+  // Check in a player
+  Future<void> checkInPlayer(Player player) async {
+    final db = await database;
+    await db.insert(
+      'player_sessions',
+      {
+        'player_id': player.playerID,
+        'check_in_time': player.checkInTime.toIso8601String(),
+        'time_reserved_hours': player.timeReserved.inHours,
+        'time_reserved_minutes': player.timeReserved.inMinutes % 60,
+        'is_open_time': player.isOpenTime ? 1 : 0,
+        'amount_owed': player.amountOwed,
+        'amount_paid': player.amountPaid,
+        'last_modified': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
   }
 }

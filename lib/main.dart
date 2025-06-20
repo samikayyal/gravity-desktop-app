@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/screens/home.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
@@ -36,6 +37,9 @@ void main() async {
     // set unable to close
     await windowManager.setPreventClose(true);
   });
+
+  sqfliteFfiInit(); // Initialize sqflite with FFI support
+  databaseFactory = databaseFactoryFfi; // Use FFI database factory
 
   runApp(ProviderScope(child: const MyApp()));
 }

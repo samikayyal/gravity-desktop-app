@@ -3,6 +3,8 @@ class Player {
   final String name;
   final int age;
   final DateTime checkInTime;
+  final Duration timeReserved;
+  final bool isOpenTime;
   final int amountOwed;
   final int amountPaid;
   final int sessionID; // For the current player's session
@@ -12,9 +14,11 @@ class Player {
     required this.name,
     required this.age,
     required this.checkInTime,
+    required this.timeReserved,
     required this.amountOwed,
     required this.amountPaid,
     required this.sessionID,
+    required this.isOpenTime,
   });
 
   // Factory constructor to create a Player from a map
@@ -24,9 +28,14 @@ class Player {
       name: map['name'] as String,
       age: map['age'] as int,
       checkInTime: DateTime.parse(map['check_in_time'] as String),
+      timeReserved: Duration(
+        hours: map['time_reserved_hours'] as int,
+        minutes: map['time_reserved_minutes'] as int,
+      ),
       amountOwed: map['amount_owed'] as int,
       amountPaid: map['amount_paid'] as int,
       sessionID: map['session_id'] as int,
+      isOpenTime: map['is_open_time'] == 1,
     );
   }
 }

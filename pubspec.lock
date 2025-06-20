@@ -91,6 +91,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  intl:
+    dependency: "direct main"
+    description:
+      name: intl
+      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.20.2"
   json_annotation:
     dependency: transitive
     description:
@@ -288,22 +296,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
-  sqflite:
-    dependency: "direct main"
-    description:
-      name: sqflite
-      sha256: "2d7299468485dca85efeeadf5d38986909c5eb0cd71fd3db2c2f000e6c9454bb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.4.1"
-  sqflite_android:
-    dependency: transitive
-    description:
-      name: sqflite_android
-      sha256: "78f489aab276260cdd26676d2169446c7ecd3484bbd5fead4ca14f3ed4dd9ee3"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.4.0"
   sqflite_common:
     dependency: transitive
     description:
@@ -312,22 +304,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.4+6"
-  sqflite_darwin:
-    dependency: transitive
+  sqflite_common_ffi:
+    dependency: "direct main"
     description:
-      name: sqflite_darwin
-      sha256: "22adfd9a2c7d634041e96d6241e6e1c8138ca6817018afc5d443fef91dcefa9c"
+      name: sqflite_common_ffi
+      sha256: "883dd810b2b49e6e8c3b980df1829ef550a94e3f87deab5d864917d27ca6bf36"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1+1"
-  sqflite_platform_interface:
+    version: "2.3.4+4"
+  sqlite3:
     dependency: transitive
     description:
-      name: sqflite_platform_interface
-      sha256: "8dd4515c7bdcae0a785b0062859336de775e8c65db81ae33dd5445f35be61920"
+      name: sqlite3
+      sha256: c0503c69b44d5714e6abbf4c1f51a3c3cc42b75ce785f44404765e4635481d38
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.7.6"
   stack_trace:
     dependency: transitive
     description:
@@ -384,6 +376,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.3"
+  typed_data:
+    dependency: transitive
+    description:
+      name: typed_data
+      sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   vector_math:
     dependency: transitive
     description:
@@ -400,6 +400,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.3.0"
+  web:
+    dependency: transitive
+    description:
+      name: web
+      sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   window_manager:
     dependency: "direct main"
     description:

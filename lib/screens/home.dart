@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/current_players_table.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -33,13 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       }),
 
                   // players table
-                  DataTable(columns: const [
-                    DataColumn(label: Text('Label')),
-                    DataColumn(label: Text('Value'))
-                  ], rows: const [
-                    DataRow(
-                        cells: [DataCell(Text('Data')), DataCell(Text('Data'))])
-                  ]),
+                  CurrentPlayersTable(),
                 ],
               ),
             ],
