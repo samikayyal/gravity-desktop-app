@@ -167,4 +167,29 @@ class DatabaseHelper {
     }
     return prices;
   }
+
+  Future<void> updatePrices(Map<TimeSlice, int> newPrices) async {
+    final db = await database;
+    if (newPrices.isEmpty) return;
+    if (!newPrices.containsKey(TimeSlice.hour) ||
+        !newPrices.containsKey(TimeSlice.halfHour) ||
+        !newPrices.containsKey(TimeSlice.additionalHour) ||
+        !newPrices.containsKey(TimeSlice.additionalHalfHour)) {
+      throw Exception('All time slices must be provided');
+    }
+
+    await db.rawQuery('''
+      UPDATE prices
+      SET price = CASE time_slice
+        WHEN 'hour' THEN ?
+        WHEN 'half_hour' THEN ?
+        WHEN 'additional_hour' THEN ?
+        WHEN 'additional_half_hour' THEN ?
+      END''', [
+      newPrices[TimeSlice.hour],
+      newPrices[TimeSlice.halfHour],
+      newPrices[TimeSlice.additionalHour],
+      newPrices[TimeSlice.additionalHalfHour],
+    ]);
+  }
 }

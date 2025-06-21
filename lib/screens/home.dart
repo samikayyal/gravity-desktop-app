@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/current_players_table.dart';
 import 'package:gravity_desktop_app/screens/add_player.dart';
+import 'package:gravity_desktop_app/screens/edit_prices.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -27,15 +28,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Column(
                 children: [
                   // button to add a player
-                  ElevatedButton(
-                      child: const Text('Add Player'),
-                      onPressed: () {
-                        // TODO: Implement add player functionality
-                        Navigator.push(
-                            context,
+                  Row(
+                    children: [
+                      ElevatedButton(
+                          child: const Text('Add Player'),
+                          onPressed: () {
+                            // TODO: Implement add player functionality
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AddPlayerScreen()));
+                          }),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        child: Text("Edit Prices"),
+                        onPressed: () {
+                          Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (context) => const AddPlayerScreen()));
-                      }),
+                              builder: (context) => EditPricesScreen(),
+                            ),
+                          );
+                        },
+                      )
+                    ],
+                  ),
 
                   // players table
                   CurrentPlayersTable(),

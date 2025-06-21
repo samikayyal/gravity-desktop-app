@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
-import 'package:gravity_desktop_app/database/database.dart';
-import 'package:gravity_desktop_app/utils/constants.dart';
+import 'package:gravity_desktop_app/providers/database_provider.dart';
 
 class AddPlayerScreen extends ConsumerStatefulWidget {
   const AddPlayerScreen({super.key});
@@ -13,27 +12,28 @@ class AddPlayerScreen extends ConsumerStatefulWidget {
 
 class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  TextEditingController nameController = TextEditingController();
+  TextEditingController ageController = TextEditingController();
+  List<TextEditingController> phoneControllers = [];
   int hoursReserved = 0;
   int minutesReserved = 0;
-  int amountPaid = 0;
+  bool isOpenTime = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const MyAppBar(),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Form to add a player
-          Center(
-            child: SizedBox(
-              width: 400,
-              child: Form(
+    final pricesAsync = ref.watch(pricesProvider);
+    return pricesAsync.when(
+        data: (prices) {
+          return Scaffold(
+              appBar: const MyAppBar(),
+              body: Form(
                 key: _formKey,
                 child: Column(
                   children: [
+                    // Name
                     TextFormField(
+                      controller: nameController,
                       decoration: const InputDecoration(
                         labelText: 'Name',
                         hintText: 'Enter player name',
@@ -45,7 +45,10 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                         return null;
                       },
                     ),
+
+                    // Age
                     TextFormField(
+                      controller: ageController,
                       decoration: const InputDecoration(
                         labelText: 'Age',
                         hintText: 'Enter player age',
@@ -56,79 +59,29 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                           return 'Please enter an age';
                         }
                         final age = int.tryParse(value);
-                        if (age == null || age <= 0) {
+                        if (age == null || age < 0) {
                           return 'Please enter a valid age';
                         }
                         return null;
                       },
                     ),
-                    TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: 'Enter player phone number',
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a phone number';
-                        }
-                        // Add more validation for phone number if needed
-                        return null;
-                      },
-                    ),
 
-                    // Reserve Time
-                    Text("$hoursReserved Hours $minutesReserved Minutes"),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                            onPressed: () {
-                              setState(() {
-                                if (hoursReserved < 12) {
-                                  hoursReserved++;
-                                }
-                              });
-                            },
-                            child: Text("+1 Hour")),
-                        TextButton(
-                            onPressed: () {
-                              setState(() {
-                                if (minutesReserved == 0) {
-                                  minutesReserved = 30;
-                                } else if (minutesReserved == 30 &&
-                                    hoursReserved < 12) {
-                                  minutesReserved = 0;
-                                  hoursReserved++;
-                                }
-                              });
-                            },
-                            child: Text("+30 Minutes")),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              hoursReserved = 0;
-                              minutesReserved = 0;
-                            });
-                          },
-                          child: Text("Reset"),
-                        )
-                      ],
-                    ),
-
-                    // Total Amount Owed
-                    Text()
+                    // Phone Numbers
+                    const Text('Phone Numbers (optional)'),
+                    
                   ],
                 ),
+              ));
+        },
+        error: (err, stack) => Scaffold(
+              appBar: const MyAppBar(),
+              body: Center(
+                child: Text('Error loading prices: $err'),
               ),
             ),
-          )
-        ],
-      ),
-    );
-  }
-
-  int calculateTotalAmountOwed() {
-    Map<TimeSlice, int> prices = ref.read(pricesProvider);
+        loading: () => Scaffold(
+              appBar: const MyAppBar(),
+              body: const Center(child: CircularProgressIndicator()),
+            ));
   }
 }

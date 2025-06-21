@@ -19,7 +19,8 @@ class CurrentPlayersTable extends ConsumerWidget {
       ),
       data: (currentPlayers) {
         if (currentPlayers.isEmpty) {
-          return const Center(child: Text('No current players'));
+          return SingleChildScrollView(
+              child: const Center(child: Text('No current players')));
         }
         return SingleChildScrollView(
           child: DataTable(

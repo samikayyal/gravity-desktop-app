@@ -6,7 +6,7 @@ final databaseProvider = Provider<DatabaseHelper>((ref) {
   return DatabaseHelper.instance;
 });
 
-//StateNotifierProvider for a list that can be updated.
+// use StateNotifierProvider for a list that can be updated.
 final currentPlayersProvider =
     StateNotifierProvider<CurrentPlayersNotifier, AsyncValue<List<Player>>>(
         (ref) {
@@ -51,8 +51,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
 }
 
 // Provider for time slice prices
-final timeSlicePricesProvider =
-    FutureProvider<Map<TimeSlice, int>>((ref) async {
+final pricesProvider = FutureProvider<Map<TimeSlice, int>>((ref) async {
   final dbHelper = ref.watch(databaseProvider);
   return dbHelper.getPrices();
 });
