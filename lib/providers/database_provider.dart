@@ -45,8 +45,26 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
   }
 
   // check in a player
-  Future<void> checkInPlayer(Player player) async {
-    await _dbHelper.checkInPlayer(player);
+  Future<void> checkInPlayer({
+    required String name,
+    required int age,
+    required int timeReservedHours,
+    required int timeReservedMinutes,
+    required bool isOpenTime,
+    required int totalFee,
+    required int amountPaid,
+    List<String> phoneNumbers = const [],
+  }) async {
+    await _dbHelper.checkInPlayer(
+        name: name,
+        age: age,
+        timeReservedHours: timeReservedHours,
+        timeReservedMinutes: timeReservedMinutes,
+        isOpenTime: isOpenTime,
+        totalFee: totalFee,
+        amountPaid: amountPaid,
+        phoneNumbers: phoneNumbers);
+    await refresh();
   }
 }
 

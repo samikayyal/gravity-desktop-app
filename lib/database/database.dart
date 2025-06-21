@@ -1,6 +1,7 @@
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:uuid/uuid.dart';
 
 enum TimeSlice {
   hour,
@@ -23,6 +24,7 @@ class DatabaseHelper {
 
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
+    print('Database path: $dbPath');
     final path = p.join(dbPath, filePath);
 
     return await openDatabase(path, version: 1, onCreate: _createDB);
@@ -52,7 +54,7 @@ class DatabaseHelper {
       time_reserved_minutes INTEGER NOT NULL,
       is_open_time INTEGER NOT NULL,     -- 0 for false, 1 for true
       check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
-      amount_owed INTEGER NOT NULL,         
+      total_fee INTEGER NOT NULL,         
       amount_paid INTEGER NOT NULL,
       last_modified TEXT NOT NULL,       --  for syncing new sessions.
       FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
@@ -90,14 +92,14 @@ class DatabaseHelper {
   Future<List<Player>> getCurrentPlayers() async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT ps.player_id,
+      SELECT ps.player_id AS id,
               p.name,
               p.age,
               ps.check_in_time,
               ps.time_reserved_hours,
               ps.time_reserved_minutes,
               ps.is_open_time,
-              ps.amount_owed,
+              ps.total_fee,
               ps.amount_paid,
               ps.session_id
       FROM player_sessions ps
@@ -122,7 +124,35 @@ class DatabaseHelper {
   }
 
   // Check in a player
-  Future<void> checkInPlayer(Player player) async {
+  Future<void> checkInPlayer({
+    required String name,
+    required int age,
+    required int timeReservedHours,
+    required int timeReservedMinutes,
+    required bool isOpenTime,
+    required int totalFee,
+    required int amountPaid,
+    List<String> phoneNumbers = const [],
+  }) async {
+    var uuid = Uuid();
+    // Generate a unique player ID
+    final String playerID = uuid.v4();
+
+    final Player player = Player(
+      playerID: playerID,
+      name: name,
+      age: age,
+      checkInTime: DateTime.now().toUtc(),
+      timeReserved: Duration(
+        hours: timeReservedHours,
+        minutes: timeReservedMinutes,
+      ),
+      totalFee: totalFee, // Initial amount owed
+      amountPaid: amountPaid, // Initial amount paid
+      sessionID: 0, // This will be set by the database
+      isOpenTime: isOpenTime, // Default to false, can be updated later
+    );
+
     final db = await database;
     await db.insert(
       'player_sessions',
@@ -132,11 +162,35 @@ class DatabaseHelper {
         'time_reserved_hours': player.timeReserved.inHours,
         'time_reserved_minutes': player.timeReserved.inMinutes % 60,
         'is_open_time': player.isOpenTime ? 1 : 0,
-        'amount_owed': player.amountOwed,
+        'total_fee': player.totalFee,
         'amount_paid': player.amountPaid,
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
     );
+
+    // Insert player into players table
+    await db.insert(
+      'players',
+      {
+        'id': player.playerID,
+        'name': player.name,
+        'age': player.age,
+        'last_modified': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
+
+    // Insert phone numbers if any
+    if (phoneNumbers.isNotEmpty) {
+      for (var phoneNumber in phoneNumbers) {
+        await db.insert(
+          'phone_numbers',
+          {
+            'player_id': player.playerID,
+            'phone_number': phoneNumber,
+          },
+        );
+      }
+    }
   }
 
   Future<Map<TimeSlice, int>> getPrices() async {
