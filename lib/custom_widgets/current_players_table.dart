@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/receipt_dialog.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:intl/intl.dart';
@@ -39,7 +40,7 @@ class CurrentPlayersTable extends ConsumerWidget {
               DataColumn(label: Text('Actions')),
             ],
             rows: currentPlayers
-                .map((player) => _createDataRow(player, ref))
+                .map((player) => _createDataRow(context, player, ref))
                 .toList(),
           ),
         );
@@ -47,7 +48,7 @@ class CurrentPlayersTable extends ConsumerWidget {
     );
   }
 
-  DataRow _createDataRow(Player player, WidgetRef ref) {
+  DataRow _createDataRow(BuildContext context, Player player, WidgetRef ref) {
     final String checkInTime =
         DateFormat('h:mm a').format(player.checkInTime.toLocal());
 
@@ -87,9 +88,10 @@ class CurrentPlayersTable extends ConsumerWidget {
             // Check Out Button
             TextButton(
                 onPressed: () {
-                  ref
-                      .read(currentPlayersProvider.notifier)
-                      .checkOutPlayer(player.sessionID);
+                  showDialog(
+                    context: context,
+                    builder: (context) => ReceiptDialog(player: player),
+                  );
                 },
                 child: const Text('Check Out')),
 

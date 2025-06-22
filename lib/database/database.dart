@@ -24,7 +24,6 @@ class DatabaseHelper {
 
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
-    print('Database path: $dbPath');
     final path = p.join(dbPath, filePath);
 
     return await openDatabase(path, version: 1, onCreate: _createDB);
@@ -45,6 +44,7 @@ class DatabaseHelper {
     ''');
 
     // The state (current/past) is determined by 'check_out_time'.
+
     await db.execute('''
     CREATE TABLE IF NOT EXISTS player_sessions (
       session_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,18 +54,28 @@ class DatabaseHelper {
       time_reserved_minutes INTEGER NOT NULL,
       is_open_time INTEGER NOT NULL,     -- 0 for false, 1 for true
       check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
-      total_fee INTEGER NOT NULL,         
-      amount_paid INTEGER NOT NULL,
-      last_modified TEXT NOT NULL,       --  for syncing new sessions.
+      last_modified TEXT NOT NULL,       
       FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
     )
   ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payments (
+      payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id INTEGER NOT NULL,
+      final_fee INTEGER NOT NULL,
+      amount_paid INTEGER NOT NULL,
+      tips INTEGER NOT NULL,
+      last_modified TEXT NOT NULL,
+      FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE
+      )''');
 
     // phone_numbers table stores phone numbers for players
     await db.execute('''
       CREATE TABLE IF NOT EXISTS phone_numbers(
         player_id TEXT NOT NULL,
         phone_number TEXT NOT NULL,
+        last_modified TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
       )
     ''');
@@ -74,7 +84,8 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS prices(
         time_slice TEXT PRIMARY KEY,
-        price INTEGER NOT NULL
+        price INTEGER NOT NULL,
+        last_modified TEXT NOT NULL
       )
     ''');
 
@@ -99,7 +110,6 @@ class DatabaseHelper {
               ps.time_reserved_hours,
               ps.time_reserved_minutes,
               ps.is_open_time,
-              ps.total_fee,
               ps.amount_paid,
               ps.session_id
       FROM player_sessions ps
@@ -110,7 +120,11 @@ class DatabaseHelper {
   }
 
   // Check out a player by session ID
-  Future<void> checkOutPlayer(int sessionId) async {
+  Future<void> checkOutPlayer(
+      {required int sessionID,
+      required int finalFee,
+      required int amountPaid,
+      required int tips}) async {
     final db = await database;
     await db.update(
       'player_sessions',
@@ -119,7 +133,19 @@ class DatabaseHelper {
         'last_modified': DateTime.now().toUtc().toIso8601String()
       },
       where: 'session_id = ?',
-      whereArgs: [sessionId],
+      whereArgs: [sessionID],
+    );
+
+    // Insert payment record
+    await db.insert(
+      'payments',
+      {
+        'session_id': sessionID,
+        'final_fee': finalFee,
+        'amount_paid': amountPaid,
+        'tips': tips,
+        'last_modified': DateTime.now().toUtc().toIso8601String(),
+      },
     );
   }
 
@@ -148,23 +174,21 @@ class DatabaseHelper {
         hours: timeReservedHours,
         minutes: timeReservedMinutes,
       ),
-      totalFee: totalFee,
       amountPaid: amountPaid,
       sessionID: 0, // This will be set by the database
       isOpenTime: isOpenTime,
     );
 
     final db = await database;
+    // ---- Player Session Insertion ----
     await db.insert(
       'player_sessions',
       {
-        'player_id': player.playerID,
+        'player_id': playerID,
         'check_in_time': player.checkInTime.toIso8601String(),
         'time_reserved_hours': player.timeReserved.inHours,
         'time_reserved_minutes': player.timeReserved.inMinutes % 60,
         'is_open_time': player.isOpenTime ? 1 : 0,
-        'total_fee': player.totalFee,
-        'amount_paid': player.amountPaid,
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
     );
@@ -178,7 +202,7 @@ class DatabaseHelper {
 
     player.sessionID = playerSessionId; // Update the session ID for the player
 
-    // Insert player into players table
+    // ---- Player Table Insertion ----
     await db.insert(
       'players',
       {
@@ -198,6 +222,7 @@ class DatabaseHelper {
           {
             'player_id': player.playerID,
             'phone_number': phoneNumber,
+            'last_modified': DateTime.now().toUtc().toIso8601String(),
           },
         );
       }
@@ -273,7 +298,6 @@ class DatabaseHelper {
               // Placeholders, not used in past players
               checkInTime: DateTime.now(),
               timeReserved: Duration.zero,
-              totalFee: 0,
               amountPaid: 0,
               sessionID: 0,
               isOpenTime: false,

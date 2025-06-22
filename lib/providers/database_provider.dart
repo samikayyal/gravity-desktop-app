@@ -38,10 +38,9 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await _fetchCurrentPlayers();
   }
 
-  Future<void> checkOutPlayer(int sessionId) async {
-    await _dbHelper
-        .checkOutPlayer(sessionId); // Assuming you create this method
-    await refresh(); // Refresh the list to remove the player from the UI
+  Future<void> checkOutPlayer(Player player) async {
+    await _dbHelper.checkOutPlayer(player);
+    await refresh();
   }
 
   // check in a player
