@@ -157,7 +157,7 @@ class DatabaseHelper {
     required int timeReservedHours,
     required int timeReservedMinutes,
     required bool isOpenTime,
-    required int totalFee,
+    required int initialFee,
     required int amountPaid,
     List<String> phoneNumbers = const [],
   }) async {
@@ -177,6 +177,7 @@ class DatabaseHelper {
       amountPaid: amountPaid,
       sessionID: 0, // This will be set by the database
       isOpenTime: isOpenTime,
+      initialFee: initialFee,
     );
 
     final db = await database;
@@ -301,6 +302,7 @@ class DatabaseHelper {
               amountPaid: 0,
               sessionID: 0,
               isOpenTime: false,
+              initialFee: 0,
             ))
         .toList();
   }

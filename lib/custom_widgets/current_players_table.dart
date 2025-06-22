@@ -21,27 +21,47 @@ class CurrentPlayersTable extends ConsumerWidget {
     return currentPlayersAsyncValue.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(
-        child: Text('Table Error: $error'),
+        child: Text('Table Error: $error \n$stackTrace'),
       ),
       data: (currentPlayers) {
         if (currentPlayers.isEmpty) {
-          return SingleChildScrollView(
-              child: const Center(child: Text('No current players')));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_off, size: 48, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                const Text('No current players',
+                    style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
         }
-        return SingleChildScrollView(
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('Name')),
-              DataColumn(label: Text('Age')),
-              DataColumn(label: Text('Check-in Time')),
-              DataColumn(label: Text('Time Remaining')),
-              DataColumn(label: Text('Total Fee')),
-              DataColumn(label: Text('Amount Left')),
-              DataColumn(label: Text('Actions')),
-            ],
-            rows: currentPlayers
-                .map((player) => _createDataRow(context, player, ref))
-                .toList(),
+
+        // Use a horizontal scrollable table for better display on constrained width
+        return Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SingleChildScrollView(
+              child: DataTable(
+                columnSpacing: 16,
+                horizontalMargin: 12,
+                columns: const [
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('Age')),
+                  DataColumn(label: Text('Check-in')),
+                  DataColumn(label: Text('Time Left')),
+                  DataColumn(label: Text('Fee')),
+                  DataColumn(label: Text('Paid')),
+                  DataColumn(label: Text('Left')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: currentPlayers
+                    .map((player) => _createDataRow(context, player, ref))
+                    .toList(),
+              ),
+            ),
           ),
         );
       },
@@ -74,31 +94,41 @@ class CurrentPlayersTable extends ConsumerWidget {
                   } else {
                     final hours = timeRemaining.inHours;
                     final minutes = timeRemaining.inMinutes.remainder(60);
-                    timeRemainingString = '$hours Hours $minutes Minutes';
+                    timeRemainingString = '$hours h $minutes m';
                   }
                   return Text(timeRemainingString);
                 },
               ),
             ),
-      DataCell(Text('${player.totalFee}')),
-      DataCell(Text('${player.totalFee - player.amountPaid}')),
+      DataCell(Text(player.isOpenTime ? 'Open' : '${player.initialFee}')),
+      DataCell(Text('${player.amountPaid}')),
+      DataCell(
+        Text(
+          player.isOpenTime
+              ? 'Open'
+              : '${player.initialFee - player.amountPaid}',
+        ),
+      ),
       DataCell(
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Check Out Button
-            TextButton(
+            IconButton(
+                tooltip: 'Check Out',
+                icon: const Icon(Icons.logout, size: 20),
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (context) => ReceiptDialog(player: player),
+                    builder: (context) => ReceiptDialog(player),
                   );
-                },
-                child: const Text('Check Out')),
+                }),
 
             // Add Product Button
-            TextButton(
+            IconButton(
+              tooltip: 'Add Product',
+              icon: const Icon(Icons.add_shopping_cart, size: 20),
               onPressed: () {},
-              child: const Text('Add Product'),
             ),
           ],
         ),

@@ -17,44 +17,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(),
-      body: Column(
+      body: Row(
         children: [
-          // Row with table, TODO: Add more widgets, other side should have inventory and shit
-          Row(
-            children: [
-              Column(
-                children: [
-                  // button to add a player
-                  Row(
-                    children: [
-                      ElevatedButton(
-                          child: const Text('Add Player'),
-                          onPressed: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AddPlayerScreen()));
-                          }),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        child: Text("Edit Prices"),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => EditPricesScreen(),
-                            ),
-                          );
-                        },
-                      )
-                    ],
-                  ),
-
-                  // players table
-                  CurrentPlayersTable(),
-                ],
+          // Left side - 65% of screen width with players table
+          Container(
+            width: MediaQuery.of(context).size.width * 0.65,
+            padding: const EdgeInsets.all(16.0),
+            decoration: const BoxDecoration(
+              border: Border(
+                right: BorderSide(color: Colors.grey, width: 1),
               ),
-            ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title section
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    'Current Players',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                // Buttons row
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.person_add),
+                      label: const Text('Add Player'),
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AddPlayerScreen()));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.edit),
+                      label: const Text("Edit Prices"),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => EditPricesScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      ),
+                    )
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Table with expanded to fill the rest of the column height
+                Expanded(
+                  child: Card(
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: CurrentPlayersTable(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ), // Right side - 35% of screen width for future additions
+          Container(
+            width: MediaQuery.of(context).size.width * 0.35,
+            padding: const EdgeInsets.all(16.0),
+            child: const Center(
+              child: Text(
+                'Future content area',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 18,
+                ),
+              ),
+            ),
           ),
         ],
       ),

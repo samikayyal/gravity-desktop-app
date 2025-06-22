@@ -5,6 +5,7 @@ class Player {
   final DateTime checkInTime;
   final Duration timeReserved;
   final bool isOpenTime;
+  final int initialFee;
   int amountPaid;
   int sessionID; // For the current player's session
 
@@ -17,6 +18,7 @@ class Player {
     required this.amountPaid,
     required this.sessionID,
     required this.isOpenTime,
+    required this.initialFee,
   });
 
   // Factory constructor to create a Player from a map
@@ -33,6 +35,7 @@ class Player {
       isOpenTime: map['is_open_time'] == 1,
       amountPaid: map['amount_paid'] as int,
       sessionID: map['session_id'] as int,
+      initialFee: map['initial_fee'] as int,
     );
   }
 }

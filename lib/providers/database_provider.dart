@@ -38,8 +38,18 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await _fetchCurrentPlayers();
   }
 
-  Future<void> checkOutPlayer(Player player) async {
-    await _dbHelper.checkOutPlayer(player);
+  Future<void> checkOutPlayer({
+    required int sessionID,
+    required int finalFee,
+    required int amountPaid,
+    required int tips,
+  }) async {
+    await _dbHelper.checkOutPlayer(
+      sessionID: sessionID,
+      finalFee: finalFee,
+      amountPaid: amountPaid,
+      tips: tips,
+    );
     await refresh();
   }
 
@@ -62,7 +72,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         timeReservedHours: timeReservedHours,
         timeReservedMinutes: timeReservedMinutes,
         isOpenTime: isOpenTime,
-        totalFee: totalFee,
+        initialFee: totalFee,
         amountPaid: amountPaid,
         phoneNumbers: phoneNumbers);
     await refresh();
