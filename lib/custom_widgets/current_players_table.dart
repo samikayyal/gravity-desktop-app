@@ -3,12 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
+
+// Provider that emits a value every second to update the timer
+final tickerProvider = StreamProvider.autoDispose<void>((ref) {
+  return Stream.periodic(const Duration(seconds: 1));
+});
 
 class CurrentPlayersTable extends ConsumerWidget {
   const CurrentPlayersTable({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the ticker provider to rebuild the widget every second for the timer
+    ref.watch(tickerProvider);
+
     // Access the current players provider
     final currentPlayersAsyncValue = ref.watch(currentPlayersProvider);
     return currentPlayersAsyncValue.when(
@@ -32,34 +41,50 @@ class CurrentPlayersTable extends ConsumerWidget {
               DataColumn(label: Text('Amount Left')),
               DataColumn(label: Text('Actions')),
             ],
-            rows:
-                currentPlayers.map((player) => _createDataRow(player)).toList(),
+            rows: currentPlayers
+                .map((player) => _createDataRow(player, ref))
+                .toList(),
           ),
         );
       },
     );
   }
 
-  DataRow _createDataRow(Player player) {
+  DataRow _createDataRow(Player player, WidgetRef ref) {
     final String checkInTime =
         DateFormat('h:mm a').format(player.checkInTime.toLocal());
     final Duration timeRemaining =
         player.checkInTime.add(player.timeReserved).difference(DateTime.now());
 
+    String timeRemainingString;
+    if (timeRemaining.isNegative) {
+      timeRemainingString = 'Time Up!';
+    } else {
+      final hours = timeRemaining.inHours;
+      final minutes = timeRemaining.inMinutes.remainder(60);
+      final seconds = timeRemaining.inSeconds.remainder(60);
+      timeRemainingString =
+          '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+
     return DataRow(cells: [
       DataCell(Text(player.name)),
       DataCell(Text('${player.age}')),
       DataCell(Text(checkInTime)),
-      DataCell(Text(player.isOpenTime
-          ? 'Open Time'
-          : '${timeRemaining.inHours}h ${timeRemaining.inMinutes % 60}m')),
+      DataCell(Text(player.isOpenTime ? 'Open Time' : timeRemainingString)),
       DataCell(Text('${player.totalFee}')),
       DataCell(Text('${player.totalFee - player.amountPaid}')),
       DataCell(
         Row(
           children: [
             // Check Out Button
-            TextButton(onPressed: () {}, child: const Text('Check Out')),
+            TextButton(
+                onPressed: () {
+                  ref
+                      .read(currentPlayersProvider.notifier)
+                      .checkOutPlayer(player.sessionID);
+                },
+                child: const Text('Check Out')),
 
             // Add Product Button
             TextButton(

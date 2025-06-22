@@ -168,6 +168,15 @@ class DatabaseHelper {
       },
     );
 
+    // Get the session ID of the newly inserted player session
+    final int playerSessionId = await db
+        .rawQuery(
+          'SELECT last_insert_rowid() AS session_id',
+        )
+        .then((value) => value.first['session_id'] as int);
+
+    player.sessionID = playerSessionId; // Update the session ID for the player
+
     // Insert player into players table
     await db.insert(
       'players',
@@ -177,6 +186,7 @@ class DatabaseHelper {
         'age': player.age,
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
+      conflictAlgorithm: ConflictAlgorithm.replace, // Replace if exists
     );
 
     // Insert phone numbers if any

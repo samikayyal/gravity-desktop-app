@@ -8,7 +8,7 @@ class Player {
   final bool isOpenTime;
   final int totalFee;
   final int amountPaid;
-  final int sessionID; // For the current player's session
+  int sessionID; // For the current player's session
 
   Player({
     required this.playerID,
