@@ -62,7 +62,7 @@ class CurrentPlayersTable extends ConsumerWidget {
                 builder: (context, ref, child) {
                   ref.watch(tickerProvider);
 
-                  // Recalculate the duration and string INSIDE the builder
+                  // Recalculate the duration and string inside the cell
                   final Duration timeRemaining = player.checkInTime
                       .add(player.timeReserved)
                       .difference(DateTime.now());

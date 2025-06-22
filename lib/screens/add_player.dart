@@ -95,7 +95,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                             await db.getPhoneNumbers(selection.playerID);
                         setState(() {
                           _selectedPlayer = selection;
-                          nameController.text = selection.name;
                           ageController.text = selection.age.toString();
                           // Clear phone numbers if a player is selected
                           phoneControllers.clear();
@@ -108,8 +107,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                       // this builds the input field
                       fieldViewBuilder:
                           (context, controller, focusNode, onFieldSubmitted) {
-                        nameController = controller;
-
                         return TextFormField(
                           controller: nameController,
                           focusNode: focusNode,
@@ -311,7 +308,8 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                         if (!_formKey.currentState!.validate()) {
                           return;
                         }
-                        final name = nameController.text;
+                        final name =
+                            _selectedPlayer?.name ?? nameController.text;
                         final age = int.parse(ageController.text);
                         final phoneNumbers = phoneControllers
                             .map((controller) => controller.text)
