@@ -46,6 +46,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
 
   // check in a player
   Future<void> checkInPlayer({
+    String? existingPlayerID,
     required String name,
     required int age,
     required int timeReservedHours,
@@ -56,6 +57,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     List<String> phoneNumbers = const [],
   }) async {
     await _dbHelper.checkInPlayer(
+        existingPlayerID: existingPlayerID,
         name: name,
         age: age,
         timeReservedHours: timeReservedHours,

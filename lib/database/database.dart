@@ -125,6 +125,7 @@ class DatabaseHelper {
 
   // Check in a player
   Future<void> checkInPlayer({
+    String? existingPlayerID,
     required String name,
     required int age,
     required int timeReservedHours,
@@ -136,7 +137,7 @@ class DatabaseHelper {
   }) async {
     var uuid = Uuid();
     // Generate a unique player ID
-    final String playerID = uuid.v4();
+    final String playerID = existingPlayerID ?? uuid.v4();
 
     final Player player = Player(
       playerID: playerID,
@@ -147,10 +148,10 @@ class DatabaseHelper {
         hours: timeReservedHours,
         minutes: timeReservedMinutes,
       ),
-      totalFee: totalFee, // Initial amount owed
-      amountPaid: amountPaid, // Initial amount paid
+      totalFee: totalFee,
+      amountPaid: amountPaid,
       sessionID: 0, // This will be set by the database
-      isOpenTime: isOpenTime, // Default to false, can be updated later
+      isOpenTime: isOpenTime,
     );
 
     final db = await database;
@@ -181,9 +182,9 @@ class DatabaseHelper {
     await db.insert(
       'players',
       {
-        'id': player.playerID,
-        'name': player.name,
-        'age': player.age,
+        'id': playerID,
+        'name': name,
+        'age': age,
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace, // Replace if exists
@@ -255,5 +256,39 @@ class DatabaseHelper {
       newPrices[TimeSlice.additionalHour],
       newPrices[TimeSlice.additionalHalfHour],
     ]);
+  }
+
+  Future<List<Player>> getPastPlayers() async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT id, name, age
+      FROM players
+      ORDER BY last_modified DESC''');
+
+    return result
+        .map((map) => Player(
+              playerID: map['id'] as String,
+              name: map['name'] as String,
+              age: map['age'] as int,
+              // Placeholders, not used in past players
+              checkInTime: DateTime.now(),
+              timeReserved: Duration.zero,
+              totalFee: 0,
+              amountPaid: 0,
+              sessionID: 0,
+              isOpenTime: false,
+            ))
+        .toList();
+  }
+
+  Future<List<String>> getPhoneNumbers(String playerId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT phone_number
+      FROM phone_numbers
+      WHERE player_id = ?
+    ''', [playerId]);
+
+    return result.map((map) => map['phone_number'] as String).toList();
   }
 }

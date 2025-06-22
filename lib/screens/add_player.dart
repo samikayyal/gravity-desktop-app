@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/database/database.dart';
+import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 
 class AddPlayerScreen extends ConsumerStatefulWidget {
@@ -24,6 +26,31 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   bool isOpenTime = false;
   int totalFee = 0;
 
+  Player? _selectedPlayer; // exists if we chose an existing player
+  late List<Player> _pastplayers; // list of past players to search in
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPastPlayers();
+  }
+
+  Future<void> _loadPastPlayers() async {
+    final dbHelper = ref.read(databaseProvider);
+    try {
+      final players = await dbHelper.getPastPlayers();
+      setState(() {
+        _pastplayers = players;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading past players: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pricesAsync = ref.watch(pricesProvider);
@@ -36,17 +63,80 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 child: Column(
                   children: [
                     // Name
-                    TextFormField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        hintText: 'Enter player name',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a name';
+                    Autocomplete<Player>(
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        if (textEditingValue.text.isEmpty) {
+                          return const Iterable<Player>.empty();
                         }
-                        return null;
+                        final fuse = Fuzzy(
+                          _pastplayers,
+                          options: FuzzyOptions(
+                            keys: [
+                              WeightedKey(
+                                  name: 'name',
+                                  weight: 1.0,
+                                  getter: (Player player) => player.name)
+                            ],
+                            threshold: 0.3, // Adjust threshold for matching
+                          ),
+                        );
+
+                        final results = fuse.search(textEditingValue.text);
+                        return results.map((result) => result.item);
+                      },
+                      // this defines how to display the selected option
+                      displayStringForOption: (Player option) =>
+                          '${option.name} (${option.age})',
+
+                      // this runs when the user accepts a suggestion
+                      onSelected: (Player selection) async {
+                        final db = ref.read(databaseProvider);
+                        final playerPhones =
+                            await db.getPhoneNumbers(selection.playerID);
+                        setState(() {
+                          _selectedPlayer = selection;
+                          nameController.text = selection.name;
+                          ageController.text = selection.age.toString();
+                          // Clear phone numbers if a player is selected
+                          phoneControllers.clear();
+                          for (var phone in playerPhones) {
+                            phoneControllers
+                                .add(TextEditingController(text: phone));
+                          }
+                        });
+                      },
+                      // this builds the input field
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                        nameController = controller;
+
+                        return TextFormField(
+                          controller: nameController,
+                          focusNode: focusNode,
+                          decoration: InputDecoration(
+                            labelText: 'Name',
+                            hintText: 'Enter player name',
+                            // Add a clear button to reset the selection
+                            suffixIcon: _selectedPlayer != null
+                                ? IconButton(
+                                    icon: Icon(Icons.clear),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedPlayer = null;
+                                        nameController.clear();
+                                        ageController.clear();
+                                      });
+                                    },
+                                  )
+                                : null,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a name';
+                            }
+                            return null;
+                          },
+                        );
                       },
                     ),
 
@@ -231,17 +321,18 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                         final amountPaid = int.parse(amountPaidController.text);
 
                         ref.read(currentPlayersProvider.notifier).checkInPlayer(
+                              existingPlayerID: _selectedPlayer?.playerID,
                               name: name,
                               age: age,
                               timeReservedHours: hoursReserved,
                               timeReservedMinutes: minutesReserved,
                               isOpenTime: isOpenTime,
-                              totalFee: isOpenTime
-                                  ? 0
-                                  : (hoursReserved * prices[TimeSlice.hour]! +
-                                      (minutesReserved > 0
-                                          ? prices[TimeSlice.halfHour]!
-                                          : 0)),
+                              totalFee: calculateTotalFee(
+                                hoursReserved: hoursReserved,
+                                minutesReserved: minutesReserved,
+                                prices: prices,
+                                isOpenTime: isOpenTime,
+                              ),
                               amountPaid: amountPaid,
                               phoneNumbers: phoneNumbers,
                             );
@@ -268,6 +359,19 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               appBar: const MyAppBar(),
               body: const Center(child: CircularProgressIndicator()),
             ));
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+    for (var controller in phoneControllers) {
+      controller.dispose();
+    }
+    amountPaidController.dispose();
+    _pastplayers.clear();
+    _selectedPlayer = null;
+    super.dispose();
   }
 }
 
