@@ -63,6 +63,7 @@ class DatabaseHelper {
       CREATE TABLE IF NOT EXISTS payments (
       payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id INTEGER NOT NULL,
+      initial_fee INTEGER NOT NULL,       -- The fee calculated at check-in
       final_fee INTEGER NOT NULL,
       amount_paid INTEGER NOT NULL,
       tips INTEGER NOT NULL,
@@ -99,7 +100,7 @@ class DatabaseHelper {
     ''');
   }
 
-  // get the  current players
+  // get the current players
   Future<List<Player>> getCurrentPlayers() async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''
@@ -110,10 +111,12 @@ class DatabaseHelper {
               ps.time_reserved_hours,
               ps.time_reserved_minutes,
               ps.is_open_time,
-              ps.amount_paid,
-              ps.session_id
+              ps.session_id,
+              pay.initial_fee,
+              pay.amount_paid
       FROM player_sessions ps
       JOIN players p ON ps.player_id = p.id
+      JOIN payments pay ON ps.session_id = pay.session_id
       WHERE ps.check_out_time IS NULL
     ''');
     return result.map((map) => Player.fromMap(map)).toList();
@@ -137,16 +140,16 @@ class DatabaseHelper {
     );
 
     // Insert payment record
-    await db.insert(
-      'payments',
-      {
-        'session_id': sessionID,
-        'final_fee': finalFee,
-        'amount_paid': amountPaid,
-        'tips': tips,
-        'last_modified': DateTime.now().toUtc().toIso8601String(),
-      },
-    );
+    await db.update(
+        'payments',
+        {
+          'final_fee': finalFee,
+          'amount_paid': amountPaid,
+          'tips': tips,
+          'last_modified': DateTime.now().toUtc().toIso8601String()
+        },
+        where: 'session_id = ?',
+        whereArgs: [sessionID]);
   }
 
   // Check in a player
@@ -190,6 +193,7 @@ class DatabaseHelper {
         'time_reserved_hours': player.timeReserved.inHours,
         'time_reserved_minutes': player.timeReserved.inMinutes % 60,
         'is_open_time': player.isOpenTime ? 1 : 0,
+        'initial_fee': player.initialFee,
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
     );
@@ -202,6 +206,19 @@ class DatabaseHelper {
         .then((value) => value.first['session_id'] as int);
 
     player.sessionID = playerSessionId; // Update the session ID for the player
+
+    // ---- Payment Insertion ----
+    await db.insert(
+      'payments',
+      {
+        'session_id': playerSessionId,
+        'initial_fee': player.initialFee,
+        'final_fee': 0,
+        'amount_paid': player.amountPaid,
+        'tips': 0, // No tips at check-in
+        'last_modified': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
 
     // ---- Player Table Insertion ----
     await db.insert(
@@ -282,6 +299,10 @@ class DatabaseHelper {
       newPrices[TimeSlice.additionalHour],
       newPrices[TimeSlice.additionalHalfHour],
     ]);
+    await db.rawQuery('''
+      UPDATE prices
+      SET last_modified = ?
+      ''', [DateTime.now().toUtc().toIso8601String()]);
   }
 
   Future<List<Player>> getPastPlayers() async {
