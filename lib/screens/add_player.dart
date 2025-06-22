@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
-import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 
 class AddPlayerScreen extends ConsumerStatefulWidget {
   const AddPlayerScreen({super.key});
@@ -279,7 +279,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                     // Display total fee
                     Text(isOpenTime
                         ? 'Total Fee: Open Time'
-                        : 'Total Fee: ${calculateTotalFee(hoursReserved: hoursReserved, minutesReserved: minutesReserved, prices: prices, isOpenTime: isOpenTime)} SYP'),
+                        : 'Total Fee: ${calculatePreCheckInFee(hoursReserved: hoursReserved, minutesReserved: minutesReserved, prices: prices, isOpenTime: isOpenTime)} SYP'),
 
                     // Input for amount paid on check-in
                     TextFormField(
@@ -325,7 +325,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                               timeReservedHours: hoursReserved,
                               timeReservedMinutes: minutesReserved,
                               isOpenTime: isOpenTime,
-                              totalFee: calculateTotalFee(
+                              totalFee: calculatePreCheckInFee(
                                 hoursReserved: hoursReserved,
                                 minutesReserved: minutesReserved,
                                 prices: prices,
@@ -371,34 +371,4 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     _selectedPlayer = null;
     super.dispose();
   }
-}
-
-int calculateTotalFee({
-  required int hoursReserved,
-  required int minutesReserved,
-  required Map<TimeSlice, int> prices,
-  required bool isOpenTime,
-}) {
-  // Open time has no fee
-  if (isOpenTime) return 0;
-  if (hoursReserved == 0 && minutesReserved == 0) {
-    return 0; // No time reserved, no fee
-  }
-
-  int total = 0;
-  // If there is at least 1 hour, charge first hour at base price
-  if (hoursReserved > 0) {
-    total += prices[TimeSlice.hour]!;
-    if (hoursReserved > 1) {
-      total += (hoursReserved - 1) * (prices[TimeSlice.additionalHour]!);
-    }
-    // If there is a half hour, charge it at additional half hour price
-    if (minutesReserved == 30) {
-      total += prices[TimeSlice.additionalHalfHour]!;
-    }
-  } else if (minutesReserved == 30) {
-    // No full hour, charge first half hour at base price
-    total += prices[TimeSlice.halfHour]!;
-  }
-  return total;
 }

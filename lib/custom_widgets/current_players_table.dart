@@ -73,9 +73,7 @@ class CurrentPlayersTable extends ConsumerWidget {
                   } else {
                     final hours = timeRemaining.inHours;
                     final minutes = timeRemaining.inMinutes.remainder(60);
-                    final seconds = timeRemaining.inSeconds.remainder(60);
-                    timeRemainingString =
-                        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+                    timeRemainingString = '$hours Hours $minutes Minutes';
                   }
                   return Text(timeRemainingString);
                 },
