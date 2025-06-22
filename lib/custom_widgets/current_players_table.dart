@@ -15,9 +15,6 @@ class CurrentPlayersTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the ticker provider to rebuild the widget every second for the timer
-    ref.watch(tickerProvider);
-
     // Access the current players provider
     final currentPlayersAsyncValue = ref.watch(currentPlayersProvider);
     return currentPlayersAsyncValue.when(
@@ -53,25 +50,37 @@ class CurrentPlayersTable extends ConsumerWidget {
   DataRow _createDataRow(Player player, WidgetRef ref) {
     final String checkInTime =
         DateFormat('h:mm a').format(player.checkInTime.toLocal());
-    final Duration timeRemaining =
-        player.checkInTime.add(player.timeReserved).difference(DateTime.now());
-
-    String timeRemainingString;
-    if (timeRemaining.isNegative) {
-      timeRemainingString = 'Time Up!';
-    } else {
-      final hours = timeRemaining.inHours;
-      final minutes = timeRemaining.inMinutes.remainder(60);
-      final seconds = timeRemaining.inSeconds.remainder(60);
-      timeRemainingString =
-          '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    }
 
     return DataRow(cells: [
       DataCell(Text(player.name)),
       DataCell(Text('${player.age}')),
       DataCell(Text(checkInTime)),
-      DataCell(Text(player.isOpenTime ? 'Open Time' : timeRemainingString)),
+      player.isOpenTime
+          ? DataCell(const Text('Open Time'))
+          : DataCell(
+              Consumer(
+                builder: (context, ref, child) {
+                  ref.watch(tickerProvider);
+
+                  // Recalculate the duration and string INSIDE the builder
+                  final Duration timeRemaining = player.checkInTime
+                      .add(player.timeReserved)
+                      .difference(DateTime.now());
+
+                  String timeRemainingString;
+                  if (timeRemaining.isNegative) {
+                    timeRemainingString = 'Time Up!';
+                  } else {
+                    final hours = timeRemaining.inHours;
+                    final minutes = timeRemaining.inMinutes.remainder(60);
+                    final seconds = timeRemaining.inSeconds.remainder(60);
+                    timeRemainingString =
+                        '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+                  }
+                  return Text(timeRemainingString);
+                },
+              ),
+            ),
       DataCell(Text('${player.totalFee}')),
       DataCell(Text('${player.totalFee - player.amountPaid}')),
       DataCell(
