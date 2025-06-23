@@ -194,7 +194,6 @@ class DatabaseHelper {
         'time_reserved_hours': player.timeReserved.inHours,
         'time_reserved_minutes': player.timeReserved.inMinutes % 60,
         'is_open_time': player.isOpenTime ? 1 : 0,
-        'initial_fee': player.initialFee,
         'last_modified': DateTime.now().toUtc().toIso8601String(),
       },
     );
@@ -339,4 +338,13 @@ class DatabaseHelper {
 
     return result.map((map) => map['phone_number'] as String).toList();
   }
+
+  // ------- TEST FUNCTIONS -------
+
+  Future<void> clearCurrentPlayers() async {
+    final db = await database;
+    await db.execute('DELETE FROM player_sessions');
+  }
+
+  // ------- END TEST FUNCTIONS -------
 }
