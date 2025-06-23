@@ -77,6 +77,12 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         phoneNumbers: phoneNumbers);
     await refresh();
   }
+
+  // -------- TEST SECTION --------
+  Future<void> clearCurrentPlayers() async {
+    await _dbHelper.clearCurrentPlayers();
+    await refresh();
+  }
 }
 
 // Provider for time slice prices

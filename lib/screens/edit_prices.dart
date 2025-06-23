@@ -151,6 +151,7 @@ class _EditPricesScreenState extends ConsumerState<EditPricesScreen> {
                             TimeSlice.additionalHalfHour: int.parse(
                                 additionalHalfHourPriceController.text),
                           });
+                          
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

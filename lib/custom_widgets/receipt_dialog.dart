@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
+import 'package:intl/intl.dart';
+
+enum TipType { returnChange, takeAsTip }
 
 class ReceiptDialog extends ConsumerStatefulWidget {
   final Player player;
@@ -14,18 +18,25 @@ class ReceiptDialog extends ConsumerStatefulWidget {
 }
 
 class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
+  late final Duration timeSpent;
+
   final TextEditingController _amountReceivedController =
       TextEditingController();
-  final TextEditingController _tipController = TextEditingController();
 
   int _change = 0;
-  bool _showTipField = false;
+  int _tip = 0;
   bool _isCheckoutEnabled = false;
+  TipType? _tipType;
+
+  @override
+  void initState() {
+    timeSpent = DateTime.now().toUtc().difference(widget.player.checkInTime);
+    super.initState();
+  }
 
   @override
   void dispose() {
     _amountReceivedController.dispose();
-    _tipController.dispose();
     super.dispose();
   }
 
@@ -35,10 +46,11 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
 
     return pricesAsync.when(
       data: (prices) {
-        Duration timeSpent =
-            DateTime.now().toUtc().difference(widget.player.checkInTime);
         String formattedTimeSpent =
             'Time Spent: ${timeSpent.inHours} Hours ${timeSpent.inMinutes.remainder(60)} minutes';
+
+        String formattedCheckInTime =
+            DateFormat('h:mm a').format(widget.player.checkInTime.toLocal());
 
         int finalFee = calculateFinalFee(timeSpent: timeSpent, prices: prices);
         int amountLeft = finalFee - widget.player.amountPaid;
@@ -48,73 +60,76 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
           content: SingleChildScrollView(
               child: ListBody(
             children: <Widget>[
-              Text("Check-in Time: ${widget.player.checkInTime.toLocal()}"),
-              Text(formattedTimeSpent),
+              Text("Check-in Time: $formattedCheckInTime"),
+              Text("Time Spent: $formattedTimeSpent"),
               const Divider(),
-              Text("Total Fee: $finalFee SYP"),
+              Text("Final Fee: $finalFee SYP"),
               Text("Amount Paid: ${widget.player.amountPaid} SYP"),
-              const Divider(
-                thickness: 2,
-              ),
+              const Divider(),
               Text("Amount Left: $amountLeft SYP"),
-
-              const SizedBox(height: 20),
-              // Amount to pay/receive
-              TextFormField(
+              const SizedBox(height: 8.0),
+              TextField(
                 controller: _amountReceivedController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
                 decoration: InputDecoration(
-                  labelText: 'Amount Received',
-                  hintText: 'Enter amount received in SYP',
+                  labelText: "Amount Received",
+                  hintText: "Enter amount received",
+                  border: OutlineInputBorder(),
                 ),
                 onChanged: (value) {
-                  final int amountReceived = int.tryParse(value) ?? 0;
                   setState(() {
+                    int amountReceived = int.tryParse(value) ?? 0;
                     _change = amountReceived - amountLeft;
-                    _isCheckoutEnabled = amountReceived >= amountLeft;
+                    _isCheckoutEnabled =
+                        amountReceived >= amountLeft && _tipType != null;
                   });
                 },
               ),
-              const SizedBox(height: 10),
-              if (_change < 0) Text("Still owed: ${-_change} SYP"),
-              if (_change >= 0) Text("Change: $_change SYP"),
-
-              if (_change > 0 && !_showTipField)
-                Row(
+              if (_change > 0) Text("Change: $_change SYP"),
+              if (_change == 0) Text("No Change"),
+              if (_change < 0) Text("Still Owed: ${-_change} SYP"),
+              const Divider(thickness: 2, color: Colors.grey),
+              if (_change > 0)
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  alignment: WrapAlignment.center,
                   children: [
                     ElevatedButton(
-                        child: Text("Take the change as tip"),
-                        onPressed: () {
-                          setState(() {
-                            _tipController.text = _change.toString();
-                          });
-                        }),
-                    OutlinedButton(
-                      child: Text("Return Change"),
                       onPressed: () {
                         setState(() {
-                          _showTipField = true;
-                          _tipController.text = '0';
+                          _tipType = TipType.takeAsTip;
+                          _tip = _change;
+                          _isCheckoutEnabled = true; // Enable checkout
                         });
                       },
-                    )
+                      style: _tipType == TipType.takeAsTip
+                          ? AppButtonStyles.primaryButton
+                          : AppButtonStyles.secondaryButton,
+                      child: Text("Take change as tip"),
+                    ),
+                    ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _tipType = TipType.returnChange;
+                            _tip = 0; // Reset tip when returning change
+                            _isCheckoutEnabled = true; // Enable checkout
+                          });
+                        },
+                        style: _tipType == TipType.returnChange
+                            ? AppButtonStyles.primaryButton
+                            : AppButtonStyles.secondaryButton,
+                        child: Text("Return Change")),
                   ],
                 ),
-              if (_showTipField || _change <= 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: TextFormField(
-                    controller: _tipController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: 'Tip Received',
-                    ),
-                  ),
-                ),
+              const SizedBox(height: 8.0),
+              if (_tipType == TipType.returnChange)
+                Text("Action: Return $_change SYP as change"),
+              if (_tipType == TipType.takeAsTip)
+                Text("Action: Take $_change SYP as tip"),
             ],
           )),
           actions: [
@@ -124,7 +139,11 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
             ElevatedButton(
               onPressed: _isCheckoutEnabled
                   ? () {
-                      // Handle confirmation logic
+                      ref.read(currentPlayersProvider.notifier).checkOutPlayer(
+                          sessionID: widget.player.sessionID,
+                          finalFee: finalFee,
+                          amountPaid: int.parse(_amountReceivedController.text),
+                          tips: _tip);
                       Navigator.of(context).pop();
                     }
                   : null,
