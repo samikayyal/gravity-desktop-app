@@ -140,7 +140,6 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                         style: const TextStyle(fontSize: 18),
                         decoration: InputDecoration(
                           hintText: "Enter amount received",
-                          prefixIcon: const Icon(Icons.attach_money),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -156,8 +155,9 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                           setState(() {
                             int amountReceived = int.tryParse(value) ?? 0;
                             _change = amountReceived - amountLeft;
-                            _isCheckoutEnabled = amountReceived >= amountLeft &&
-                                _tipType != null;
+                            _isCheckoutEnabled = (amountReceived > amountLeft &&
+                                    _tipType != null) ||
+                                amountReceived == amountLeft;
                           });
                         },
                       ),
@@ -253,13 +253,20 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                     ElevatedButton(
                       onPressed: _isCheckoutEnabled
                           ? () {
+                              int amountReceived = int.tryParse(
+                                      _amountReceivedController.text) ??
+                                  0;
+
+                              if (_tipType == TipType.returnChange) {
+                                amountReceived -= _change;
+                              }
+
                               ref
                                   .read(currentPlayersProvider.notifier)
                                   .checkOutPlayer(
                                       sessionID: widget.player.sessionID,
                                       finalFee: finalFee,
-                                      amountPaid: int.parse(
-                                          _amountReceivedController.text),
+                                      amountPaid: amountReceived,
                                       tips: _tip);
                               Navigator.of(context).pop();
                             }
