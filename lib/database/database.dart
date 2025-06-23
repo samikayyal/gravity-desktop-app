@@ -119,6 +119,7 @@ class DatabaseHelper {
       JOIN players p ON ps.player_id = p.id
       JOIN payments pay ON ps.session_id = pay.session_id
       WHERE ps.check_out_time IS NULL
+      ORDER BY ps.check_in_time ASC
     ''');
     return result.map((map) => Player.fromMap(map)).toList();
   }
