@@ -90,14 +90,15 @@ class DatabaseHelper {
       )
     ''');
 
-    // Insert default prices if they do not exist
+    // Insert default prices if they do not exist, with last_modified for NOT NULL constraint
+    final nowIso = DateTime.now().toUtc().toIso8601String();
     await db.execute('''
-      INSERT OR IGNORE INTO prices (time_slice, price) VALUES
-      ('hour', 0),
-      ('half_hour', 0),
-      ('additional_hour', 0),
-      ('additional_half_hour', 0)
-    ''');
+      INSERT OR REPLACE INTO prices (time_slice, price, last_modified) VALUES
+      ('hour', 0, ?),
+      ('half_hour', 0, ?),
+      ('additional_hour', 0, ?),
+      ('additional_half_hour', 0, ?)
+    ''', [nowIso, nowIso, nowIso, nowIso]);
   }
 
   // get the current players
