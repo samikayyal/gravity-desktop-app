@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/current_players_table.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/screens/add_player.dart';
 import 'package:gravity_desktop_app/screens/edit_prices.dart';
+import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -43,41 +47,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-                // Buttons row
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.person_add),
-                      label: const Text('Add Player'),
-                      onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const AddPlayerScreen()));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.edit),
-                      label: const Text("Edit Prices"),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => EditPricesScreen(),
+                // Buttons section with title
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8.0, bottom: 12.0),
+                        child: Text(
+                          'Actions',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(
+                                0xFF3949AB), // Updated to match button color
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        ),
                       ),
-                    )
-                  ],
+                      Wrap(
+                        spacing: 16, // Horizontal spacing between buttons
+                        runSpacing:
+                            16, // Vertical spacing between rows if buttons wrap
+                        children: [
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.person_add, size: 24),
+                            label: const PrimaryButtonText("Add Player"),
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AddPlayerScreen()));
+                            },
+                            style: AppButtonStyles.primaryButton,
+                          ),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.edit, size: 24),
+                            label: const PrimaryButtonText("Edit Prices"),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => EditPricesScreen(),
+                                ),
+                              );
+                            },
+                            style: AppButtonStyles.primaryButton,
+                          ),
+
+                          // ---------- TEST SECTION ----------
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.person, size: 24),
+                            label: const Text(
+                              "Add player with 1 mins",
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                            onPressed: () {
+                              ref
+                                  .read(currentPlayersProvider.notifier)
+                                  .checkInPlayer(
+                                existingPlayerID: null,
+                                name: "Test Player",
+                                age: 99,
+                                timeReservedHours: 0,
+                                timeReservedMinutes: 1,
+                                isOpenTime: false,
+                                totalFee: calculatePreCheckInFee(
+                                  hoursReserved: 0,
+                                  minutesReserved: 1,
+                                  prices: ref.read(pricesProvider).value!,
+                                  isOpenTime: false,
+                                ),
+                                amountPaid: 0,
+                                phoneNumbers: [],
+                              );
+                            },
+                          ),
+
+                          ElevatedButton.icon(
+                            icon: const Icon(
+                              Icons.clear_all,
+                              size: 24,
+                            ),
+                            label: const Text(
+                              "Clear All Players",
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                            onPressed: () async {
+                              final db =
+                                  ref.read(currentPlayersProvider.notifier);
+                              await db.clearCurrentPlayers();
+                            },
+                            style: AppButtonStyles.dangerButton,
+                          ),
+
+                          // ---------- END TEST SECTION ----------
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 // Table with expanded to fill the rest of the column height
                 Expanded(
