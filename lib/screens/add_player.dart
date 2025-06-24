@@ -649,129 +649,138 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                             const SizedBox(width: 24),
                             Expanded(
                               flex: 2,
-                              child: Card(
-                                elevation: 3,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade300),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Payment Summary',
-                                        style: AppTextStyles.sectionHeaderStyle
-                                            .copyWith(color: Colors.black),
-                                      ),
-                                      const SizedBox(height: 32),
-
-                                      // Fee summary display
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 16, horizontal: 24),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade50,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                              color: Colors.blue.shade100),
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: Card(
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Payment Summary',
+                                          style: AppTextStyles
+                                              .sectionHeaderStyle
+                                              .copyWith(color: Colors.black),
                                         ),
-                                        child: Column(
-                                          children: [
-                                            const Text(
-                                              'Total Fee',
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              isOpenTime
-                                                  ? 'Open Time'
-                                                  : '$initialFee  SYP',
-                                              style: TextStyle(
-                                                fontSize: 28,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.blue.shade900,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
+                                        const SizedBox(height: 32),
 
-                                      // Input for amount paid on check-in
-                                      TextFormField(
-                                        controller: amountPaidController,
-                                        style: const TextStyle(fontSize: 18),
-                                        decoration: InputDecoration(
-                                            labelText:
-                                                'Amount Paid on Check-in',
-                                            labelStyle:
-                                                AppTextStyles.regularTextStyle,
-                                            hintText: 'Enter amount paid',
-                                            hintStyle:
-                                                AppTextStyles.subtitleTextStyle,
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 18),
-                                            prefixText: 'SYP   ',
-                                            prefixStyle: AppTextStyles
-                                                .regularTextStyle
-                                                .copyWith(color: Colors.black)),
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ],
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
-                                            return 'Please enter an amount';
-                                          }
-                                          final amount = int.tryParse(value);
-                                          if (amount == null || amount < 0) {
-                                            return 'Please enter a valid amount';
-                                          }
-                                          return null;
-                                        },
-                                      ),
-
-                                      const SizedBox(height: 24),
-                                      const Divider(),
-                                      const SizedBox(height: 16),
-
-                                      // Submit Button
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 60,
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue,
-                                            foregroundColor: Colors.white,
-                                            textStyle: const TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
+                                        // Fee summary display
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 16, horizontal: 24),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade50,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                                color: Colors.blue.shade100),
                                           ),
-                                          onPressed: () => _handleCheckIn(
-                                              prices, initialFee),
-                                          child: const Text("Add Player"),
+                                          child: Column(
+                                            children: [
+                                              const Text(
+                                                'Total Fee',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                isOpenTime
+                                                    ? 'Open Time'
+                                                    : '$initialFee  SYP',
+                                                style: TextStyle(
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blue.shade900,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 24),
+
+                                        // Input for amount paid on check-in
+                                        TextFormField(
+                                          controller: amountPaidController,
+                                          style: const TextStyle(fontSize: 18),
+                                          decoration: InputDecoration(
+                                              labelText:
+                                                  'Amount Paid on Check-in',
+                                              labelStyle: AppTextStyles
+                                                  .regularTextStyle,
+                                              hintText: 'Enter amount paid',
+                                              hintStyle: AppTextStyles
+                                                  .subtitleTextStyle,
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 18),
+                                              prefixText: 'SYP   ',
+                                              prefixStyle: AppTextStyles
+                                                  .regularTextStyle
+                                                  .copyWith(
+                                                      color: Colors.black)),
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ],
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Please enter an amount';
+                                            }
+                                            final amount = int.tryParse(value);
+                                            if (amount == null || amount < 0) {
+                                              return 'Please enter a valid amount';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+
+                                        const SizedBox(height: 24),
+                                        const Divider(),
+                                        const SizedBox(height: 16),
+
+                                        // Submit Button
+                                        SizedBox(
+                                          width: double.infinity,
+                                          height: 60,
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.blue,
+                                              foregroundColor: Colors.white,
+                                              textStyle: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: () => _handleCheckIn(
+                                                prices, initialFee),
+                                            child: const Text("Add Player"),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
