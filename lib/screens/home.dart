@@ -65,8 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(
-                                0xFF3949AB), // Updated to match button color
+                            color: Color(0xFF3949AB),
                           ),
                         ),
                       ),
@@ -98,6 +97,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   builder: (context) => EditPricesScreen(),
                                 ),
                               );
+                            },
+                            style: AppButtonStyles.primaryButton,
+                          ),
+
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.shopping_cart, size: 24),
+                            label: Text("Separate Purchase",
+                                style: AppTextStyles.primaryButtonTextStyle),
+                            onPressed: () {
+                              // Navigator.of(context).push(
+                              //   MaterialPageRoute(
+                              //     builder: (context) => SeparatePurchaseScreen(),
+                              //   ),
+                              // );
                             },
                             style: AppButtonStyles.primaryButton,
                           ),
