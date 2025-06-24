@@ -77,7 +77,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           ElevatedButton.icon(
                             icon: const Icon(Icons.person_add, size: 24),
-                            label: const PrimaryButtonText("Add Player"),
+                            label: Text("Add Player",
+                                style: AppTextStyles.primaryButtonTextStyle),
                             onPressed: () {
                               Navigator.push(
                                   context,
@@ -89,7 +90,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.edit, size: 24),
-                            label: const PrimaryButtonText("Edit Prices"),
+                            label: Text("Edit Prices",
+                                style: AppTextStyles.primaryButtonTextStyle),
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(

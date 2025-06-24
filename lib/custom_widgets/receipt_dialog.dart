@@ -192,7 +192,8 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                               style: _tipType == TipType.takeAsTip
                                   ? AppButtonStyles.primaryButton
                                   : AppButtonStyles.secondaryButton,
-                              child: const PrimaryButtonText("Take as Tip"),
+                              child: Text("Take as Tip",
+                                  style: AppTextStyles.primaryButtonTextStyle),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -208,7 +209,8 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                               style: _tipType == TipType.returnChange
                                   ? AppButtonStyles.primaryButton
                                   : AppButtonStyles.secondaryButton,
-                              child: const PrimaryButtonText("Return Change"),
+                              child: Text("Return Change",
+                                  style: AppTextStyles.primaryButtonTextStyle),
                             ),
                           ),
                         ],
@@ -247,7 +249,8 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: AppButtonStyles.secondaryButton,
-                      child: const PrimaryButtonText("Cancel"),
+                      child: Text("Cancel",
+                          style: AppTextStyles.primaryButtonTextStyle),
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
@@ -288,7 +291,8 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                                 ),
                               ),
                             ),
-                      child: const PrimaryButtonText("Confirm"),
+                      child: Text("Confirm",
+                          style: AppTextStyles.primaryButtonTextStyle),
                     ),
                   ],
                 ),
@@ -342,7 +346,8 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: AppButtonStyles.secondaryButton,
-                child: const PrimaryButtonText('Close'),
+                child: Text('Close',
+                    style: AppTextStyles.primaryButtonTextStyle),
               ),
             ],
           ),

@@ -5,14 +5,14 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTextStyles {
   // Style for section headers
   static TextStyle sectionHeaderStyle = GoogleFonts.notoSans(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
     color: const Color(0xFF3949AB),
   );
 
   // Style for regular text
   static TextStyle regularTextStyle = GoogleFonts.notoSans(
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: FontWeight.w400,
     color: const Color(0xFF424242),
   );
@@ -30,20 +30,18 @@ class AppTextStyles {
     fontWeight: FontWeight.w700,
     color: const Color(0xFF3949AB),
   );
-}
 
-class PrimaryButtonText extends StatelessWidget {
-  final String text;
-  const PrimaryButtonText(this.text, {super.key});
+  // Style for table cells
+  static TextStyle tableCellStyle = GoogleFonts.notoSans(
+    fontSize: 18,
+    fontWeight: FontWeight.w400,
+    color: const Color(0xFF424242),
+  );
 
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: GoogleFonts.notoSans().fontFamily),
-    );
-  }
+  // Style for primary button text
+  static TextStyle primaryButtonTextStyle = GoogleFonts.notoSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF3949AB),
+  );
 }
