@@ -12,9 +12,16 @@ class AppTextStyles {
 
   // Style for regular text
   static TextStyle regularTextStyle = GoogleFonts.notoSans(
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: FontWeight.w400,
     color: const Color(0xFF424242),
+  );
+
+  // Style for subtitle text
+  static TextStyle subtitleTextStyle = GoogleFonts.notoSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF757575),
   );
 
   // Style for amount values
