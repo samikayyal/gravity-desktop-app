@@ -51,4 +51,10 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     color: const Color(0xFF3949AB),
   );
+
+  static TextStyle secondaryButtonTextStyle = GoogleFonts.notoSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF757575),
+  );
 }

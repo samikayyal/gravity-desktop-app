@@ -1,4 +1,5 @@
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/models/product.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uuid/uuid.dart';
@@ -99,6 +100,37 @@ class DatabaseHelper {
       ('additional_hour', 0, ?),
       ('additional_half_hour', 0, ?)
     ''', [nowIso, nowIso, nowIso, nowIso]);
+
+    // Products
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS products(
+        product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        price INTEGER NOT NULL,
+        quantity_available INTEGER NOT NULL,
+        last_modified TEXT NOT NULL
+      )
+    ''');
+
+    // Product purchase history
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS product_purchases(
+        purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        session_id INTEGER,               -- NULL if separate purchase
+        quantity INTEGER NOT NULL,
+        purchase_time TEXT NOT NULL,
+        FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL,
+        FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE
+      )
+    ''');
+
+    // insert water and socks products
+    await db.execute('''
+      INSERT OR IGNORE INTO products (name, price, quantity_available, last_modified) VALUES
+      ('Water Bottle', 5000, 50, ?),
+      ('Socks', 35000, 100, ?)
+    ''', [nowIso, nowIso]);
   }
 
   // get the current players
@@ -348,4 +380,100 @@ class DatabaseHelper {
   }
 
   // ------- END TEST FUNCTIONS -------
+
+  Future<List<Product>> getProducts() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'products',
+      orderBy: 'name ASC',
+    );
+    if (maps.isEmpty) {
+      return [];
+    }
+    return maps.map((map) => Product.fromMap(map)).toList();
+  }
+
+  Future<void> recordSeparatePurchase({
+    required int productId,
+    required int quantity,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // 1. Decrement the product quantity. The WHERE clause prevents selling out-of-stock items.
+      final count = await txn.rawUpdate(
+        '''
+        UPDATE products
+        SET quantity_available = quantity_available - ?,
+            last_modified = ?
+        WHERE product_id = ? AND quantity_available >= ?
+        ''',
+        [
+          quantity,
+          DateTime.now().toUtc().toIso8601String(),
+          productId,
+          quantity
+        ],
+      );
+
+      // If no rows were updated, it means stock was insufficient. Abort.
+      if (count == 0) {
+        throw Exception('Insufficient stock for this purchase.');
+      }
+
+      // 2. Insert the purchase record
+      await txn.insert('product_purchases', {
+        'product_id': productId,
+        'session_id': null, // Explicitly null for a separate purchase
+        'quantity': quantity,
+        'purchase_time': DateTime.now().toUtc().toIso8601String(),
+      });
+    });
+  }
+
+  /// Records multiple purchases not associated with a player session and updates product quantities in a single transaction.
+  Future<void> recordMultipleSeparatePurchases({
+    required Map<int, int> purchases, // Map<productId, quantity>
+  }) async {
+    if (purchases.isEmpty) return;
+
+    final db = await database;
+    await db.transaction((txn) async {
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+
+      for (final entry in purchases.entries) {
+        final productId = entry.key;
+        final quantity = entry.value;
+
+        // Skip items with zero or negative quantity
+        if (quantity <= 0) continue;
+
+        // 1. Decrement the product quantity.
+        // The WHERE clause prevents selling more items than are available.
+        final count = await txn.rawUpdate(
+          '''
+          UPDATE products
+          SET quantity_available = quantity_available - ?,
+              last_modified = ?
+          WHERE product_id = ? AND quantity_available >= ?
+          ''',
+          [quantity, nowIso, productId, quantity],
+        );
+
+        // If no rows were updated, it means stock was insufficient. This will
+        // throw an exception, causing the transaction to automatically roll back.
+        if (count == 0) {
+          throw Exception(
+              'Insufficient stock for product ID $productId. Purchase cancelled.');
+        }
+
+        // 2. Insert the purchase record into history.
+        await txn.insert('product_purchases', {
+          'product_id': productId,
+          'session_id': null, // Explicitly null for a separate purchase
+          'quantity': quantity,
+          'purchase_time': nowIso,
+        });
+      }
+    });
+  }
 }
