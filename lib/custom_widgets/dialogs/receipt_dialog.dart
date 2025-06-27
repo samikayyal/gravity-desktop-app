@@ -22,6 +22,7 @@ class ReceiptDialog extends ConsumerStatefulWidget {
 }
 
 class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
+  final formatter = NumberFormat.decimalPattern();
   late final Duration timeSpent;
 
   final TextEditingController _amountReceivedController =
@@ -98,10 +99,13 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
               const Divider(height: 24, thickness: 1),
               Text("Payment Summary", style: AppTextStyles.sectionHeaderStyle),
               const SizedBox(height: 12),
-              _buildInfoRow("Final Fee:", "$finalFee SYP", isHighlighted: true),
-              _buildInfoRow("Amount Paid:", "${widget.player.amountPaid} SYP"),
+              _buildInfoRow("Final Fee:", "${formatter.format(finalFee)} SYP",
+                  isHighlighted: true),
+              _buildInfoRow("Amount Paid:",
+                  "${formatter.format(widget.player.amountPaid)} SYP"),
               const Divider(height: 24, thickness: 1),
-              _buildInfoRow("Amount Left:", "$amountLeft SYP",
+              _buildInfoRow(
+                  "Amount Left:", "${formatter.format(amountLeft)} SYP",
                   isHighlighted: true),
               const SizedBox(height: 20),
 
@@ -143,9 +147,9 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                         setState(() {
                           int amountReceived = int.tryParse(value) ?? 0;
                           _change = amountReceived - amountLeft;
-                          _isCheckoutEnabled =
-                              (amountReceived > amountLeft && _tipType != null) ||
-                                  amountReceived == amountLeft;
+                          _isCheckoutEnabled = (amountReceived > amountLeft &&
+                                  _tipType != null) ||
+                              amountReceived == amountLeft;
                         });
                       },
                     ),
@@ -327,8 +331,7 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: AppButtonStyles.secondaryButton,
-              child:
-                  Text('Close', style: AppTextStyles.primaryButtonTextStyle),
+              child: Text('Close', style: AppTextStyles.primaryButtonTextStyle),
             ),
           ],
         ),
@@ -370,7 +373,7 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
           children: [
             Text("Change:", style: AppTextStyles.regularTextStyle),
             Text(
-              "$_change SYP",
+              "${formatter.format(_change)} SYP",
               style: AppTextStyles.highlightedTextStyle.copyWith(
                 color: const Color(0xFF1976D2),
               ),
