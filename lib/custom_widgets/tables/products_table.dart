@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
@@ -100,7 +99,6 @@ class _ProductsTableState extends ConsumerState<ProductsTable> {
                       0: const FlexColumnWidth(2.0), // Product name
                       1: const FlexColumnWidth(1.5), // Price
                       2: const FlexColumnWidth(1.5), // Quantity
-                      3: const FlexColumnWidth(2.5), // Actions
                     },
                     defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                     children: [
@@ -113,7 +111,6 @@ class _ProductsTableState extends ConsumerState<ProductsTable> {
                           _buildHeaderCell('Product Name'),
                           _buildHeaderCell('Price'),
                           _buildHeaderCell('Quantity'),
-                          _buildHeaderCell('Actions'),
                         ],
                       ),
                       // Data Rows
@@ -168,29 +165,6 @@ class _ProductsTableState extends ConsumerState<ProductsTable> {
         _buildDataCell(productName, style: cellStyle),
         _buildDataCell(productPrice, style: amountStyle),
         _buildDataCell(quantityAvailable, style: amountStyle),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              ElevatedButton.icon(
-                icon: const Icon(Icons.edit, size: 23),
-                label: Text(
-                  "Edit",
-                  style: AppTextStyles.primaryButtonTextStyle,
-                ),
-                style: AppButtonStyles.primaryButton.copyWith(
-                  padding: WidgetStateProperty.all(
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  ),
-                ),
-                onPressed: () {
-                  print("Edit button pressed");
-                },
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

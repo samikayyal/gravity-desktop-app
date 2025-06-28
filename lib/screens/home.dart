@@ -217,7 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           ElevatedButton.icon(
                             icon: const Icon(Icons.add_shopping_cart, size: 24),
-                            label: Text("Add Product/Inventory",
+                            label: Text("Edit Product Inventory",
                                 style: AppTextStyles.primaryButtonTextStyle),
                             onPressed: () {
                               Navigator.push(
