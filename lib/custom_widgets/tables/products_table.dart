@@ -32,7 +32,7 @@ class _ProductsTableState extends ConsumerState<ProductsTable> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stackTrace) => Center(
         child: Text(
-          'Table Error: $error \n$stackTrace',
+          'Table Error: $error',
           style: AppTextStyles.regularTextStyle.copyWith(color: Colors.red),
         ),
       ),
