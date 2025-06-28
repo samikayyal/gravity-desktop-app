@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/providers/time_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
+import 'package:intl/intl.dart';
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MyAppBar({super.key});
@@ -33,14 +34,6 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
 class ClockWidget extends ConsumerWidget {
   const ClockWidget({super.key});
 
-  String _formatDateTime(DateTime dateTime) {
-    // format to h:mm:ss a
-    final hour = (dateTime.hour % 12 == 0) ? 12 : dateTime.hour % 12;
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    final period = dateTime.hour < 12 ? 'AM' : 'PM';
-    return '$hour:$minute $period';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final time = ref.watch(timeProvider);
@@ -49,7 +42,7 @@ class ClockWidget extends ConsumerWidget {
       data: (value) {
         return Center(
           child: Text(
-            _formatDateTime(value),
+            '${DateFormat('dd/MM/yyyy').format(value)} | ${DateFormat('hh:mm a').format(value)}',
             style:
                 AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
           ),
