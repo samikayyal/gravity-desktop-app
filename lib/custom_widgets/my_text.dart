@@ -3,6 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Text styles for consistent use throughout the app
 class AppTextStyles {
+  // Style for main page titles
+  static TextStyle pageTitleStyle = GoogleFonts.notoSans(
+    fontSize: 28,
+    fontWeight: FontWeight.bold,
+    color: const Color(0xFF37474F), // A dark, professional blue-grey
+  );
+
   // Style for section headers
   static TextStyle sectionHeaderStyle = GoogleFonts.notoSans(
     fontSize: 20,

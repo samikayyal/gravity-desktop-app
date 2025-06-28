@@ -33,38 +33,56 @@ class ProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> {
     await _fetchProducts();
   }
 
-  /// Handles the logic for purchasing a product.
-  Future<void> purchaseProduct({
-    required Product product,
-    required int quantity,
+  /// Adds a new product to the database
+  Future<void> addProduct({
+    required String name,
+    required int price,
+    required int quantityAvailable,
   }) async {
-    if (quantity <= 0 || quantity > product.quantityAvailable) {
-      // This is a safeguard; the UI should prevent this.
-      throw Exception("Invalid quantity for purchase.");
+    try {
+      await _dbHelper.addProduct(
+        name: name,
+        price: price,
+        quantityAvailable: quantityAvailable,
+      );
+      await refresh();
+    } catch (e) {
+      rethrow;
     }
-    await _dbHelper.recordSeparatePurchase(
-      productId: product.id,
-      quantity: quantity,
-    );
-    await refresh(); // Refresh the list to show updated quantities
   }
 
-    /// Handles the logic for purchasing multiple products at once.
-  Future<void> purchaseMultipleProducts({
-    required Map<Product, int> cart,
+  /// Updates an existing product in the database
+  Future<void> updateProduct({
+    required int productId,
+    String? name,
+    int? price,
+    int? quantityAvailable,
   }) async {
-    // Filter out any items with a quantity of 0 and convert the map
-    // to the Map<productId, quantity> format expected by the database.
-    final Map<int, int> purchases = {
-      for (var entry in cart.entries)
-        if (entry.value > 0) entry.key.id: entry.value
-    };
-
-    if (purchases.isEmpty) {
-      return; // Nothing to purchase
+    try {
+      await _dbHelper.updateProduct(
+        productId: productId,
+        name: name,
+        price: price,
+        quantityAvailable: quantityAvailable,
+      );
+      await refresh();
+    } catch (e) {
+      rethrow;
     }
+  }
 
-    await _dbHelper.recordMultipleSeparatePurchases(purchases: purchases);
-    await refresh(); // Refresh the product list to show updated quantities
+  /// Deletes a product from the database
+  Future<void> deleteProduct(int productId) async {
+    try {
+      await _dbHelper.deleteProduct(productId);
+      await refresh();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> recordSeparatePurchase({required Map<Product, int> cart}) async {
+    await _dbHelper.recordSeparatePurchase(cart: cart);
+    await refresh();
   }
 }

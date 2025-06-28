@@ -8,6 +8,7 @@ class Player {
   final int initialFee;
   int amountPaid;
   int sessionID; // For the current player's session
+  Map<String, int> productsBought = {}; // Map of product ID to quantity
 
   Player({
     required this.playerID,
@@ -37,5 +38,9 @@ class Player {
       sessionID: map['session_id'] as int,
       initialFee: map['initial_fee'] as int,
     );
+  }
+
+  void addProduct(String productId, int quantity) {
+    productsBought[productId] = (productsBought[productId] ?? 0) + quantity;
   }
 }

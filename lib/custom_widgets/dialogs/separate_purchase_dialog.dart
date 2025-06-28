@@ -1,5 +1,3 @@
-// lib/custom_widgets/dialogs/seperate_purchase_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
@@ -7,19 +5,21 @@ import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
+import 'package:intl/intl.dart';
 
-class SeperatePurchaseDialog extends ConsumerStatefulWidget {
-  const SeperatePurchaseDialog({super.key});
+class SeparatePurchaseDialog extends ConsumerStatefulWidget {
+  const SeparatePurchaseDialog({super.key});
 
   @override
-  ConsumerState<SeperatePurchaseDialog> createState() =>
-      _SeperatePurchaseDialogState();
+  ConsumerState<SeparatePurchaseDialog> createState() =>
+      _SeparatePurchaseDialogState();
 }
 
-class _SeperatePurchaseDialogState
-    extends ConsumerState<SeperatePurchaseDialog> {
-  // Use a map of <productId, quantity> to track the cart
+class _SeparatePurchaseDialogState
+    extends ConsumerState<SeparatePurchaseDialog> {
+  // <productId, quantity>
   final Map<int, int> _cart = {};
+  final formatter = NumberFormat.decimalPattern();
 
   void _onQuantityChanged(Product product, int newQuantity) {
     // Ensure the new quantity is within valid bounds
@@ -57,7 +57,7 @@ class _SeperatePurchaseDialogState
     try {
       await ref
           .read(productsProvider.notifier)
-          .purchaseMultipleProducts(cart: cartForProvider);
+          .recordSeparatePurchase(cart: cartForProvider);
       if (mounted) {
         Navigator.of(context).pop(true); // Pop with a success value
       }
@@ -86,8 +86,8 @@ class _SeperatePurchaseDialogState
           const SizedBox(height: 16),
           const Divider(),
           productsState.when(
-            loading: () =>
-                const Center(heightFactor: 5, child: CircularProgressIndicator()),
+            loading: () => const Center(
+                heightFactor: 5, child: CircularProgressIndicator()),
             error: (err, stack) => Center(
                 heightFactor: 5, child: Text('Error loading products: $err')),
             data: (products) {
@@ -112,33 +112,30 @@ class _SeperatePurchaseDialogState
   }
 
   Widget _buildProductList(List<Product> products) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 300), // Prevents infinite height
-      child: products.isEmpty
-          ? Center(
-              heightFactor: 3,
-              child: Text(
-                'No products available for purchase.',
-                style: AppTextStyles.subtitleTextStyle,
-              ),
-            )
-          : ListView.separated(
-              shrinkWrap: true,
-              itemCount: products.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final product = products[index];
-                final quantityInCart = _cart[product.id] ?? 0;
-                return _ProductListItem(
-                  product: product,
-                  quantity: quantityInCart,
-                  onQuantityChanged: (newQuantity) {
-                    _onQuantityChanged(product, newQuantity);
-                  },
-                );
-              },
+    return products.isEmpty
+        ? Center(
+            heightFactor: 3,
+            child: Text(
+              'No products available for purchase.',
+              style: AppTextStyles.subtitleTextStyle,
             ),
-    );
+          )
+        : ListView.separated(
+            shrinkWrap: true,
+            itemCount: products.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final product = products[index];
+              final quantityInCart = _cart[product.id] ?? 0;
+              return _ProductListItem(
+                product: product,
+                quantity: quantityInCart,
+                onQuantityChanged: (newQuantity) {
+                  _onQuantityChanged(product, newQuantity);
+                },
+              );
+            },
+          );
   }
 
   Widget _buildPriceSummary(int totalPrice) {
@@ -155,7 +152,7 @@ class _SeperatePurchaseDialogState
               style: AppTextStyles.regularTextStyle
                   .copyWith(fontWeight: FontWeight.bold)),
           Text(
-            '\$${(totalPrice / 100).toStringAsFixed(2)}',
+            '${formatter.format(totalPrice)} SYP',
             style: AppTextStyles.highlightedTextStyle,
           ),
         ],
@@ -174,9 +171,11 @@ class _SeperatePurchaseDialogState
         ),
         const SizedBox(width: 12),
         ElevatedButton(
-          onPressed: _cart.isNotEmpty ? () => _onConfirmPurchase(allProducts) : null,
+          onPressed:
+              _cart.isNotEmpty ? () => _onConfirmPurchase(allProducts) : null,
           style: AppButtonStyles.primaryButton,
-          child: Text('Confirm Purchase', style: AppTextStyles.primaryButtonTextStyle),
+          child: Text('Confirm Purchase',
+              style: AppTextStyles.primaryButtonTextStyle),
         ),
       ],
     );
@@ -197,6 +196,7 @@ class _ProductListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formatter = NumberFormat.decimalPattern();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
       child: Row(
@@ -208,8 +208,8 @@ class _ProductListItem extends StatelessWidget {
                 Text(product.name, style: AppTextStyles.regularTextStyle),
                 const SizedBox(height: 4),
                 Text(
-                  '\$${(product.price / 100).toStringAsFixed(2)}  •  ${product.quantityAvailable} in stock',
-                  style: AppTextStyles.subtitleTextStyle.copyWith(fontSize: 14),
+                  '${formatter.format(product.price)} SYP  •  ${product.quantityAvailable} in stock',
+                  style: AppTextStyles.subtitleTextStyle,
                 ),
               ],
             ),
@@ -230,7 +230,8 @@ class _ProductListItem extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.remove),
-            onPressed: quantity > 0 ? () => onQuantityChanged(quantity - 1) : null,
+            onPressed:
+                quantity > 0 ? () => onQuantityChanged(quantity - 1) : null,
             style: AppButtonStyles.iconButtonCircle.copyWith(
               shape: const WidgetStatePropertyAll(RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(

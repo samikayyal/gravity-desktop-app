@@ -48,29 +48,51 @@ class DatabaseHelper {
 
     await db.execute('''
     CREATE TABLE IF NOT EXISTS player_sessions (
+      -- player info
       session_id INTEGER PRIMARY KEY AUTOINCREMENT,
       player_id TEXT NOT NULL,
+
+      -- session info
       check_in_time TEXT NOT NULL,
       time_reserved_hours INTEGER NOT NULL,
       time_reserved_minutes INTEGER NOT NULL,
       is_open_time INTEGER NOT NULL,     -- 0 for false, 1 for true
       check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
+
+      -- payment info
+      initial_fee INTEGER NOT NULL DEFAULT 0,
+      prepaid_amount INTEGER NOT NULL DEFAULT 0,
       last_modified TEXT NOT NULL,       
-      FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+      FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL
     )
-  ''');
+    ''');
 
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS payments (
-      payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id INTEGER NOT NULL,
-      initial_fee INTEGER NOT NULL,       -- The fee calculated at check-in
-      final_fee INTEGER NOT NULL,
+    CREATE TABLE IF NOT EXISTS sales(
+      sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id INTEGER,               -- NULL if it's a separate (e.g. walk-in) purchase
+      final_fee INTEGER NOT NULL,    -- Total value of the sale (session fee + products)
       amount_paid INTEGER NOT NULL,
-      tips INTEGER NOT NULL,
+      tips INTEGER NOT NULL DEFAULT 0,
+      sale_time TEXT NOT NULL,
       last_modified TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE
-      )''');
+      FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE SET NULL
+    )
+    ''');
+
+    //
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS sale_items(
+      sale_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER NOT NULL,
+      product_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL,
+      price_per_item INTEGER NOT NULL, -- Price at the time of sale for historical accuracy
+      last_modified TEXT NOT NULL,
+      FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT
+    )
+    ''');
 
     // phone_numbers table stores phone numbers for players
     await db.execute('''
@@ -112,19 +134,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Product purchase history
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS product_purchases(
-        purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id INTEGER NOT NULL,
-        session_id INTEGER,               -- NULL if separate purchase
-        quantity INTEGER NOT NULL,
-        purchase_time TEXT NOT NULL,
-        FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL,
-        FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE
-      )
-    ''');
-
     // insert water and socks products
     await db.execute('''
       INSERT OR IGNORE INTO products (name, price, quantity_available, last_modified) VALUES
@@ -137,22 +146,22 @@ class DatabaseHelper {
   Future<List<Player>> getCurrentPlayers() async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT ps.player_id AS id,
-              p.name,
-              p.age,
-              ps.check_in_time,
-              ps.time_reserved_hours,
-              ps.time_reserved_minutes,
-              ps.is_open_time,
-              ps.session_id,
-              pay.initial_fee,
-              pay.amount_paid
-      FROM player_sessions ps
-      JOIN players p ON ps.player_id = p.id
-      JOIN payments pay ON ps.session_id = pay.session_id
-      WHERE ps.check_out_time IS NULL
-      ORDER BY ps.check_in_time ASC
-    ''');
+    SELECT ps.player_id AS id,
+            p.name,
+            p.age,
+            ps.check_in_time,
+            ps.time_reserved_hours,
+            ps.time_reserved_minutes,
+            ps.is_open_time,
+            ps.session_id,
+            ps.initial_fee,
+            ps.prepaid_amount AS amount_paid
+    FROM player_sessions ps
+    JOIN players p ON ps.player_id = p.id
+    WHERE ps.check_out_time IS NULL
+    ORDER BY ps.check_in_time ASC
+  ''');
+
     return result.map((map) => Player.fromMap(map)).toList();
   }
 
@@ -163,27 +172,27 @@ class DatabaseHelper {
       required int amountPaid,
       required int tips}) async {
     final db = await database;
-    await db.update(
-      'player_sessions',
-      {
-        'check_out_time': DateTime.now().toUtc().toIso8601String(),
-        'last_modified': DateTime.now().toUtc().toIso8601String()
-      },
-      where: 'session_id = ?',
-      whereArgs: [sessionID],
-    );
+    await db.transaction((txn) async {
+      final nowIso = DateTime.now().toUtc().toIso8601String();
 
-    // Insert payment record
-    await db.update(
-        'payments',
+      // set check_out_time to check out player
+      await txn.update('player_sessions',
+          {'check_out_time': nowIso, 'last_modified': nowIso},
+          where: 'session_id = ?', whereArgs: [sessionID]);
+
+      // create a final sales record
+      await txn.insert(
+        'sales',
         {
+          'session_id': sessionID,
           'final_fee': finalFee,
           'amount_paid': amountPaid,
           'tips': tips,
-          'last_modified': DateTime.now().toUtc().toIso8601String()
+          'sale_time': nowIso,
+          'last_modified': nowIso,
         },
-        where: 'session_id = ?',
-        whereArgs: [sessionID]);
+      );
+    });
   }
 
   // Check in a player
@@ -198,86 +207,66 @@ class DatabaseHelper {
     required int amountPaid,
     List<String> phoneNumbers = const [],
   }) async {
-    var uuid = Uuid();
     // Generate a unique player ID
+    var uuid = Uuid();
     final String playerID = existingPlayerID ?? uuid.v4();
 
-    final Player player = Player(
-      playerID: playerID,
-      name: name,
-      age: age,
-      checkInTime: DateTime.now().toUtc(),
-      timeReserved: Duration(
-        hours: timeReservedHours,
-        minutes: timeReservedMinutes,
-      ),
-      amountPaid: amountPaid,
-      sessionID: 0, // This will be set by the database
-      isOpenTime: isOpenTime,
-      initialFee: initialFee,
-    );
-
     final db = await database;
-    // ---- Player Session Insertion ----
-    await db.insert(
-      'player_sessions',
-      {
-        'player_id': playerID,
-        'check_in_time': player.checkInTime.toIso8601String(),
-        'time_reserved_hours': player.timeReserved.inHours,
-        'time_reserved_minutes': player.timeReserved.inMinutes % 60,
-        'is_open_time': player.isOpenTime ? 1 : 0,
-        'last_modified': DateTime.now().toUtc().toIso8601String(),
-      },
-    );
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
-    // Get the session ID of the newly inserted player session
-    final int playerSessionId = await db
-        .rawQuery(
-          'SELECT last_insert_rowid() AS session_id',
-        )
-        .then((value) => value.first['session_id'] as int);
+    // Make all DB operations atomic using a transaction
+    await db.transaction((txn) async {
+      // ---- Player Session Insertion ----
+      await txn.insert(
+        'player_sessions',
+        {
+          'player_id': playerID,
+          'check_in_time': nowIso,
+          'time_reserved_hours': timeReservedHours,
+          'time_reserved_minutes': timeReservedMinutes,
+          'is_open_time': isOpenTime ? 1 : 0,
+          'initial_fee': initialFee,
+          'prepaid_amount': amountPaid,
+          'last_modified': nowIso,
+        },
+      );
 
-    player.sessionID = playerSessionId; // Update the session ID for the player
-
-    // ---- Payment Insertion ----
-    await db.insert(
-      'payments',
-      {
-        'session_id': playerSessionId,
-        'initial_fee': player.initialFee,
-        'final_fee': 0,
-        'amount_paid': player.amountPaid,
-        'tips': 0, // No tips at check-in
-        'last_modified': DateTime.now().toUtc().toIso8601String(),
-      },
-    );
-
-    // ---- Player Table Insertion ----
-    await db.insert(
-      'players',
-      {
-        'id': playerID,
-        'name': name,
-        'age': age,
-        'last_modified': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace, // Replace if exists
-    );
-
-    // Insert phone numbers if any
-    if (phoneNumbers.isNotEmpty) {
-      for (var phoneNumber in phoneNumbers) {
-        await db.insert(
-          'phone_numbers',
+      // ---- Player Table Insertion ----
+      if (existingPlayerID == null) {
+        await txn.insert(
+          'players',
           {
-            'player_id': player.playerID,
-            'phone_number': phoneNumber,
-            'last_modified': DateTime.now().toUtc().toIso8601String(),
+            'id': playerID,
+            'name': name,
+            'age': age,
+            'last_modified': nowIso,
           },
         );
+      } else {
+        // TODO: Handle updating existing player info
       }
-    }
+
+      // Insert phone numbers if any
+      if (phoneNumbers.isNotEmpty) {
+        // delete existing phone numbers
+        await txn.delete(
+          'phone_numbers',
+          where: 'player_id = ?',
+          whereArgs: [playerID],
+        );
+
+        for (var phoneNumber in phoneNumbers) {
+          await txn.insert(
+            'phone_numbers',
+            {
+              'player_id': playerID,
+              'phone_number': phoneNumber,
+              'last_modified': nowIso,
+            },
+          );
+        }
+      }
+    });
   }
 
   Future<Map<TimeSlice, int>> getPrices() async {
@@ -326,16 +315,15 @@ class DatabaseHelper {
         WHEN 'half_hour' THEN ?
         WHEN 'additional_hour' THEN ?
         WHEN 'additional_half_hour' THEN ?
-      END''', [
+      END,
+      last_modified = ?
+      ''', [
       newPrices[TimeSlice.hour],
       newPrices[TimeSlice.halfHour],
       newPrices[TimeSlice.additionalHour],
       newPrices[TimeSlice.additionalHalfHour],
+      DateTime.now().toUtc().toIso8601String(),
     ]);
-    await db.rawQuery('''
-      UPDATE prices
-      SET last_modified = ?
-      ''', [DateTime.now().toUtc().toIso8601String()]);
   }
 
   Future<List<Player>> getPastPlayers() async {
@@ -374,9 +362,14 @@ class DatabaseHelper {
 
   // ------- TEST FUNCTIONS -------
 
-  Future<void> clearCurrentPlayers() async {
+  Future<void> clearDb() async {
     final db = await database;
+    await db.execute('DELETE FROM players');
     await db.execute('DELETE FROM player_sessions');
+    await db.execute('DELETE FROM sales');
+    await db.execute('DELETE FROM sale_items');
+    await db.execute('DELETE FROM phone_numbers');
+    await db.execute('DELETE FROM products');
   }
 
   // ------- END TEST FUNCTIONS -------
@@ -393,85 +386,114 @@ class DatabaseHelper {
     return maps.map((map) => Product.fromMap(map)).toList();
   }
 
-  Future<void> recordSeparatePurchase({
-    required int productId,
-    required int quantity,
+  // Add a new product to the database
+  Future<int> addProduct({
+    required String name,
+    required int price,
+    required int quantityAvailable,
   }) async {
     final db = await database;
-    await db.transaction((txn) async {
-      // 1. Decrement the product quantity. The WHERE clause prevents selling out-of-stock items.
-      final count = await txn.rawUpdate(
-        '''
-        UPDATE products
-        SET quantity_available = quantity_available - ?,
-            last_modified = ?
-        WHERE product_id = ? AND quantity_available >= ?
-        ''',
-        [
-          quantity,
-          DateTime.now().toUtc().toIso8601String(),
-          productId,
-          quantity
-        ],
-      );
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
-      // If no rows were updated, it means stock was insufficient. Abort.
-      if (count == 0) {
-        throw Exception('Insufficient stock for this purchase.');
-      }
-
-      // 2. Insert the purchase record
-      await txn.insert('product_purchases', {
-        'product_id': productId,
-        'session_id': null, // Explicitly null for a separate purchase
-        'quantity': quantity,
-        'purchase_time': DateTime.now().toUtc().toIso8601String(),
-      });
-    });
+    return await db.insert(
+      'products',
+      {
+        'name': name,
+        'price': price,
+        'quantity_available': quantityAvailable,
+        'last_modified': nowIso,
+      },
+    );
   }
 
-  /// Records multiple purchases not associated with a player session and updates product quantities in a single transaction.
-  Future<void> recordMultipleSeparatePurchases({
-    required Map<int, int> purchases, // Map<productId, quantity>
+  // Update an existing product's quantity or price
+  Future<int> updateProduct({
+    required int productId,
+    String? name,
+    int? price,
+    int? quantityAvailable,
   }) async {
-    if (purchases.isEmpty) return;
-
     final db = await database;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    final Map<String, dynamic> updates = {'last_modified': nowIso};
+    if (name != null) updates['name'] = name;
+    if (price != null) updates['price'] = price;
+    if (quantityAvailable != null) {
+      updates['quantity_available'] = quantityAvailable;
+    }
+
+    return await db.update(
+      'products',
+      updates,
+      where: 'product_id = ?',
+      whereArgs: [productId],
+    );
+  }
+
+  Future<void> deleteProduct(int productId) async {
+    final db = await database;
+    await db.delete(
+      'products',
+      where: 'product_id = ?',
+      whereArgs: [productId],
+    );
+  }
+
+  // Purchase one or more products in a single transaction.
+  Future<void> recordSeparatePurchase({required Map<Product, int> cart}) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final db = await database;
+
+    cart.removeWhere((Product product, quantity) =>
+        quantity <= 0 || product.quantityAvailable < quantity);
+
+    if (cart.isEmpty) {
+      throw Exception('Cart is empty or all products have insufficient stock.');
+    }
+
     await db.transaction((txn) async {
-      final nowIso = DateTime.now().toUtc().toIso8601String();
+      int finalFee = 0;
+      for (var entry in cart.entries) {
+        // calc final fee
+        final Product product = entry.key;
+        final int quantity = entry.value;
+        finalFee += product.price * quantity;
 
-      for (final entry in purchases.entries) {
-        final productId = entry.key;
-        final quantity = entry.value;
-
-        // Skip items with zero or negative quantity
-        if (quantity <= 0) continue;
-
-        // 1. Decrement the product quantity.
-        // The WHERE clause prevents selling more items than are available.
-        final count = await txn.rawUpdate(
-          '''
-          UPDATE products
-          SET quantity_available = quantity_available - ?,
-              last_modified = ?
-          WHERE product_id = ? AND quantity_available >= ?
-          ''',
-          [quantity, nowIso, productId, quantity],
+        // Update product quantity in stock
+        // update the product quantity
+        await txn.update(
+          'products',
+          {
+            'quantity_available': product.quantityAvailable - quantity,
+            'last_modified': nowIso
+          },
+          where: 'product_id = ?',
+          whereArgs: [product.id],
         );
+      }
 
-        // If no rows were updated, it means stock was insufficient. This will
-        // throw an exception, causing the transaction to automatically roll back.
-        if (count == 0) {
-          throw Exception(
-              'Insufficient stock for product ID $productId. Purchase cancelled.');
-        }
+      // insert into sales
+      final int saleId = await txn.insert('sales', {
+        'session_id': null,
+        'final_fee': finalFee,
+        'amount_paid': finalFee,
+        'tips': 0,
+        'sale_time': nowIso,
+        'last_modified': nowIso
+      });
 
-        // 2. Insert the purchase record into history.
-        await txn.insert('product_purchases', {
-          'product_id': productId,
-          'session_id': null, // Explicitly null for a separate purchase
+      // insert into sale_items
+      for (var entry in cart.entries) {
+        final Product product = entry.key;
+        final int quantity = entry.value;
+
+        await txn.insert('sale_items', {
+          'sale_id': saleId,
+          'product_id': product.id,
           'quantity': quantity,
-          'purchase_time': nowIso,
+          'price_per_item': product.price,
+          'last_modified': nowIso,
         });
       }
     });

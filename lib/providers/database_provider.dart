@@ -80,7 +80,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
 
   // -------- TEST SECTION --------
   Future<void> clearCurrentPlayers() async {
-    await _dbHelper.clearCurrentPlayers();
+    await _dbHelper.clearDb();
     await refresh();
   }
 }

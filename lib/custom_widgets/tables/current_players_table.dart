@@ -313,7 +313,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                tooltip: 'Add Product',
+                tooltip: 'Buy Product',
                 icon: const Icon(Icons.add_shopping_cart, size: 22),
                 style: AppButtonStyles.iconButtonCircle,
                 onPressed: () {},
