@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:path/path.dart' as p;
@@ -113,7 +114,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Insert default prices if they do not exist, with last_modified for NOT NULL constraint
+    // Insert default prices if they do not exist
     final nowIso = DateTime.now().toUtc().toIso8601String();
     await db.execute('''
       INSERT OR REPLACE INTO prices (time_slice, price, last_modified) VALUES
@@ -140,6 +141,19 @@ class DatabaseHelper {
       ('Water Bottle', 5000, 50, ?),
       ('Socks', 35000, 100, ?)
     ''', [nowIso, nowIso]);
+
+    // Table to store products bought in a session
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS session_products(
+        session_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        last_modified TEXT NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT,
+        PRIMARY KEY (session_id, product_id)
+      )
+''');
   }
 
   // get the current players
@@ -162,15 +176,36 @@ class DatabaseHelper {
     ORDER BY ps.check_in_time ASC
   ''');
 
-    return result.map((map) => Player.fromMap(map)).toList();
+    final List<Player> players =
+        result.map((map) => Player.fromMap(map)).toList();
+
+    // fetch products bought if any
+    for (var player in players) {
+      final products = await db.rawQuery('''
+        SELECT p.product_id, p.name, p.price, sp.quantity
+        FROM session_products sp
+        JOIN products p ON sp.product_id = p.product_id
+        WHERE sp.session_id = ?
+      ''', [player.sessionID]);
+
+      for (var product in products) {
+        final productId = product['product_id'] as int;
+        final productQuantity = product['quantity'] as int;
+        player.addProduct(productId, productQuantity);
+      }
+    }
+
+    return players;
   }
 
   // Check out a player by session ID
-  Future<void> checkOutPlayer(
-      {required int sessionID,
-      required int finalFee,
-      required int amountPaid,
-      required int tips}) async {
+  Future<void> checkOutPlayer({
+    required int sessionID,
+    required int finalFee,
+    required int amountPaid,
+    required int tips,
+    Map<int, int>? productsBought,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       final nowIso = DateTime.now().toUtc().toIso8601String();
@@ -181,7 +216,7 @@ class DatabaseHelper {
           where: 'session_id = ?', whereArgs: [sessionID]);
 
       // create a final sales record
-      await txn.insert(
+      final saleId = await txn.insert(
         'sales',
         {
           'session_id': sessionID,
@@ -192,6 +227,25 @@ class DatabaseHelper {
           'last_modified': nowIso,
         },
       );
+
+      // If products were bought, record them in sale_items
+      if (productsBought != null && productsBought.isNotEmpty) {
+        for (var entry in productsBought.entries) {
+          await txn.insert(
+            'sale_items',
+            {
+              'sale_id': saleId,
+              'product_id': entry.key,
+              'quantity': entry.value,
+              'price_per_item': await txn.rawQuery(
+                'SELECT price FROM products WHERE product_id = ?',
+                [entry.key],
+              ).then((value) => value.first['price'] as int),
+              'last_modified': nowIso,
+            },
+          );
+        }
+      }
     });
   }
 
@@ -369,7 +423,7 @@ class DatabaseHelper {
     await db.execute('DELETE FROM sales');
     await db.execute('DELETE FROM sale_items');
     await db.execute('DELETE FROM phone_numbers');
-    await db.execute('DELETE FROM products');
+    await db.execute('DELETE FROM session_products');
   }
 
   // ------- END TEST FUNCTIONS -------
@@ -495,6 +549,41 @@ class DatabaseHelper {
           'price_per_item': product.price,
           'last_modified': nowIso,
         });
+      }
+    });
+  }
+
+  Future<void> updatePlayerProducts(Player player) async {
+    final db = await database;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    debugPrint(
+        'Products bought for player ${player.playerID}: ${player.productsBought}');
+    debugPrint('Session ID: ${player.sessionID}');
+
+    // Clear existing products for this session
+    await db.transaction((txn) async {
+      await txn.delete(
+        'session_products',
+        where: 'session_id = ?',
+        whereArgs: [player.sessionID],
+      );
+
+      // Insert new products bought
+      for (var entry in player.productsBought.entries) {
+        final productId = entry.key;
+        final quantity = entry.value;
+
+        await txn.insert(
+          'session_products',
+          {
+            'session_id': player.sessionID,
+            'product_id': productId,
+            'quantity': quantity,
+            'last_modified': nowIso,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
   }

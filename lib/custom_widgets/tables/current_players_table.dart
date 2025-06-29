@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/receipt_dialog.dart';
@@ -40,6 +42,16 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
     _audioPlayer.dispose();
     _verticalController.dispose();
     super.dispose();
+  }
+
+  void _handlePurchase(BuildContext context, Player player) {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return ProductPurchaseDialog(
+            player: player,
+          );
+        });
   }
 
   void _handleTimeUp(BuildContext context, Player player) {
@@ -316,7 +328,9 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                 tooltip: 'Buy Product',
                 icon: const Icon(Icons.add_shopping_cart, size: 22),
                 style: AppButtonStyles.iconButtonCircle,
-                onPressed: () {},
+                onPressed: () {
+                  _handlePurchase(context, player);
+                },
               ),
             ],
           ),

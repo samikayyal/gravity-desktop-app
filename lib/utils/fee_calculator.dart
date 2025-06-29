@@ -1,4 +1,5 @@
 import 'package:gravity_desktop_app/database/database.dart';
+import 'package:gravity_desktop_app/models/product.dart';
 
 int calculatePreCheckInFee({
   required int hoursReserved,
@@ -30,8 +31,12 @@ int calculatePreCheckInFee({
   return total;
 }
 
-int calculateFinalFee(
-    {required Duration timeSpent, required Map<TimeSlice, int> prices}) {
+int calculateFinalFee({
+  required Duration timeSpent,
+  required Map<TimeSlice, int> prices,
+  Map<int, int>? productsBought,
+  List<Product>? allProducts,
+}) {
   if (timeSpent.isNegative || timeSpent.inMinutes <= 0) {
     return 0;
   }
@@ -77,5 +82,28 @@ int calculateFinalFee(
     total += prices[TimeSlice.halfHour]!;
   }
 
+  // --- Product Fees Logic ---
+  if (productsBought != null && allProducts == null) {
+    throw ArgumentError(
+      'All products must be provided if products bought are specified.',
+    );
+  }
+
+  if (productsBought != null && productsBought.isNotEmpty) {
+    for (final entry in productsBought.entries) {
+      final productId = entry.key;
+      final quantity = entry.value;
+
+      // Find the product by ID
+      final product = allProducts!.firstWhere(
+        (p) => p.id == productId,
+        orElse: () =>
+            throw ArgumentError('Product with ID $productId not found.'),
+      );
+
+      // Add the product fee to the total
+      total += product.price * quantity;
+    }
+  }
   return total;
 }

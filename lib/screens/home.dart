@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/current_players_table.dart';
-import 'package:gravity_desktop_app/custom_widgets/dialogs/separate_purchase_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
@@ -99,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onPressed: () {
                               showDialog(
                                 context: context,
-                                builder: (context) => SeparatePurchaseDialog(),
+                                builder: (context) => ProductPurchaseDialog(),
                               );
                             },
                             style: AppButtonStyles.primaryButton,

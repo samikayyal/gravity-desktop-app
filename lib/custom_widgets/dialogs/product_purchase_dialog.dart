@@ -3,23 +3,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
+import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:intl/intl.dart';
 
-class SeparatePurchaseDialog extends ConsumerStatefulWidget {
-  const SeparatePurchaseDialog({super.key});
+class ProductPurchaseDialog extends ConsumerStatefulWidget {
+  final Player? player;
+
+  const ProductPurchaseDialog({super.key, this.player});
 
   @override
-  ConsumerState<SeparatePurchaseDialog> createState() =>
-      _SeparatePurchaseDialogState();
+  ConsumerState<ProductPurchaseDialog> createState() =>
+      _ProductPurchaseDialogState();
 }
 
-class _SeparatePurchaseDialogState
-    extends ConsumerState<SeparatePurchaseDialog> {
+class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
   // <productId, quantity>
   final Map<int, int> _cart = {};
   final formatter = NumberFormat.decimalPattern();
+
+  bool _isAddingToDatabase = false;
+
+  @override
+  void initState() {
+    // Initialize the cart with existing products if the player is provided
+    if (widget.player != null) {
+      final player = widget.player!;
+      for (var entry in player.productsBought.entries) {
+        _cart[entry.key] = entry.value;
+      }
+    }
+
+    super.initState();
+  }
 
   void _onQuantityChanged(Product product, int newQuantity) {
     // Ensure the new quantity is within valid bounds
@@ -48,27 +66,49 @@ class _SeparatePurchaseDialogState
   Future<void> _onConfirmPurchase(List<Product> allProducts) async {
     if (_cart.isEmpty) return;
 
-    // Create the Map<Product, int> expected by the provider
-    final Map<Product, int> cartForProvider = {
-      for (var entry in _cart.entries)
-        allProducts.firstWhere((p) => p.id == entry.key): entry.value
-    };
+    // ------------------------- SEPARATE PURCHASE
+    if (widget.player == null) {
+      // Create the Map<Product, int> expected by the provider
+      final Map<Product, int> cartForProvider = {
+        for (var entry in _cart.entries)
+          allProducts.firstWhere((p) => p.id == entry.key): entry.value
+      };
 
-    try {
-      await ref
-          .read(productsProvider.notifier)
-          .recordSeparatePurchase(cart: cartForProvider);
-      if (mounted) {
-        Navigator.of(context).pop(true); // Pop with a success value
+      try {
+        await ref
+            .read(productsProvider.notifier)
+            .recordSeparatePurchase(cart: cartForProvider);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                backgroundColor: Colors.red.shade700,
+                content: Text('Error: ${e.toString()}')),
+          );
+        }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              backgroundColor: Colors.red.shade700,
-              content: Text('Error: ${e.toString()}')),
-        );
+    } else {
+      // ------------------------- PLAYER PURCHASE
+      final player = widget.player!;
+      player.clearProducts();
+
+      for (var entry in _cart.entries) {
+        player.addProduct(entry.key, entry.value);
+
+        setState(() {
+          _isAddingToDatabase = true;
+        });
+
+        // update the database
+        await ref.read(databaseProvider).updatePlayerProducts(player);
+
+        setState(() {
+          _isAddingToDatabase = false;
+        });
       }
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -82,7 +122,11 @@ class _SeparatePurchaseDialogState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Separate Purchase', style: AppTextStyles.sectionHeaderStyle),
+          Text(
+              widget.player == null
+                  ? 'Separate Purchase'
+                  : 'Purchase for ${widget.player!.name}',
+              style: AppTextStyles.sectionHeaderStyle),
           const SizedBox(height: 16),
           const Divider(),
           productsState.when(
@@ -171,11 +215,19 @@ class _SeparatePurchaseDialogState
         ),
         const SizedBox(width: 12),
         ElevatedButton(
-          onPressed:
-              _cart.isNotEmpty ? () => _onConfirmPurchase(allProducts) : null,
+          onPressed: _isAddingToDatabase
+              ? null
+              : _cart.isNotEmpty
+                  ? () => _onConfirmPurchase(allProducts)
+                  : null,
           style: AppButtonStyles.primaryButton,
-          child: Text('Confirm Purchase',
-              style: AppTextStyles.primaryButtonTextStyle),
+          child: _isAddingToDatabase
+              ? const CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.0,
+                )
+              : Text('Confirm Purchase',
+                  style: AppTextStyles.primaryButtonTextStyle),
         ),
       ],
     );
