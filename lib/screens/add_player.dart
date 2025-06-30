@@ -931,12 +931,13 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
 
     final amountPaid = int.parse(amountPaidController.text);
 
+    final int totalMinutesReserved = hoursReserved * 60 + minutesReserved;
+
     ref.read(currentPlayersProvider.notifier).checkInPlayer(
           existingPlayerID: _selectedPlayer?.playerID,
           name: name,
           age: age,
-          timeReservedHours: hoursReserved,
-          timeReservedMinutes: minutesReserved,
+          timeReservedMinutes: totalMinutesReserved,
           isOpenTime: isOpenTime,
           totalFee: initialFee,
           amountPaid: amountPaid,

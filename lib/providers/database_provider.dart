@@ -43,14 +43,12 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     required int finalFee,
     required int amountPaid,
     required int tips,
-    Map<int, int>? productsBought,
   }) async {
     await _dbHelper.checkOutPlayer(
       sessionID: sessionID,
       finalFee: finalFee,
       amountPaid: amountPaid,
       tips: tips,
-      productsBought: productsBought,
     );
     await refresh();
   }
@@ -60,7 +58,6 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     String? existingPlayerID,
     required String name,
     required int age,
-    required int timeReservedHours,
     required int timeReservedMinutes,
     required bool isOpenTime,
     required int totalFee,
@@ -71,7 +68,6 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         existingPlayerID: existingPlayerID,
         name: name,
         age: age,
-        timeReservedHours: timeReservedHours,
         timeReservedMinutes: timeReservedMinutes,
         isOpenTime: isOpenTime,
         initialFee: totalFee,

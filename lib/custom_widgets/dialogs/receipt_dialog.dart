@@ -299,13 +299,10 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                               ref
                                   .read(currentPlayersProvider.notifier)
                                   .checkOutPlayer(
-                                    sessionID: widget.player.sessionID,
-                                    finalFee: finalFee,
-                                    amountPaid: amountReceived,
-                                    tips: _tip,
-                                    productsBought:
-                                        widget.player.productsBought,
-                                  );
+                                      sessionID: widget.player.sessionID,
+                                      finalFee: finalFee,
+                                      amountPaid: amountReceived,
+                                      tips: _tip);
                               Navigator.of(context).pop();
                             }
                           : null,

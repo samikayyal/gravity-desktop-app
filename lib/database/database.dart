@@ -55,7 +55,6 @@ class DatabaseHelper {
 
       -- session info
       check_in_time TEXT NOT NULL,
-      time_reserved_hours INTEGER NOT NULL,
       time_reserved_minutes INTEGER NOT NULL,
       is_open_time INTEGER NOT NULL,     -- 0 for false, 1 for true
       check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
@@ -71,17 +70,18 @@ class DatabaseHelper {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS sales(
       sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      subscription_id INTEGER, -- NULL if not a subscriber
       session_id INTEGER,               -- NULL if it's a separate (e.g. walk-in) purchase
       final_fee INTEGER NOT NULL,    -- Total value of the sale (session fee + products)
       amount_paid INTEGER NOT NULL,
       tips INTEGER NOT NULL DEFAULT 0,
       sale_time TEXT NOT NULL,
       last_modified TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE SET NULL
+      FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE SET NULL,
+      FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id) ON DELETE SET NULL
     )
     ''');
 
-    //
     await db.execute('''
     CREATE TABLE IF NOT EXISTS sale_items(
       sale_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,8 +90,8 @@ class DatabaseHelper {
       quantity INTEGER NOT NULL,
       price_per_item INTEGER NOT NULL, -- Price at the time of sale for historical accuracy
       last_modified TEXT NOT NULL,
-      FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE,
-      FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT
+      FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE SET NULL,
+      FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL
     )
     ''');
 
@@ -101,7 +101,8 @@ class DatabaseHelper {
         player_id TEXT NOT NULL,
         phone_number TEXT NOT NULL,
         last_modified TEXT NOT NULL,
-        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
+        PRIMARY KEY (player_id, phone_number)
       )
     ''');
 
@@ -152,8 +153,36 @@ class DatabaseHelper {
         FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT,
         PRIMARY KEY (session_id, product_id)
+      )''');
+
+    // Subscriptions
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS subscriptions(
+        subscription_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        expiry_date TEXT NOT NULL,
+        discount_percent INTEGER NOT NULL,
+        total_minutes INTEGER NOT NULL,
+        remaining_minutes INTEGER NOT NULL,
+        status TEXT NOT NULL, -- 'active', 'expired', 'paused', 'finished'
+        last_modified TEXT NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
+        CHECK (status IN ('active', 'expired', 'paused', 'finished'))
       )
-''');
+      ''');
+
+    // Subscription records
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS subscription_records(
+        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subscription_id INTEGER NOT NULL,
+        session_id INTEGER NOT NULL,
+        minutes_used INTEGER NOT NULL,
+        last_modified TEXT NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE SET NULL,
+        FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id) ON DELETE SET NULL
+      )''');
   }
 
   // get the current players
@@ -164,7 +193,6 @@ class DatabaseHelper {
             p.name,
             p.age,
             ps.check_in_time,
-            ps.time_reserved_hours,
             ps.time_reserved_minutes,
             ps.is_open_time,
             ps.session_id,
@@ -204,7 +232,6 @@ class DatabaseHelper {
     required int finalFee,
     required int amountPaid,
     required int tips,
-    Map<int, int>? productsBought,
   }) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -227,25 +254,38 @@ class DatabaseHelper {
           'last_modified': nowIso,
         },
       );
+      // Get products bought in this session
+      final List<Map<String, dynamic>> productsBought = await txn.rawQuery('''
+        SELECT product_id, quantity
+        FROM session_products
+        WHERE session_id = ?
+      ''', [sessionID]);
 
       // If products were bought, record them in sale_items
-      if (productsBought != null && productsBought.isNotEmpty) {
-        for (var entry in productsBought.entries) {
+      if (productsBought.isNotEmpty) {
+        for (var entry in productsBought) {
           await txn.insert(
             'sale_items',
             {
               'sale_id': saleId,
-              'product_id': entry.key,
-              'quantity': entry.value,
+              'product_id': entry['product_id'] as int,
+              'quantity': entry['quantity'] as int,
               'price_per_item': await txn.rawQuery(
                 'SELECT price FROM products WHERE product_id = ?',
-                [entry.key],
+                [entry['product_id'] as int],
               ).then((value) => value.first['price'] as int),
               'last_modified': nowIso,
             },
           );
         }
       }
+
+      // Clear session products after checkout
+      await txn.delete(
+        'session_products',
+        where: 'session_id = ?',
+        whereArgs: [sessionID],
+      );
     });
   }
 
@@ -254,7 +294,6 @@ class DatabaseHelper {
     String? existingPlayerID,
     required String name,
     required int age,
-    required int timeReservedHours,
     required int timeReservedMinutes,
     required bool isOpenTime,
     required int initialFee,
@@ -276,7 +315,6 @@ class DatabaseHelper {
         {
           'player_id': playerID,
           'check_in_time': nowIso,
-          'time_reserved_hours': timeReservedHours,
           'time_reserved_minutes': timeReservedMinutes,
           'is_open_time': isOpenTime ? 1 : 0,
           'initial_fee': initialFee,

@@ -31,7 +31,6 @@ class Player {
       age: map['age'] as int,
       checkInTime: DateTime.parse(map['check_in_time'] as String),
       timeReserved: Duration(
-        hours: map['time_reserved_hours'] as int,
         minutes: map['time_reserved_minutes'] as int,
       ),
       isOpenTime: map['is_open_time'] == 1,
