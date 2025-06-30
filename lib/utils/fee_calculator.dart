@@ -107,3 +107,18 @@ int calculateFinalFee({
   }
   return total;
 }
+
+// TODO: ASK Dad how its calculated
+int calculateSubscriptionFee(
+    {required int discount,
+    required int hours,
+    required Map<TimeSlice, int> prices}) {
+  if (hours <= 0) return 0;
+  if (discount < 0 || discount > 100) {
+    throw ArgumentError('Discount must be between 0 and 100.');
+  }
+  if (prices.isEmpty) throw ArgumentError('Prices must not be empty.');
+
+  // Calculate the total fee for the subscription duration
+  return ((hours * prices[TimeSlice.hour]!) * (100 - discount) / 100).ceil();
+}

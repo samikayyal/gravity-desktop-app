@@ -10,6 +10,7 @@ import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/screens/add_player.dart';
 import 'package:gravity_desktop_app/screens/add_product.dart';
 import 'package:gravity_desktop_app/screens/edit_prices.dart';
+import 'package:gravity_desktop_app/screens/subscriptions.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -120,7 +121,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 existingPlayerID: null,
                                 name: "Test Player",
                                 age: 99,
-                                timeReservedHours: 0,
                                 timeReservedMinutes: 1,
                                 isOpenTime: false,
                                 totalFee: calculatePreCheckInFee(
@@ -176,7 +176,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           // -----------------------------------------------------
-          // Right side - 35% of screen width for future additions
+          // Right side - 35% of screen width
           // -----------------------------------------------------
           Container(
             width: MediaQuery.of(context).size.width * 0.35,
@@ -229,7 +229,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               );
                             },
                             style: AppButtonStyles.primaryButton,
-                          )
+                          ),
+                          ElevatedButton.icon(
+                              label: Text("Subscriptions",
+                                  style: AppTextStyles.primaryButtonTextStyle),
+                              icon: const Icon(Icons.hotel_class, size: 24),
+                              style: AppButtonStyles.primaryButton,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SubscriptionsScreen(),
+                                  ),
+                                );
+                              })
                         ],
                       ),
                     ],

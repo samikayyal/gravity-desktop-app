@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
+import 'package:gravity_desktop_app/models/subscription.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uuid/uuid.dart';
@@ -165,7 +166,9 @@ class DatabaseHelper {
         discount_percent INTEGER NOT NULL,
         total_minutes INTEGER NOT NULL,
         remaining_minutes INTEGER NOT NULL,
-        status TEXT NOT NULL, -- 'active', 'expired', 'paused', 'finished'
+        status TEXT NOT NULL, -- 'active', 'expired', 'paused', 'deleted'
+        total_fee INTEGER NOT NULL,
+        amount_paid INTEGER NOT NULL,
         last_modified TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
         CHECK (status IN ('active', 'expired', 'paused', 'finished'))
@@ -624,5 +627,79 @@ class DatabaseHelper {
         );
       }
     });
+  }
+
+  Future<void> addNewSubscription({
+    String? existingPlayerId,
+    required String playerName,
+    required int age,
+    required List<String> phoneNumbers,
+    required int hoursIncluded,
+    required int durationMinutes,
+    required int discountPercent,
+    required int totalFee,
+    required int amountPaid,
+  }) async {
+    final db = await database;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    await db.transaction((txn) async {
+      final String playerId = existingPlayerId ?? Uuid().v4();
+      if (existingPlayerId == null) {
+        await txn.insert(
+          'players',
+          {
+            'id': playerId,
+            'name': playerName,
+            'age': age,
+            'last_modified': nowIso,
+          },
+        );
+      }
+
+      if (phoneNumbers.isNotEmpty) {
+        for (var phoneNumber in phoneNumbers) {
+          await txn.insert(
+            'phone_numbers',
+            {
+              'player_id': playerId,
+              'phone_number': phoneNumber,
+              'last_modified': nowIso,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      await txn.insert(
+        'subscriptions',
+        {
+          'player_id': playerId,
+          'start_date': nowIso,
+          'expiry_date': DateTime.now()
+              .add(Duration(minutes: durationMinutes))
+              .toUtc()
+              .toIso8601String(),
+          'discount_percent': discountPercent,
+          'total_minutes': hoursIncluded * 60,
+          'remaining_minutes': hoursIncluded * 60,
+          'status': 'active',
+          'total_fee': totalFee,
+          'amount_paid': amountPaid,
+          'last_modified': nowIso,
+        },
+      );
+    });
+  }
+
+  Future<List<Subscription>> getSubscriptions() async {
+    final db = await database;
+    final List<Map<String, dynamic>> subscriptions = await db.rawQuery('''
+      SELECT subscriptions.*, players.name AS player_name
+      FROM subscriptions
+      JOIN players ON subscriptions.player_id = players.id
+      ORDER BY subscriptions.expiry_date ASC''');
+
+    return subscriptions.map((subMap) => Subscription.fromMap(subMap)).toList();
   }
 }
