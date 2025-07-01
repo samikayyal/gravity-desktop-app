@@ -11,6 +11,7 @@ import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
+import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
 

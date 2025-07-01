@@ -84,9 +84,3 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await refresh();
   }
 }
-
-// Provider for time slice prices
-final pricesProvider = FutureProvider<Map<TimeSlice, int>>((ref) async {
-  final dbHelper = ref.watch(databaseProvider);
-  return dbHelper.getPrices();
-});

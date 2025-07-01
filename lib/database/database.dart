@@ -244,6 +244,24 @@ class DatabaseHelper {
     await db.transaction((txn) async {
       final nowIso = DateTime.now().toUtc().toIso8601String();
 
+      // see if the player inside is a subscriber
+      final subscriberQuery = await txn.rawQuery('''
+        SELECT subscription_id, status
+        FROM subscriptions
+        WHERE player_id = (
+          SELECT player_id
+          FROM player_sessions
+          WHERE session_id = ?
+        )''', [sessionID]);
+
+      late final bool isSub;
+      if (subscriberQuery.isEmpty) {
+        isSub = false;
+      } else {
+        final sub = subscriberQuery.first;
+        isSub = sub['subscription_id'] != null && sub['status'] == 'active';
+      }
+
       // set check_out_time to check out player
       await txn.update('player_sessions',
           {'check_out_time': nowIso, 'last_modified': nowIso},
@@ -343,7 +361,8 @@ class DatabaseHelper {
           },
         );
       } else {
-        // TODO: Handle updating existing player info
+        /// Handle updating existing player info happens separately
+        /// This is just to ensure the player exists in the players table
       }
 
       // Insert phone numbers if any
@@ -365,6 +384,31 @@ class DatabaseHelper {
             },
           );
         }
+      }
+
+      // --------------- SUBSCRIBER
+      if (subscriptionId != null) {
+        // get sub info
+        final subscriptionInfo = await txn.rawQuery('''
+          SELECT player_id, start_date, expiry_date, status, remaining_minutes, total_fee, amount_paid
+          FROM subscriptions
+          WHERE subscription_id = ?''', [subscriptionId]);
+
+        final sub = subscriptionInfo.first;
+
+        // Validation
+        if (subscriptionInfo.isEmpty) {
+          throw Exception('Subscription not found');
+        }
+        if (sub['status'] != 'active') {
+          throw Exception(
+              'Subscription is not active, its status is ${sub['status']}');
+        }
+        if ((sub['remaining_minutes']! as int) < timeReservedMinutes) {
+          throw Exception('Not enough remaining minutes in subscription');
+        }
+
+        // NOTE: Insert into subscription_records at checkout
       }
     });
   }

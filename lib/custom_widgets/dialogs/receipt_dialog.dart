@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
+import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
-
-import 'my_dialog.dart'; // Import the new dialog widget
 
 enum TipType { returnChange, takeAsTip }
 
