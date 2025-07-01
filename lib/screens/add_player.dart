@@ -4,13 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/models/subscription.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
+import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
+
+enum TimeIncrement { hour, halfHour }
 
 class AddPlayerScreen extends ConsumerStatefulWidget {
   const AddPlayerScreen({super.key});
@@ -63,6 +68,58 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
           phoneControllers.add(TextEditingController(text: phone));
         }
       }
+    });
+  }
+
+  void _incrementTime(TimeIncrement increment) {
+    ref.watch(subscriptionsProvider).whenData((subs) {
+      final Subscription? sub = _selectedPlayer?.subscriptionId != null
+          ? subs.firstWhere(
+              (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
+              orElse: () => throw Exception('Subscription not found'),
+            )
+          : null;
+
+      setState(() {
+        if (!isOpenTime) {
+          if (increment == TimeIncrement.hour) {
+            if (sub != null) {
+              if (sub.remainingMinutes <
+                  ((hoursReserved + 1) * 60 + minutesReserved + 60)) {
+                MyMaterialBanner.showBanner(context,
+                    message: 'Not enough remaining time in subscription',
+                    type: MessageType.error,
+                    durationInSeconds: 2);
+                return;
+              }
+            }
+            if (hoursReserved < 12) {
+              hoursReserved++;
+            }
+          } else if (increment == TimeIncrement.halfHour) {
+            final oldMinutes = minutesReserved;
+            if (minutesReserved == 0) {
+              minutesReserved = 30;
+            } else if (minutesReserved == 30 && hoursReserved < 12) {
+              hoursReserved++;
+              minutesReserved = 0;
+            }
+
+            if (sub != null) {
+              if (sub.remainingMinutes <
+                  (hoursReserved * 60 + minutesReserved + 60)) {
+                MyMaterialBanner.showBanner(context,
+                    message: 'Not enough remaining time in subscription',
+                    type: MessageType.error,
+                    durationInSeconds: 2);
+                // Reset to old value if not enough time
+                minutesReserved = oldMinutes;
+                return;
+              }
+            }
+          }
+        }
+      });
     });
   }
 
@@ -127,9 +184,13 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                               const SizedBox(width: 24),
                               Expanded(
                                 flex: 2,
-                                child: Align(
-                                  alignment: Alignment.topCenter,
-                                  child: _buildPaymentCard(prices),
+                                child: Column(
+                                  children: [
+                                    _buildPaymentCard(prices),
+                                    if (_selectedPlayer != null &&
+                                        _selectedPlayer!.subscriptionId != null)
+                                      _buildSubscriberCard()
+                                  ],
                                 ),
                               ),
                             ],
@@ -168,8 +229,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
         .where((phone) => phone.isNotEmpty)
         .toList();
 
-    final amountPaid = int.parse(amountPaidController.text);
-
     final int totalMinutesReserved = hoursReserved * 60 + minutesReserved;
 
     ref.read(currentPlayersProvider.notifier).checkInPlayer(
@@ -179,7 +238,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
           timeReservedMinutes: totalMinutesReserved,
           isOpenTime: isOpenTime,
           totalFee: initialFee,
-          amountPaid: amountPaid,
+          amountPaid: _selectedPlayer?.subscriptionId == null
+              ? int.parse(amountPaidController.text)
+              : 0,
           phoneNumbers: phoneNumbers,
           subscriptionId: _selectedPlayer?.subscriptionId,
         );
@@ -538,6 +599,12 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   }
 
   MyCard _buildTimeReservationCard() {
+    final Subscription? sub = _selectedPlayer?.subscriptionId != null
+        ? ref.watch(subscriptionsProvider).valueOrNull?.firstWhere(
+              (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
+              orElse: () => throw Exception('Subscription not found'),
+            )
+        : null;
     return MyCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,9 +657,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   ),
                   onPressed: () {
                     setState(() {
-                      if (!isOpenTime && hoursReserved <= 12) {
-                        hoursReserved++;
-                      }
+                      _incrementTime(TimeIncrement.hour);
                     });
                   },
                 ),
@@ -613,14 +678,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   ),
                   onPressed: () {
                     setState(() {
-                      if (!isOpenTime && minutesReserved == 0) {
-                        minutesReserved = 30;
-                      } else if (!isOpenTime &&
-                          minutesReserved == 30 &&
-                          hoursReserved < 12) {
-                        hoursReserved++;
-                        minutesReserved = 0;
-                      }
+                      _incrementTime(TimeIncrement.halfHour);
                     });
                   },
                 ),
@@ -690,18 +748,37 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               ),
             ),
           ),
+
+          if ((sub != null &&
+                  sub.remainingMinutes <
+                      (hoursReserved * 60 + minutesReserved) &&
+                  !isOpenTime) ||
+              sub != null && isOpenTime)
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: Text(
+                'Warning: This player has only ${sub.remainingMinutes ~/ 60} hours and ${sub.remainingMinutes % 60} minutes remaining in their subscription.',
+                style: AppTextStyles.subtitleTextStyle.copyWith(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   MyCard _buildPaymentCard(Map<TimeSlice, int> prices) {
-    final int initialFee = calculatePreCheckInFee(
-      hoursReserved: hoursReserved,
-      minutesReserved: minutesReserved,
-      prices: prices,
-      isOpenTime: isOpenTime,
-    );
+    // If sub then 0 fee
+    final int initialFee = _selectedPlayer?.subscriptionId == null
+        ? calculatePreCheckInFee(
+            hoursReserved: hoursReserved,
+            minutesReserved: minutesReserved,
+            prices: prices,
+            isOpenTime: isOpenTime,
+          )
+        : 0;
     return MyCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -734,9 +811,11 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isOpenTime
-                      ? 'Open Time'
-                      : '${formatter.format(initialFee)}  SYP',
+                  _selectedPlayer?.subscriptionId != null
+                      ? 'Subscription Active'
+                      : isOpenTime
+                          ? 'Open Time'
+                          : '${formatter.format(initialFee)}  SYP',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -754,8 +833,11 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
             child: TextFormField(
               controller: amountPaidController,
               style: const TextStyle(fontSize: 18),
+              enabled: _selectedPlayer?.subscriptionId == null,
               decoration: InputDecoration(
-                  labelText: 'Amount Paid on Check-in',
+                  labelText: _selectedPlayer?.subscriptionId == null
+                      ? 'Amount Paid on Check-in'
+                      : 'Subscription Active',
                   labelStyle: AppTextStyles.regularTextStyle,
                   hintText: 'Enter amount paid',
                   hintStyle: AppTextStyles.subtitleTextStyle,
@@ -770,6 +852,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (value) {
+                if (_selectedPlayer?.subscriptionId != null) {
+                  return null; // No validation needed for subscription
+                }
                 if (value == null || value.isEmpty) {
                   return 'Please enter an amount';
                 }
@@ -819,5 +904,167 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
         ],
       ),
     );
+  }
+
+  MyCard _buildSubscriberCard() {
+    return ref.watch(subscriptionsProvider).when(
+        data: (subs) {
+          final sub = subs.firstWhere(
+              (sub) => sub.subscriptionId == _selectedPlayer!.subscriptionId,
+              orElse: () => throw ("Not a sub"));
+
+          final double remainingHours = sub.remainingMinutes / 60;
+          final remainingPayment = sub.totalFee - sub.amountPaid;
+
+          return MyCard(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Subscription Details',
+                style: AppTextStyles.sectionHeaderStyle
+                    .copyWith(color: Colors.black),
+              ),
+              const SizedBox(height: 24),
+
+              // Remaining Hours
+              Row(
+                children: [
+                  Text(
+                    "Remaining Hours",
+                    style: AppTextStyles.regularTextStyle.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.history,
+                    color: Colors.blue.shade600,
+                    size: 24,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "${remainingHours.toStringAsFixed(1)} hours",
+                style: AppTextStyles.amountTextStyle.copyWith(
+                  color: Colors.blue.shade800,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              Divider(color: Colors.grey.shade300),
+              const SizedBox(height: 16),
+
+              // Subscription Fee
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Subscription Fee",
+                          style: AppTextStyles.regularTextStyle,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${formatter.format(sub.totalFee)} SYP",
+                          style: AppTextStyles.regularTextStyle.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Paid", style: AppTextStyles.regularTextStyle),
+                        const SizedBox(height: 4),
+                        Text("${formatter.format(sub.amountPaid)} SYP",
+                            style: AppTextStyles.regularTextStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: sub.amountPaid > 0
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                            )),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "Remaining Payment",
+                          style: AppTextStyles.regularTextStyle,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${formatter.format(remainingPayment)} SYP",
+                          style: AppTextStyles.regularTextStyle.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: remainingPayment > 0
+                                ? Colors.red.shade700
+                                : Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Additional spacing at bottom
+              const SizedBox(height: 8),
+            ],
+          ));
+        },
+        error: (err, stack) => MyCard(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading subscription details',
+                      style: AppTextStyles.regularTextStyle
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$err',
+                      style: AppTextStyles.subtitleTextStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        loading: () => MyCard(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Loading Subscription Details...",
+                      style: AppTextStyles.regularTextStyle,
+                    ),
+                  ],
+                ),
+              ),
+            ));
   }
 }
