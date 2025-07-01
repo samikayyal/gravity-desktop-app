@@ -2,6 +2,7 @@ class Subscription {
   final int subscriptionId;
   final String playerId;
   final String playerName;
+  final List<String> phoneNumbers;
   final int totalMinutes;
   final int remainingMinutes;
   final DateTime startDate;
@@ -14,6 +15,7 @@ class Subscription {
     required this.subscriptionId,
     required this.playerId,
     required this.playerName,
+    required this.phoneNumbers,
     required this.totalMinutes,
     required this.remainingMinutes,
     required this.startDate,
@@ -35,6 +37,7 @@ class Subscription {
       status: map['status'],
       totalFee: map['total_fee'],
       amountPaid: map['amount_paid'],
+      phoneNumbers: List<String>.from(map['phone_numbers'] ?? []),
     );
   }
 }

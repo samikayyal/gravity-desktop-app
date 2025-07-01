@@ -29,4 +29,23 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
   Future<void> refresh() async {
     await _fetchPastPlayers();
   }
+
+  Future<void> editPlayer(
+      {required String playerID,
+      required String name,
+      required int age,
+      required List<String> phones}) async {
+    state = const AsyncValue.loading();
+    try {
+      await _dbHelper.editPlayer(
+        playerID: playerID,
+        name: name,
+        age: age,
+        phones: phones,
+      );
+      await _fetchPastPlayers();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }

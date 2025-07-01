@@ -63,6 +63,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     required int totalFee,
     required int amountPaid,
     List<String> phoneNumbers = const [],
+    int? subscriptionId,
   }) async {
     await _dbHelper.checkInPlayer(
         existingPlayerID: existingPlayerID,
@@ -72,7 +73,8 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         isOpenTime: isOpenTime,
         initialFee: totalFee,
         amountPaid: amountPaid,
-        phoneNumbers: phoneNumbers);
+        phoneNumbers: phoneNumbers,
+        subscriptionId: subscriptionId);
     await refresh();
   }
 

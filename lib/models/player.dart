@@ -8,20 +8,25 @@ class Player {
   final int initialFee;
   int amountPaid;
   int sessionID; // For the current player's session
-  final Map<int, int> _productsBought = {}; // Map of product ID to quantity
 
+  // subscription ID
+  int? subscriptionId;
+
+  final Map<int, int> _productsBought = {}; // Map of product ID to quantity
   Map<int, int> get productsBought => _productsBought;
 
-  Player(
-      {required this.playerID,
-      required this.name,
-      required this.age,
-      required this.checkInTime,
-      required this.timeReserved,
-      required this.amountPaid,
-      required this.sessionID,
-      required this.isOpenTime,
-      required this.initialFee});
+  Player({
+    required this.playerID,
+    required this.name,
+    required this.age,
+    required this.checkInTime,
+    required this.timeReserved,
+    required this.amountPaid,
+    required this.sessionID,
+    required this.isOpenTime,
+    required this.initialFee,
+    this.subscriptionId,
+  });
 
   // Factory constructor to create a Player from a map
   factory Player.fromMap(Map<String, dynamic> map) {
@@ -37,6 +42,7 @@ class Player {
       amountPaid: map['amount_paid'] as int,
       sessionID: map['session_id'] as int,
       initialFee: map['initial_fee'] as int,
+      subscriptionId: map['subscription_id'] as int?,
     );
   }
 

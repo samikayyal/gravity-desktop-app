@@ -68,6 +68,8 @@ class DatabaseHelper {
     )
     ''');
 
+    /// For sub payments sub id will be given, and final fee will be a fixed fee
+    /// of the sub final fee.
     await db.execute('''
     CREATE TABLE IF NOT EXISTS sales(
       sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,9 +202,11 @@ class DatabaseHelper {
             ps.is_open_time,
             ps.session_id,
             ps.initial_fee,
-            ps.prepaid_amount AS amount_paid
+            ps.prepaid_amount AS amount_paid,
+            sub.subscription_id
     FROM player_sessions ps
     JOIN players p ON ps.player_id = p.id
+    LEFT JOIN subscriptions sub ON p.id = sub.player_id
     WHERE ps.check_out_time IS NULL
     ORDER BY ps.check_in_time ASC
   ''');
@@ -302,6 +306,7 @@ class DatabaseHelper {
     required int initialFee,
     required int amountPaid,
     List<String> phoneNumbers = const [],
+    int? subscriptionId,
   }) async {
     // Generate a unique player ID
     var uuid = Uuid();
@@ -424,9 +429,13 @@ class DatabaseHelper {
   Future<List<Player>> getPastPlayers() async {
     final db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT id, name, age
-      FROM players
-      ORDER BY last_modified DESC''');
+      SELECT id, name, age, s.subscription_id
+      FROM players p
+      LEFT JOIN subscriptions s ON p.id = s.player_id
+      WHERE p.id NOT IN ( -- make sure not to include current players
+        SELECT player_id FROM player_sessions WHERE check_out_time IS NULL
+      )
+      ORDER BY p.last_modified DESC''');
 
     return result
         .map((map) => Player(
@@ -440,6 +449,7 @@ class DatabaseHelper {
               sessionID: 0,
               isOpenTime: false,
               initialFee: 0,
+              subscriptionId: map['subscription_id'] as int?,
             ))
         .toList();
   }
@@ -671,7 +681,7 @@ class DatabaseHelper {
         }
       }
 
-      await txn.insert(
+      final subscriptionId = await txn.insert(
         'subscriptions',
         {
           'player_id': playerId,
@@ -689,17 +699,135 @@ class DatabaseHelper {
           'last_modified': nowIso,
         },
       );
+
+      await txn.insert('sales', {
+        'subscription_id': subscriptionId,
+        'session_id': null,
+        'final_fee': totalFee,
+        'amount_paid': amountPaid,
+        'tips': 0,
+        'sale_time': nowIso,
+        'last_modified': nowIso,
+      });
     });
   }
 
   Future<List<Subscription>> getSubscriptions() async {
     final db = await database;
-    final List<Map<String, dynamic>> subscriptions = await db.rawQuery('''
+    final List<Map<String, dynamic>> subscriptionsQuery = await db.rawQuery('''
       SELECT subscriptions.*, players.name AS player_name
       FROM subscriptions
       JOIN players ON subscriptions.player_id = players.id
       ORDER BY subscriptions.expiry_date ASC''');
 
-    return subscriptions.map((subMap) => Subscription.fromMap(subMap)).toList();
+    /// Create mutable copies and add phone numbers because its normally
+    /// read only which is stupid
+    final List<Map<String, dynamic>> mutableSubscriptions = [];
+    for (var row in subscriptionsQuery) {
+      // Create a mutable copy of the row
+      final Map<String, dynamic> mutableRow = Map<String, dynamic>.from(row);
+
+      // Fetch phone numbers for this player
+      final phoneNumbersResult = await db.rawQuery('''
+        SELECT phone_number
+        FROM phone_numbers
+        WHERE player_id = ?
+      ''', [row['player_id']]);
+
+      // Extract phone numbers as a list of strings
+      final phoneNumbers = phoneNumbersResult
+          .map((phoneRow) => phoneRow['phone_number'] as String)
+          .toList();
+
+      mutableRow['phone_numbers'] = phoneNumbers;
+      mutableSubscriptions.add(mutableRow);
+    }
+
+    return mutableSubscriptions
+        .map((map) => Subscription.fromMap(map))
+        .toList();
+  }
+
+  Future<void> makeSubPayment({
+    required String subscriptionId,
+    required int amountPaid,
+  }) async {
+    final db = await database;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    await db.transaction((txn) async {
+      // get sub total fee and amount left/prev amount paid
+      final List<Map<String, dynamic>> subQuery = await txn.rawQuery('''
+        SELECT total_fee, amount_paid
+        FROM subscriptions
+        WHERE subscription_id = ?
+      ''', [subscriptionId]);
+
+      if (subQuery.isEmpty) {
+        throw Exception('Subscription not found');
+      }
+
+      await txn.insert('sales', {
+        'subscription_id': subscriptionId,
+        'session_id': null,
+        'final_fee': subQuery.first['total_fee'],
+        'amount_paid': amountPaid,
+        'tips': 0,
+        'last_modified': nowIso,
+      });
+
+      // Update the subscription's amount_paid and status
+      await txn.update(
+          'subscriptions',
+          {
+            'amount_paid': amountPaid +
+                (subQuery.first['amount_paid']
+                    as int), // add to prev amount paid
+            'last_modified': nowIso,
+          },
+          where: 'id = ?',
+          whereArgs: [subscriptionId]);
+    });
+  }
+
+  Future<void> editPlayer(
+      {required String playerID,
+      required String name,
+      required int age,
+      required List<String> phones}) async {
+    final db = await database;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    await db.transaction((txn) async {
+      // Update player info
+      await txn.update(
+        'players',
+        {'name': name, 'age': age, 'last_modified': nowIso},
+        where: 'id = ?',
+        whereArgs: [playerID],
+      );
+
+      // Update phone numbers
+      if (phones.isNotEmpty) {
+        // delete existing phone numbers
+        await txn.delete(
+          'phone_numbers',
+          where: 'player_id = ?',
+          whereArgs: [playerID],
+        );
+
+        for (var phoneNumber in phones) {
+          await txn.insert(
+            'phone_numbers',
+            {
+              'player_id': playerID,
+              'phone_number': phoneNumber,
+              'last_modified': nowIso,
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    });
   }
 }

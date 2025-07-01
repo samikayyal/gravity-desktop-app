@@ -1,9 +1,11 @@
+import 'package:change_case/change_case.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
@@ -128,9 +130,8 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
 
       setState(() => _currentScreen = ScreenState.viewSubs);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding subscription: $e')),
-      );
+      MyMaterialBanner.showBanner(context,
+          message: 'Error adding subscription: $e', type: MessageType.error);
       return;
     }
   }
@@ -208,48 +209,62 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
           );
         }
         return SingleChildScrollView(
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('Player Name')),
-              DataColumn(label: Text('Remaining Time')),
-              DataColumn(label: Text('End Date')),
-              DataColumn(label: Text('Actions')),
-            ],
-            rows: subscriptions.map((sub) {
-              final remainingHours = sub.remainingMinutes ~/ 60;
-              final remainingMins = sub.remainingMinutes % 60;
-              return DataRow(
-                cells: [
-                  DataCell(Text(sub.playerName,
-                      style: AppTextStyles.tableCellStyle)),
-                  DataCell(Text('$remainingHours h $remainingMins m',
-                      style: AppTextStyles.tableCellStyle)),
-                  DataCell(Text(DateFormat.yMMMd().format(sub.expiryDate),
-                      style: AppTextStyles.tableCellStyle)),
-                  DataCell(Row(
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement logic to use subscription time
-                        },
-                        child: const Text('Use Time'),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: () {
-                          // TODO: Implement logic to renew subscription
-                        },
-                        child: const Text('Renew'),
-                      ),
-                    ],
-                  )),
-                ],
-              );
-            }).toList(),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text('Name')),
+                DataColumn(label: Text('Phone Number')),
+                DataColumn(label: Text('Initial Hours')),
+                DataColumn(label: Text('Remaining')),
+                DataColumn(label: Text('Expiry Date')),
+                DataColumn(label: Text('Total Fee')),
+                DataColumn(label: Text('Amount Left')),
+                DataColumn(label: Text('Status')),
+                DataColumn(label: Text('Actions')),
+              ],
+              rows: subscriptions.map((sub) {
+                final initialHours = sub.totalMinutes ~/ 60;
+
+                final remainingHours = sub.remainingMinutes ~/ 60;
+                final remainingMins = sub.remainingMinutes % 60;
+                final String remainingString = remainingHours > 0
+                    ? '$remainingHours h $remainingMins m'
+                    : '$remainingMins m';
+
+                return DataRow(
+                  cells: [
+                    // Name
+                    DataCell(Text(sub.playerName)),
+                    // Phone
+                    DataCell(Text(sub.phoneNumbers.firstOrNull ?? 'N/A')),
+                    // Initial Hours
+                    DataCell(Text('$initialHours h')),
+                    // Remaining
+                    DataCell(Text(remainingString)),
+                    // Expiry Date
+                    DataCell(Text(
+                      DateFormat('yyyy-MM-dd').format(sub.expiryDate),
+                    )),
+                    // Total Fee
+                    DataCell(Text('${sub.totalFee}')),
+                    // Amount Left
+                    DataCell(Text('${sub.totalFee - sub.amountPaid}')),
+                    // Status
+                    DataCell(Text(sub.status.toTitleCase())),
+                    // Actions
+                    DataCell(Row(mainAxisSize: MainAxisSize.min, children: []))
+                  ],
+                );
+              }).toList(),
+            ),
           ),
         );
       },
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) {
+        debugPrint('Error in subs table: $err\n$stack');
+        return Center(child: Text('Error: $err'));
+      },
       loading: () => const Center(child: CircularProgressIndicator()),
     );
   }
