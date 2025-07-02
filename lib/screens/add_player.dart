@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -300,7 +302,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 final results = fuse.search(textEditingValue.text);
                 return results.map((result) => result.item);
               }, error: (err, stack) {
-                debugPrint("Error fetching past players: $err, $stack");
+                log("Error fetching past players: $err, $stack");
                 return const Iterable<Player>.empty();
               }, loading: () {
                 return const Iterable<Player>.empty();
@@ -393,7 +395,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                                   ),
                                   tooltip: 'Save Changes',
                                   onPressed: () {
-                                    debugPrint("Edit player details confirmed");
+                                    log("Edit player details confirmed");
                                     setState(() {
                                       _inEditMode = false;
                                       _detailsReadOnly = true;

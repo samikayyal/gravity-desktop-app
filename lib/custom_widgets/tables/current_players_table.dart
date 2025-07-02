@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
@@ -162,9 +164,9 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                 .toList(),
             columnWidths: {
               0: const FlexColumnWidth(2.5), // Name (wider)
-              1: const FlexColumnWidth(0.8), // Age (narrower)
-              2: const FlexColumnWidth(1.5), // Check-in
-              3: const FlexColumnWidth(1.5), // Time Left
+              1: const FlexColumnWidth(0.7), // Age (narrower)
+              2: const FlexColumnWidth(1.2), // Check-in
+              3: const FlexColumnWidth(1.2), // Time Left
               4: const FlexColumnWidth(1.0), // Fee
               5: const FlexColumnWidth(1.0), // Paid
               6: const FlexColumnWidth(1.0), // Left
@@ -276,6 +278,15 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                   _handlePurchase(context, player);
                 },
               ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.more_time_outlined, size: 22),
+                tooltip: 'Extend Time',
+                style: AppButtonStyles.iconButtonCircle,
+                onPressed: () {
+                  log('Extend Time for ${player.name}');
+                },
+              )
             ],
           ),
         ),

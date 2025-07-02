@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:change_case/change_case.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -263,7 +265,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
         );
       },
       error: (err, stack) {
-        debugPrint('Error in subs table: $err\n$stack');
+        log('Error in subs table: $err\n$stack');
         return Center(child: Text('Error: $err'));
       },
       loading: () => const Center(child: CircularProgressIndicator()),

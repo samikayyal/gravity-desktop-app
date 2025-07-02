@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'dart:developer';
+
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
@@ -263,7 +264,7 @@ class DatabaseHelper {
         sub = subscriberQuery.first;
         isSub = sub['subscription_id'] != null && sub['status'] == 'active';
       }
-      debugPrint("isSub in checkout: $isSub");
+      log("isSub in checkout: $isSub");
 
       // set check_out_time to check out player
       await txn.update('player_sessions',
@@ -709,9 +710,8 @@ class DatabaseHelper {
     final db = await database;
     final nowIso = DateTime.now().toUtc().toIso8601String();
 
-    debugPrint(
-        'Products bought for player ${player.playerID}: ${player.productsBought}');
-    debugPrint('Session ID: ${player.sessionID}');
+    log('Products bought for player ${player.playerID}: ${player.productsBought}');
+    log('Session ID: ${player.sessionID}');
 
     // Clear existing products for this session
     await db.transaction((txn) async {
