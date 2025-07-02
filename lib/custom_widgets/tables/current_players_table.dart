@@ -1,9 +1,9 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/receipt_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
@@ -284,7 +284,14 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                 tooltip: 'Extend Time',
                 style: AppButtonStyles.iconButtonCircle,
                 onPressed: () {
-                  log('Extend Time for ${player.name}');
+                  if (player.isOpenTime) {
+                    MyMaterialBanner.showBanner(context,
+                        message: "Cannot extend time for open sessions.");
+                    return;
+                  }
+                  showDialog(
+                      context: context,
+                      builder: (context) => ExtendTimeDialog(player));
                 },
               )
             ],
