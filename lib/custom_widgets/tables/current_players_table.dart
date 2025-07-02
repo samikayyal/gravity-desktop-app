@@ -242,29 +242,32 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
           style: amountStyle,
         ),
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(4.0),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              ElevatedButton.icon(
-                icon: const Icon(Icons.logout, size: 23),
-                label: Text(
-                  "Checkout",
-                  style: AppTextStyles.primaryButtonTextStyle,
-                ),
-                style: AppButtonStyles.primaryButton.copyWith(
-                  padding: WidgetStateProperty.all(
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              Flexible(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.logout, size: 24),
+                  label: Text(
+                    "Checkout",
+                    style: AppTextStyles.primaryButtonTextStyle,
                   ),
+                  style: AppButtonStyles.primaryButton.copyWith(
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    ),
+                  ),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ReceiptDialog(player),
+                    );
+                  },
                 ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => ReceiptDialog(player),
-                  );
-                },
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               IconButton(
                 tooltip: 'Buy Product',
                 icon: const Icon(Icons.add_shopping_cart, size: 22),
