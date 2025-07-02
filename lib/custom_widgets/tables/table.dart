@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 
 class TableContainer extends StatelessWidget {
-  final ScrollController verticalController;
   final List<String> columnHeaders;
   final List<TableRow> rowData;
   final Map<int, FlexColumnWidth> columnWidths;
 
   const TableContainer(
       {super.key,
-      required this.verticalController,
       required this.columnHeaders,
       required this.rowData,
       required this.columnWidths});
@@ -20,6 +18,8 @@ class TableContainer extends StatelessWidget {
       throw ArgumentError(
           'Number of column headers must match number of column widths');
     }
+
+    final ScrollController verticalController = ScrollController();
 
     return Container(
       clipBehavior: Clip.antiAlias, // To clip the child to the border radius
@@ -41,7 +41,6 @@ class TableContainer extends StatelessWidget {
         thickness: 8,
         radius: const Radius.circular(4),
         child: SingleChildScrollView(
-          controller: verticalController,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return Table(

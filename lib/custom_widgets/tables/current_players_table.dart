@@ -30,9 +30,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   late final AudioPlayer _audioPlayer;
   final Set<String> _alertedPlayerIds = {};
 
-  // Scrolling controller for vertical scrolling only
-  final ScrollController _verticalController = ScrollController();
-
   @override
   void initState() {
     super.initState();
@@ -42,7 +39,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   @override
   void dispose() {
     _audioPlayer.dispose();
-    _verticalController.dispose();
     super.dispose();
   }
 
@@ -146,7 +142,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
 
         // Use a vertically scrollable table that fills the available space
         return TableContainer(
-            verticalController: _verticalController,
             columnHeaders: [
               'Name',
               'Age',

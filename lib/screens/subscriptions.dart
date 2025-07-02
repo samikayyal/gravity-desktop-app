@@ -9,6 +9,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
@@ -177,6 +178,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
         borderRadius: BorderRadius.circular(10),
         onPressed: (index) {
           setState(() {
+            _resetForm();
             _currentScreen = ScreenState.values[index];
           });
         },
@@ -211,22 +213,34 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
             ),
           );
         }
-        return SingleChildScrollView(
+        return Align(
+          alignment: Alignment.topCenter,
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: DataTable(
-              columns: const [
-                DataColumn(label: Text('Name')),
-                DataColumn(label: Text('Phone Number')),
-                DataColumn(label: Text('Initial Hours')),
-                DataColumn(label: Text('Remaining')),
-                DataColumn(label: Text('Expiry Date')),
-                DataColumn(label: Text('Total Fee')),
-                DataColumn(label: Text('Amount Left')),
-                DataColumn(label: Text('Status')),
-                DataColumn(label: Text('Actions')),
+            padding: const EdgeInsets.all(16.0),
+            child: TableContainer(
+              columnHeaders: [
+                'Name',
+                'Phone Number',
+                'Initial Hours',
+                'Remaining',
+                'Expiry Date',
+                'Total Fee',
+                'Amount Left',
+                'Status',
+                'Actions'
               ],
-              rows: subscriptions.map((sub) {
+              columnWidths: {
+                0: const FlexColumnWidth(2), // Name
+                1: const FlexColumnWidth(1.2), // Phone Number
+                2: const FlexColumnWidth(1), // Initial Hours
+                3: const FlexColumnWidth(1), // Remaining
+                4: const FlexColumnWidth(1), // Expiry Date
+                5: const FlexColumnWidth(1), // Total Fee
+                6: const FlexColumnWidth(1.2), // Amount Left
+                7: const FlexColumnWidth(0.8), // Status
+                8: const FlexColumnWidth(1.5), // Actions
+              },
+              rowData: subscriptions.map((sub) {
                 final initialHours = sub.totalMinutes ~/ 60;
 
                 final remainingHours = sub.remainingMinutes ~/ 60;
@@ -235,28 +249,33 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                     ? '$remainingHours h $remainingMins m'
                     : '$remainingMins m';
 
-                return DataRow(
-                  cells: [
+                return TableRow(
+                  decoration: BoxDecoration(
+                    color: subscriptions.indexOf(sub) % 2 == 0
+                        ? TableThemes.evenRowColor
+                        : TableThemes.oddRowColor,
+                  ),
+                  children: [
                     // Name
-                    DataCell(Text(sub.playerName)),
+                    buildDataCell(sub.playerName),
                     // Phone
-                    DataCell(Text(sub.phoneNumbers.firstOrNull ?? 'N/A')),
+                    buildDataCell(sub.phoneNumbers.firstOrNull ?? 'N/A'),
                     // Initial Hours
-                    DataCell(Text('$initialHours h')),
+                    buildDataCell('$initialHours h'),
                     // Remaining
-                    DataCell(Text(remainingString)),
+                    buildDataCell(remainingString),
                     // Expiry Date
-                    DataCell(Text(
+                    buildDataCell(
                       DateFormat('yyyy-MM-dd').format(sub.expiryDate),
-                    )),
+                    ),
                     // Total Fee
-                    DataCell(Text('${sub.totalFee}')),
+                    buildDataCell('${sub.totalFee}'),
                     // Amount Left
-                    DataCell(Text('${sub.totalFee - sub.amountPaid}')),
+                    buildDataCell('${sub.totalFee - sub.amountPaid}'),
                     // Status
-                    DataCell(Text(sub.status.toTitleCase())),
+                    buildDataCell(sub.status.toTitleCase()),
                     // Actions
-                    DataCell(Row(mainAxisSize: MainAxisSize.min, children: []))
+                    Row(mainAxisSize: MainAxisSize.min, children: [])
                   ],
                 );
               }).toList(),

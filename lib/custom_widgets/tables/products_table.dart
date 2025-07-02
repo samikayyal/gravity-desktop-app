@@ -16,12 +16,8 @@ class ProductsTable extends ConsumerStatefulWidget {
 class _ProductsTableState extends ConsumerState<ProductsTable> {
   final formatter = NumberFormat.decimalPattern();
 
-  // Scrolling controller for vertical scrolling only
-  final ScrollController _verticalController = ScrollController();
-
   @override
   void dispose() {
-    _verticalController.dispose();
     super.dispose();
   }
 
@@ -68,7 +64,6 @@ class _ProductsTableState extends ConsumerState<ProductsTable> {
 
         // Use a vertically scrollable table that fills the available space
         return TableContainer(
-          verticalController: _verticalController,
           columnHeaders: [
             'Product Name',
             'Price',
