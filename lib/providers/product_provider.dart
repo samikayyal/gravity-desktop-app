@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/product.dart';
-import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 
 final productsProvider =
     StateNotifierProvider<ProductsNotifier, AsyncValue<List<Product>>>((ref) {

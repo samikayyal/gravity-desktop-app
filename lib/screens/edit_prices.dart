@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/database/database.dart';
-import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 
 class EditPricesScreen extends ConsumerStatefulWidget {

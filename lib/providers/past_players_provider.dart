@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
-import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 
 final pastPlayersProvider =
     StateNotifierProvider<PastPlayersNotifier, AsyncValue<List<Player>>>((ref) {

@@ -7,7 +7,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
-import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';

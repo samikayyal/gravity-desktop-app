@@ -8,7 +8,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/receipt_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
-import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
