@@ -43,7 +43,7 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         age: age,
         phones: phones,
       );
-      await _fetchPastPlayers();
+      await refresh();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

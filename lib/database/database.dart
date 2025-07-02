@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uuid/uuid.dart';
@@ -246,7 +247,7 @@ class DatabaseHelper {
 
       // see if the player inside is a subscriber
       final subscriberQuery = await txn.rawQuery('''
-        SELECT subscription_id, status
+        SELECT subscription_id, status, remaining_minutes
         FROM subscriptions
         WHERE player_id = (
           SELECT player_id
@@ -255,12 +256,14 @@ class DatabaseHelper {
         )''', [sessionID]);
 
       late final bool isSub;
+      late final Map<String, dynamic>? sub;
       if (subscriberQuery.isEmpty) {
         isSub = false;
       } else {
-        final sub = subscriberQuery.first;
+        sub = subscriberQuery.first;
         isSub = sub['subscription_id'] != null && sub['status'] == 'active';
       }
+      debugPrint("isSub in checkout: $isSub");
 
       // set check_out_time to check out player
       await txn.update('player_sessions',
@@ -272,6 +275,8 @@ class DatabaseHelper {
         'sales',
         {
           'session_id': sessionID,
+          'subscription_id':
+              isSub ? subscriberQuery.first['subscription_id'] : null,
           'final_fee': finalFee,
           'amount_paid': amountPaid,
           'tips': tips,
@@ -303,6 +308,56 @@ class DatabaseHelper {
             },
           );
         }
+
+        // TODO: Update product quantities after sale
+      }
+
+      // Subscription shit
+      if (isSub) {
+        final timeSpentQuery = await txn.rawQuery('''
+          SELECT check_in_time, check_out_time
+          FROM player_sessions
+          WHERE session_id = ?
+          ''', [sessionID]);
+
+        final checkInTime =
+            DateTime.parse(timeSpentQuery.first['check_in_time'] as String);
+        final checkOutTime =
+            DateTime.parse(timeSpentQuery.first['check_out_time'] as String);
+
+        final Duration timeSpent = checkOutTime.difference(checkInTime);
+
+        final int halfHourBlocks = (timeSpent.inMinutes ~/ 30);
+        final remainderMinutes = timeSpent.inMinutes % 30;
+
+        int totalHalfHourBlocks = remainderMinutes > leewayMinutes
+            ? halfHourBlocks + 1 // Over leeway, charge for next block
+            : halfHourBlocks; // Within leeway, only charge for full blocks
+
+        int timeToSubstract = ((totalHalfHourBlocks * 0.5) * 60).toInt();
+
+        if (totalHalfHourBlocks == 0) {
+          timeToSubstract = 30; // At least charge for half an hour
+        }
+
+        // insert to sub records
+        await txn.insert('subscription_records', {
+          'subscription_id': sub!['subscription_id'],
+          'session_id': sessionID,
+          'minutes_used': timeToSubstract,
+          'last_modified': nowIso,
+        });
+
+        // update remianing time in subs table
+        await txn.update(
+          'subscriptions',
+          {
+            'remaining_minutes': sub['remaining_minutes'] - timeToSubstract,
+            'last_modified': nowIso,
+          },
+          where: 'subscription_id = ?',
+          whereArgs: [sub['subscription_id']],
+        );
       }
 
       // Clear session products after checkout
@@ -519,6 +574,8 @@ class DatabaseHelper {
     await db.execute('DELETE FROM sale_items');
     await db.execute('DELETE FROM phone_numbers');
     await db.execute('DELETE FROM session_products');
+    await db.execute('DELETE FROM subscriptions');
+    await db.execute('DELETE FROM subscription_records');
   }
 
   // ------- END TEST FUNCTIONS -------

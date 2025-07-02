@@ -168,7 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Card(
                     elevation: 4,
                     child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(16.0),
                       child: CurrentPlayersTable(),
                     ),
                   ),

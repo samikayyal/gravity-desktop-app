@@ -1,5 +1,6 @@
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/product.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 
 int calculatePreCheckInFee({
   required int hoursReserved,
@@ -42,7 +43,6 @@ int calculateFinalFee({
   }
 
   // --- Leeway Logic ---
-  const int leewayMinutes = 10;
   final totalMinutes = timeSpent.inMinutes;
   final fullBlocks = totalMinutes ~/ 30;
   final remainderMinutes = totalMinutes % 30;

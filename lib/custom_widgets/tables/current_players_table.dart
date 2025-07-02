@@ -4,6 +4,7 @@ import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dial
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/receipt_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
 import 'package:intl/intl.dart';
@@ -142,102 +143,39 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         }
 
         // Use a vertically scrollable table that fills the available space
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withAlpha(50),
-                spreadRadius: 1,
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
+        return TableContainer(
+            verticalController: _verticalController,
+            columnHeaders: [
+              'Name',
+              'Age',
+              'Check-in',
+              'Time Left',
+              'Fee',
+              'Paid',
+              'Left',
+              'Actions'
             ],
-          ),
-          child: Scrollbar(
-            controller: _verticalController,
-            thumbVisibility: true,
-            thickness: 8,
-            radius: const Radius.circular(4),
-            child: SingleChildScrollView(
-              controller: _verticalController,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Table(
-                    border: TableBorder(
-                      horizontalInside: BorderSide(
-                        color: Colors.grey.shade300,
-                        width: 1,
-                      ),
-                    ),
-                    columnWidths: {
-                      0: const FlexColumnWidth(2.5), // Name (wider)
-                      1: const FlexColumnWidth(0.8), // Age (narrower)
-                      2: const FlexColumnWidth(1.5), // Check-in
-                      3: const FlexColumnWidth(1.5), // Time Left
-                      4: const FlexColumnWidth(1.0), // Fee
-                      5: const FlexColumnWidth(1.0), // Paid
-                      6: const FlexColumnWidth(1.0), // Left
-                      7: const FlexColumnWidth(2.5), // Actions (wider)
-                    },
-                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                    children: [
-                      // Header Row
-                      TableRow(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5),
-                        ),
-                        children: [
-                          _buildHeaderCell('Name'),
-                          _buildHeaderCell('Age'),
-                          _buildHeaderCell('Check-in'),
-                          _buildHeaderCell('Time Left'),
-                          _buildHeaderCell('Fee'),
-                          _buildHeaderCell('Paid'),
-                          _buildHeaderCell('Left'),
-                          _buildHeaderCell('Actions'),
-                        ],
-                      ),
-                      // Data Rows
-                      ...currentPlayers
-                          .map((player) => _buildTableRow(context, player)),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        );
+            rowData: currentPlayers
+                .asMap()
+                .entries
+                .map((entry) => _buildTableRow(context, entry.value, entry.key))
+                .toList(),
+            columnWidths: {
+              0: const FlexColumnWidth(2.5), // Name (wider)
+              1: const FlexColumnWidth(0.8), // Age (narrower)
+              2: const FlexColumnWidth(1.5), // Check-in
+              3: const FlexColumnWidth(1.5), // Time Left
+              4: const FlexColumnWidth(1.0), // Fee
+              5: const FlexColumnWidth(1.0), // Paid
+              6: const FlexColumnWidth(1.0), // Left
+              7: const FlexColumnWidth(2.5), // Actions (wider)
+            });
       },
     );
   }
 
-  // Helper method to build header cells
-  Widget _buildHeaderCell(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Text(
-        text,
-        style: AppTextStyles.sectionHeaderStyle.copyWith(fontSize: 18),
-      ),
-    );
-  }
-
-  // Helper method to build regular data cells
-  Widget _buildDataCell(String text, {TextStyle? style}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: Text(
-        text,
-        style: style ?? AppTextStyles.regularTextStyle,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
   // Create a table row for each player
-  TableRow _buildTableRow(BuildContext context, Player player) {
+  TableRow _buildTableRow(BuildContext context, Player player, int index) {
     final String checkInTime =
         DateFormat('h:mm a').format(player.checkInTime.toLocal());
 
@@ -278,22 +216,26 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
 
     return TableRow(
       decoration: BoxDecoration(
-        color: isTimeUp ? Colors.red.withAlpha((0.1 * 255).toInt()) : null,
+        color: isTimeUp
+            ? Colors.red.withAlpha(30)
+            : (index.isEven
+                ? TableThemes.evenRowColor
+                : TableThemes.oddRowColor),
       ),
       children: [
-        _buildDataCell(player.name, style: cellStyle),
-        _buildDataCell('${player.age}', style: cellStyle),
-        _buildDataCell(checkInTime, style: cellStyle),
-        _buildDataCell(
+        buildDataCell(player.name, style: cellStyle),
+        buildDataCell('${player.age}', style: cellStyle),
+        buildDataCell(checkInTime, style: cellStyle),
+        buildDataCell(
           timeRemainingString,
           style: isTimeUp ? timeUpStyle : cellStyle,
         ),
-        _buildDataCell(
+        buildDataCell(
           player.isOpenTime ? 'Open' : '${player.initialFee}',
           style: amountStyle,
         ),
-        _buildDataCell('${player.amountPaid}', style: amountStyle),
-        _buildDataCell(
+        buildDataCell('${player.amountPaid}', style: amountStyle),
+        buildDataCell(
           player.isOpenTime
               ? 'Open'
               : '${player.initialFee - player.amountPaid}',

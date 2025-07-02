@@ -8,8 +8,11 @@ import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/database_provider.dart';
+import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
+import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
 
@@ -49,6 +52,36 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
     super.dispose();
   }
 
+  double _subTimeUsed() {
+    final int halfHourBlocks = (timeSpent.inMinutes ~/ 30);
+    final remainderMinutes = timeSpent.inMinutes % 30;
+
+    int totalHalfHourBlocks = remainderMinutes > leewayMinutes
+        ? halfHourBlocks + 1 // Over leeway, charge for next block
+        : halfHourBlocks; // Within leeway, only charge for full blocks
+
+    if (totalHalfHourBlocks == 0) {
+      return 0.5; // At least charge for half an hour
+    }
+
+    return totalHalfHourBlocks * 0.5; // Convert to hours
+  }
+
+  double _subRemainingTime() {
+    final double hoursUsed = _subTimeUsed();
+    return ref.watch(subscriptionsProvider).when(
+          data: (subscriptions) {
+            final sub = subscriptions.firstWhere(
+              (sub) => sub.subscriptionId == widget.player.subscriptionId,
+              orElse: () => throw Exception('Subscription not found'),
+            );
+            return (sub.totalMinutes / 60) - hoursUsed;
+          },
+          loading: () => 0,
+          error: (error, stackTrace) => -1,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pricesAsync = ref.watch(pricesProvider);
@@ -61,11 +94,14 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
         final String formattedCheckInTime =
             DateFormat('h:mm a').format(widget.player.checkInTime.toLocal());
 
-        final int finalFee = calculateFinalFee(
-            timeSpent: timeSpent,
-            prices: prices,
-            productsBought: widget.player.productsBought,
-            allProducts: products);
+        final int finalFee = widget.player.subscriptionId == null
+            ? calculateFinalFee(
+                timeSpent: timeSpent,
+                prices: prices,
+                productsBought: widget.player.productsBought,
+                allProducts: products)
+            : 0;
+        // amount paid be 0 if the player has a subscription
         final int amountLeft = finalFee - widget.player.amountPaid;
 
         final Map<int, int> productsBought = widget.player.productsBought;
@@ -105,9 +141,27 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                 const SizedBox(height: 8),
                 _buildInfoRow("Check-in Time:", formattedCheckInTime),
                 _buildInfoRow("Time Spent:", formattedTimeSpent),
-                if (widget.player.productsBought.isNotEmpty)
-                  _buildInfoRow("Time Fee:",
-                      "${formatter.format(calculateFinalFee(timeSpent: timeSpent, prices: prices))} SYP"),
+
+                // if subscriber display how much to substract and how much is remaining
+                if (widget.player.subscriptionId != null) ...[
+                  const SizedBox(height: 16),
+                  Text("Subscription Details",
+                      style: AppTextStyles.sectionHeaderStyle),
+                  const SizedBox(height: 8),
+                  _buildInfoRow("Time Used: ", _subTimeUsed().toString()),
+                  _buildInfoRow(
+                      "Remaining Minutes:", "${_subRemainingTime()} Hours"),
+                ],
+
+                /// display fee if products exist
+                /// otherwise its just the total fee so no need to display it
+                if (widget.player.productsBought.isNotEmpty &&
+                    widget.player.subscriptionId == null)
+                  _buildInfoRow(
+                      "Time Fee:",
+                      widget.player.subscriptionId != null
+                          ? "Subscriber"
+                          : "${formatter.format(calculateFinalFee(timeSpent: timeSpent, prices: prices))} SYP"),
                 const SizedBox(height: 16),
 
                 if (productsBought.isNotEmpty) ...[
@@ -303,6 +357,7 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                                       finalFee: finalFee,
                                       amountPaid: amountReceived,
                                       tips: _tip);
+
                               Navigator.of(context).pop();
                             }
                           : null,

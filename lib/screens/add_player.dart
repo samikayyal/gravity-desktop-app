@@ -46,6 +46,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
 
   @override
   void initState() {
+    ref.read(pastPlayersProvider.notifier).refresh();
     super.initState();
   }
 
@@ -282,29 +283,28 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               if (textEditingValue.text.isEmpty || _inEditMode) {
                 return const Iterable<Player>.empty();
               }
-              return ref.watch(pastPlayersProvider).when(
-                  data: (pastPlayers) {
-                    final fuse = Fuzzy(
-                      pastPlayers,
-                      options: FuzzyOptions(
-                        keys: [
-                          WeightedKey(
-                              name: 'name',
-                              weight: 1.0,
-                              getter: (Player player) => player.name)
-                        ],
-                        threshold: 0.5,
-                      ),
-                    );
+              return ref.watch(pastPlayersProvider).when(data: (pastPlayers) {
+                final fuse = Fuzzy(
+                  pastPlayers,
+                  options: FuzzyOptions(
+                    keys: [
+                      WeightedKey(
+                          name: 'name',
+                          weight: 1.0,
+                          getter: (Player player) => player.name)
+                    ],
+                    threshold: 0.5,
+                  ),
+                );
 
-                    final results = fuse.search(textEditingValue.text);
-                    return results.map((result) => result.item);
-                  },
-                  error: (err, stack) {
-                    debugPrint("Error fetching past players: $err, $stack");
-                    return const Iterable<Player>.empty();
-                  },
-                  loading: () => const Iterable<Player>.empty());
+                final results = fuse.search(textEditingValue.text);
+                return results.map((result) => result.item);
+              }, error: (err, stack) {
+                debugPrint("Error fetching past players: $err, $stack");
+                return const Iterable<Player>.empty();
+              }, loading: () {
+                return const Iterable<Player>.empty();
+              });
             },
             optionsViewBuilder: (context, onSelected, options) {
               return Align(
