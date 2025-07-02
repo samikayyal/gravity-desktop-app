@@ -285,7 +285,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                 style: AppButtonStyles.iconButtonCircle,
                 onPressed: () {
                   if (player.isOpenTime) {
-                    MyMaterialBanner.showBanner(context,
+                    MyMaterialBanner.showFloatingBanner(context,
                         message: "Cannot extend time for open sessions.");
                     return;
                   }
