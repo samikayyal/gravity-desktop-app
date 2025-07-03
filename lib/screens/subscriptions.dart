@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/edit_profile_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/models/subscription.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
@@ -104,7 +108,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
     _phoneControllers.add(TextEditingController());
 
     _hoursController.clear();
-    _discountController.text = '0';
+    _discountController.text = '45';
     _amountPaidController.clear();
     setState(() {
       _selectedPlayer = null;
@@ -112,7 +116,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
     });
   }
 
-  void _handleAddSubscription() {
+  Future<void> _handleAddSubscription() async {
     final subs = ref.read(subscriptionsProvider.notifier);
     if (!_formKey.currentState!.validate()) return;
 
@@ -121,7 +125,8 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
         _selectedPlayer?.age ?? int.tryParse(_ageController.text.trim()) ?? 0;
 
     try {
-      subs.addNewSubscription(
+      await subs.addNewSubscription(
+        existingPlayerId: _selectedPlayer?.playerID,
         playerName: playerName,
         age: playerAge,
         phoneNumbers: _phoneControllers.map((c) => c.text.trim()).toList(),
@@ -134,8 +139,10 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
 
       setState(() => _currentScreen = ScreenState.viewSubs);
     } catch (e) {
-      MyMaterialBanner.showBanner(context,
-          message: 'Error adding subscription: $e', type: MessageType.error);
+      if (mounted) {
+        MyMaterialBanner.showBanner(context,
+            message: 'Error adding subscription: $e', type: MessageType.error);
+      }
       return;
     }
   }
@@ -207,9 +214,13 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
       data: (subscriptions) {
         if (subscriptions.isEmpty) {
           return Center(
-            child: Text(
-              'No active subscriptions found.',
-              style: AppTextStyles.subtitleTextStyle,
+            child: MyCard(
+              child: Center(
+                child: Text(
+                  'No active subscriptions.',
+                  style: AppTextStyles.subtitleTextStyle,
+                ),
+              ),
             ),
           );
         }
@@ -217,68 +228,128 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
           alignment: Alignment.topCenter,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TableContainer(
-              columnHeaders: [
-                'Name',
-                'Phone Number',
-                'Initial Hours',
-                'Remaining',
-                'Expiry Date',
-                'Total Fee',
-                'Amount Left',
-                'Status',
-                'Actions'
-              ],
-              columnWidths: {
-                0: const FlexColumnWidth(2), // Name
-                1: const FlexColumnWidth(1.2), // Phone Number
-                2: const FlexColumnWidth(1), // Initial Hours
-                3: const FlexColumnWidth(1), // Remaining
-                4: const FlexColumnWidth(1), // Expiry Date
-                5: const FlexColumnWidth(1), // Total Fee
-                6: const FlexColumnWidth(1.2), // Amount Left
-                7: const FlexColumnWidth(0.8), // Status
-                8: const FlexColumnWidth(1.5), // Actions
-              },
-              rowData: subscriptions.map((sub) {
-                final initialHours = sub.totalMinutes ~/ 60;
+            child: MyCard(
+              child: TableContainer(
+                columnHeaders: [
+                  'Name',
+                  'Phone Number',
+                  'Initial Hours',
+                  'Remaining',
+                  'Expiry Date',
+                  'Total Fee',
+                  'Amount Left',
+                  'Status',
+                  'Actions'
+                ],
+                columnWidths: {
+                  0: const FlexColumnWidth(1.5), // Name
+                  1: const FlexColumnWidth(1), // Phone Number
+                  2: const FlexColumnWidth(1), // Initial Hours
+                  3: const FlexColumnWidth(1), // Remaining
+                  4: const FlexColumnWidth(1), // Expiry Date
+                  5: const FlexColumnWidth(0.8), // Total Fee
+                  6: const FlexColumnWidth(0.8), // Amount Left
+                  7: const FlexColumnWidth(0.5), // Status
+                  8: const FlexColumnWidth(2.5), // Actions
+                },
+                rowData: subscriptions.map((sub) {
+                  final initialHours = sub.totalMinutes ~/ 60;
 
-                final remainingHours = sub.remainingMinutes ~/ 60;
-                final remainingMins = sub.remainingMinutes % 60;
-                final String remainingString = remainingHours > 0
-                    ? '$remainingHours h $remainingMins m'
-                    : '$remainingMins m';
+                  final remainingHours = sub.remainingMinutes ~/ 60;
+                  final remainingMins = sub.remainingMinutes % 60;
+                  final String remainingString = remainingHours > 0
+                      ? '$remainingHours h $remainingMins m'
+                      : '$remainingMins m';
 
-                return TableRow(
-                  decoration: BoxDecoration(
-                    color: subscriptions.indexOf(sub) % 2 == 0
-                        ? TableThemes.evenRowColor
-                        : TableThemes.oddRowColor,
-                  ),
-                  children: [
-                    // Name
-                    buildDataCell(sub.playerName),
-                    // Phone
-                    buildDataCell(sub.phoneNumbers.firstOrNull ?? 'N/A'),
-                    // Initial Hours
-                    buildDataCell('$initialHours h'),
-                    // Remaining
-                    buildDataCell(remainingString),
-                    // Expiry Date
-                    buildDataCell(
-                      DateFormat('yyyy-MM-dd').format(sub.expiryDate),
+                  return TableRow(
+                    decoration: BoxDecoration(
+                      color: subscriptions.indexOf(sub) % 2 == 0
+                          ? TableThemes.evenRowColor
+                          : TableThemes.oddRowColor,
                     ),
-                    // Total Fee
-                    buildDataCell('${sub.totalFee}'),
-                    // Amount Left
-                    buildDataCell('${sub.totalFee - sub.amountPaid}'),
-                    // Status
-                    buildDataCell(sub.status.toTitleCase()),
-                    // Actions
-                    Row(mainAxisSize: MainAxisSize.min, children: [])
-                  ],
-                );
-              }).toList(),
+                    children: [
+                      // Name
+                      buildDataCell(sub.playerName),
+                      // Phone
+                      buildDataCell(sub.phoneNumbers.firstOrNull ?? 'N/A'),
+                      // Initial Hours
+                      buildDataCell('$initialHours h'),
+                      // Remaining
+                      buildDataCell(remainingString),
+                      // Expiry Date
+                      buildDataCell(
+                        DateFormat('yyyy-MM-dd').format(sub.expiryDate),
+                      ),
+                      // Total Fee
+                      buildDataCell('${sub.totalFee}'),
+                      // Amount Left
+                      buildDataCell('${sub.totalFee - sub.amountPaid}'),
+                      // Status
+                      buildDataCell(sub.status.toTitleCase()),
+                      // Actions
+                      SingleChildScrollView(
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const SizedBox(width: 5),
+                          ElevatedButton.icon(
+                            label: Text("Details",
+                                style: AppTextStyles.primaryButtonTextStyle),
+                            style: AppButtonStyles.primaryButton.copyWith(
+                              padding: WidgetStateProperty.all(
+                                const EdgeInsets.symmetric(
+                                    horizontal: 0, vertical: 2),
+                              ),
+                              minimumSize: WidgetStateProperty.all(
+                                Size(
+                                  // width
+                                  MediaQuery.of(context).size.width * 0.07,
+                                  // height
+                                  AppButtonStyles.primaryButton.minimumSize!
+                                      .resolve({})!.height,
+                                ),
+                              ),
+                            ),
+                            icon: const Icon(Icons.info),
+                            onPressed: () {
+                              // TODO: Handle view details action
+                            },
+                          ),
+                          const SizedBox(width: 5),
+                          ElevatedButton.icon(
+                              label: Text("Edit Profile",
+                                  style: AppTextStyles.primaryButtonTextStyle),
+                              icon: const Icon(Icons.edit),
+                              style: AppButtonStyles.primaryButton.copyWith(
+                                padding: WidgetStateProperty.all(
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 0, vertical: 2),
+                                ),
+                              ),
+                              onPressed: () async =>
+                                  await _editProfile(context, sub)),
+                          if (sub.amountPaid < sub.totalFee) ...[
+                            const SizedBox(width: 5),
+                            ElevatedButton.icon(
+                              onPressed: () async =>
+                                  await _makeSubPayment(context, sub),
+                              label: Text(
+                                'Make Payment',
+                                style: AppTextStyles.primaryButtonTextStyle,
+                              ),
+                              icon: const Icon(Icons.payment),
+                              style: AppButtonStyles.primaryButton.copyWith(
+                                padding: WidgetStateProperty.all(
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                ),
+                              ),
+                            ),
+                          ]
+                        ]),
+                      )
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
         );
@@ -618,12 +689,179 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: _totalFee <= 0 ? null : _handleAddSubscription,
+              onPressed: _totalFee <= 0
+                  ? null
+                  : () async => await _handleAddSubscription(),
               child: const Text("Add Subscription"),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _makeSubPayment(BuildContext context, Subscription sub) async {
+    final subPaymentController = TextEditingController();
+    final subFormKey = GlobalKey<FormState>();
+
+    await showDialog(
+        context: context,
+        builder: (context) {
+          final int remainingPayment = sub.totalFee - sub.amountPaid;
+          return MyDialog(
+            width: MediaQuery.of(context).size.width * 0.3,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 4.0,
+              children: [
+                // Title
+                Text("Make Payment for ${sub.playerName}",
+                    style: AppTextStyles.sectionHeaderStyle),
+
+                // show payment details
+                MyCard(
+                    child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Subscription Fee",
+                          style: AppTextStyles.regularTextStyle,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${formatter.format(sub.totalFee)} SYP",
+                          style: AppTextStyles.regularTextStyle.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Paid", style: AppTextStyles.regularTextStyle),
+                        const SizedBox(height: 4),
+                        Text("${formatter.format(sub.amountPaid)} SYP",
+                            style: AppTextStyles.regularTextStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: sub.amountPaid > 0
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                            )),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "Remaining Payment",
+                          style: AppTextStyles.regularTextStyle,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${formatter.format(remainingPayment)} SYP",
+                          style: AppTextStyles.regularTextStyle.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: remainingPayment > 0
+                                ? Colors.red.shade700
+                                : Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                )),
+                const SizedBox(height: 16),
+
+                // Input for amount paid
+                Form(
+                  key: subFormKey,
+                  child: TextFormField(
+                      controller: subPaymentController,
+                      style: AppTextStyles.regularTextStyle,
+                      decoration: InputDecoration(
+                          labelText: 'Sub Payment Amount',
+                          labelStyle: AppTextStyles.regularTextStyle,
+                          hintText: 'Enter amount paid',
+                          hintStyle: AppTextStyles.subtitleTextStyle,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 18),
+                          prefixText: 'SYP   ',
+                          prefixStyle: AppTextStyles.regularTextStyle
+                              .copyWith(color: Colors.black)),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a payment amount';
+                        }
+                        final amount = int.tryParse(value);
+                        if (amount == null || amount <= 0) {
+                          return 'Enter a valid amount';
+                        }
+                        if (amount > remainingPayment) {
+                          return 'Amount exceeds remaining payment';
+                        }
+                        return null;
+                      }),
+                ),
+
+                const SizedBox(height: 8),
+
+                // actions
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child:
+                          Text('Cancel', style: AppTextStyles.regularTextStyle),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                        style: AppButtonStyles.primaryButton,
+                        onPressed: () async {
+                          if (subFormKey.currentState?.validate() ?? false) {
+                            final amount = int.parse(subPaymentController.text);
+                            await ref
+                                .read(subscriptionsProvider.notifier)
+                                .makePayment(sub: sub, amount: amount);
+
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          }
+                        },
+                        child: Text("Make Payment",
+                            style: AppTextStyles.primaryButtonTextStyle))
+                  ],
+                )
+              ],
+            ),
+          );
+        });
+  }
+
+  Future<void> _editProfile(BuildContext context, Subscription sub) async {
+    await showDialog(
+        context: context,
+        builder: (context) {
+          return MyDialog(
+            width: MediaQuery.of(context).size.width * 0.3,
+            child: EditProfileDialog(playerId: sub.playerId),
+          );
+        });
   }
 }

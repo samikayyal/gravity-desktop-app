@@ -835,7 +835,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
             order: NumericFocusOrder(phoneControllers.length + 7.0),
             child: TextFormField(
               controller: amountPaidController,
-              style: const TextStyle(fontSize: 18),
+              style: AppTextStyles.regularTextStyle,
               enabled: _selectedPlayer?.subscriptionId == null,
               decoration: InputDecoration(
                   labelText: _selectedPlayer?.subscriptionId == null

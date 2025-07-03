@@ -638,6 +638,7 @@ class DatabaseHelper {
     );
   }
 
+
   Future<void> deleteProduct(int productId) async {
     final db = await database;
     await db.delete(
@@ -706,6 +707,7 @@ class DatabaseHelper {
     });
   }
 
+
   Future<void> updatePlayerProducts(Player player) async {
     final db = await database;
     final nowIso = DateTime.now().toUtc().toIso8601String();
@@ -740,79 +742,7 @@ class DatabaseHelper {
     });
   }
 
-  Future<void> addNewSubscription({
-    String? existingPlayerId,
-    required String playerName,
-    required int age,
-    required List<String> phoneNumbers,
-    required int hoursIncluded,
-    required int durationMinutes,
-    required int discountPercent,
-    required int totalFee,
-    required int amountPaid,
-  }) async {
-    final db = await database;
-    final nowIso = DateTime.now().toUtc().toIso8601String();
-
-    await db.transaction((txn) async {
-      final String playerId = existingPlayerId ?? Uuid().v4();
-      if (existingPlayerId == null) {
-        await txn.insert(
-          'players',
-          {
-            'id': playerId,
-            'name': playerName,
-            'age': age,
-            'last_modified': nowIso,
-          },
-        );
-      }
-
-      if (phoneNumbers.isNotEmpty) {
-        for (var phoneNumber in phoneNumbers) {
-          await txn.insert(
-            'phone_numbers',
-            {
-              'player_id': playerId,
-              'phone_number': phoneNumber,
-              'last_modified': nowIso,
-            },
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
-        }
-      }
-
-      final subscriptionId = await txn.insert(
-        'subscriptions',
-        {
-          'player_id': playerId,
-          'start_date': nowIso,
-          'expiry_date': DateTime.now()
-              .add(Duration(minutes: durationMinutes))
-              .toUtc()
-              .toIso8601String(),
-          'discount_percent': discountPercent,
-          'total_minutes': hoursIncluded * 60,
-          'remaining_minutes': hoursIncluded * 60,
-          'status': 'active',
-          'total_fee': totalFee,
-          'amount_paid': amountPaid,
-          'last_modified': nowIso,
-        },
-      );
-
-      await txn.insert('sales', {
-        'subscription_id': subscriptionId,
-        'session_id': null,
-        'final_fee': totalFee,
-        'amount_paid': amountPaid,
-        'tips': 0,
-        'sale_time': nowIso,
-        'last_modified': nowIso,
-      });
-    });
-  }
-
+ 
   Future<List<Subscription>> getSubscriptions() async {
     final db = await database;
     final List<Map<String, dynamic>> subscriptionsQuery = await db.rawQuery('''

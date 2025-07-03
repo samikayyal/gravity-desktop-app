@@ -41,6 +41,8 @@ class TableContainer extends StatelessWidget {
         thickness: 8,
         radius: const Radius.circular(4),
         child: SingleChildScrollView(
+          controller: verticalController,
+          scrollDirection: Axis.vertical,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return Table(
