@@ -554,17 +554,6 @@ class DatabaseHelper {
         .toList();
   }
 
-  Future<List<String>> getPhoneNumbers(String playerId) async {
-    final db = await database;
-    final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT phone_number
-      FROM phone_numbers
-      WHERE player_id = ?
-    ''', [playerId]);
-
-    return result.map((map) => map['phone_number'] as String).toList();
-  }
-
   // ------- TEST FUNCTIONS -------
 
   Future<void> clearDb() async {

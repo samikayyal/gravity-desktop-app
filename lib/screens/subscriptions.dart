@@ -448,8 +448,9 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                   });
             },
             onSelected: (Player selection) async {
-              final db = ref.read(databaseProvider);
-              final phones = await db.getPhoneNumbers(selection.playerID);
+              final phones = await ref
+                  .read(pastPlayersProvider.notifier)
+                  .getPhoneNumbers(selection.playerID);
               setState(() {
                 _selectedPlayer = selection;
                 _nameController.text = selection.name;

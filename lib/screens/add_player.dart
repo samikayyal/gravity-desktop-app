@@ -48,13 +48,15 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
 
   @override
   void initState() {
-    ref.read(pastPlayersProvider.notifier).refresh();
     super.initState();
+
+    ref.read(pastPlayersProvider.notifier).refresh();
   }
 
   Future<void> _fillPlayerDetails(Player selection) async {
-    final db = ref.read(databaseProvider);
-    final playerPhones = await db.getPhoneNumbers(selection.playerID);
+    final playerPhones = await ref
+        .read(pastPlayersProvider.notifier)
+        .getPhoneNumbers(selection.playerID);
 
     setState(() {
       _detailsReadOnly = true;

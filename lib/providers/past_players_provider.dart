@@ -30,6 +30,17 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await _fetchPastPlayers();
   }
 
+  Future<List<String>> getPhoneNumbers(String playerId) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT phone_number
+      FROM phone_numbers
+      WHERE player_id = ?
+    ''', [playerId]);
+
+    return result.map((map) => map['phone_number'] as String).toList();
+  }
+
   Future<void> editPlayer(
       {required String playerID,
       required String name,

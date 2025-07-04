@@ -7,6 +7,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/products_table.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
+import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/add_player.dart';
 import 'package:gravity_desktop_app/screens/add_product.dart';
@@ -71,12 +72,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             icon: const Icon(Icons.person_add, size: 24),
                             label: Text("Add Player",
                                 style: AppTextStyles.primaryButtonTextStyle),
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const AddPlayerScreen()));
+                            onPressed: () async {
+                              if (context.mounted) {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const AddPlayerScreen()));
+                              }
                             },
                             style: AppButtonStyles.primaryButton,
                           ),
