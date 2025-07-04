@@ -10,6 +10,7 @@ class Subscription {
   final String status; // 'active', 'expired', 'paused', 'finished'
   final int totalFee;
   final int amountPaid;
+  final int discountPercent;
 
   Subscription({
     required this.subscriptionId,
@@ -23,6 +24,7 @@ class Subscription {
     required this.status,
     required this.totalFee,
     required this.amountPaid,
+    required this.discountPercent,
   });
 
   factory Subscription.fromMap(Map<String, dynamic> map) {
@@ -38,6 +40,7 @@ class Subscription {
       totalFee: map['total_fee'],
       amountPaid: map['amount_paid'],
       phoneNumbers: List<String>.from(map['phone_numbers'] ?? []),
+      discountPercent: map['discount_percent'] ?? 0,
     );
   }
 }

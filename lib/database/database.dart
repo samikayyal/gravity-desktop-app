@@ -627,7 +627,6 @@ class DatabaseHelper {
     );
   }
 
-
   Future<void> deleteProduct(int productId) async {
     final db = await database;
     await db.delete(
@@ -696,7 +695,6 @@ class DatabaseHelper {
     });
   }
 
-
   Future<void> updatePlayerProducts(Player player) async {
     final db = await database;
     final nowIso = DateTime.now().toUtc().toIso8601String();
@@ -731,13 +729,13 @@ class DatabaseHelper {
     });
   }
 
- 
   Future<List<Subscription>> getSubscriptions() async {
     final db = await database;
     final List<Map<String, dynamic>> subscriptionsQuery = await db.rawQuery('''
       SELECT subscriptions.*, players.name AS player_name
       FROM subscriptions
       JOIN players ON subscriptions.player_id = players.id
+      WHERE subscriptions.status IN ('active', 'expired', 'paused') -- not finished
       ORDER BY subscriptions.expiry_date ASC''');
 
     /// Create mutable copies and add phone numbers because its normally

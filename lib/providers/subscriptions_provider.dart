@@ -151,3 +151,22 @@ class SubscriptionsNotifier
     }
   }
 }
+
+final subInfoProvider =
+    FutureProvider.family<List<Subscription>, String>((ref, subId) async {
+  final dbHelper = ref.watch(databaseProvider);
+  final db = await dbHelper.database;
+
+  final result = await db.rawQuery('''
+    SELECT s.*, p.name AS player_name
+    FROM subscriptions s
+    JOIN players p ON s.player_id = p.id
+    WHERE s.subscription_id = ?
+    ''', [subId]);
+
+  if (result.isEmpty) {
+    throw Exception('Subscription not found');
+  }
+
+  return result.map((map) => Subscription.fromMap(map)).toList();
+});
