@@ -165,7 +165,7 @@ final subInfoProvider =
     ''', [subId]);
 
   if (result.isEmpty) {
-    throw Exception('Subscription not found');
+   return [];
   }
 
   return result.map((map) => Subscription.fromMap(map)).toList();

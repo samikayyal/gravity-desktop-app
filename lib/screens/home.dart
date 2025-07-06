@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/past_players_search.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/current_players_table.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
@@ -27,6 +28,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const PastPlayersSearch(),
+          );
+        },
+        tooltip: 'Search Past Players',
+        backgroundColor: const Color(0xFF3949AB),
+        foregroundColor: Colors.white,
+        elevation: 6,
+        highlightElevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.search, size: 24),
+      ),
       body: Row(
         children: [
           // Left side - 65% of screen width with players table
@@ -117,7 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ElevatedButton.icon(
                             icon: const Icon(Icons.person, size: 24),
                             label: const Text(
-                              "Add player with 1 mins",
+                              "1 min",
                               style: TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.w500),
                             ),

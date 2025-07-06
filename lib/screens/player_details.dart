@@ -60,19 +60,24 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
               const SizedBox(height: 16),
 
               // Bottom row - Subscription history and Past sessions
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: _buildSubscriptionHistoryCard(),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.8,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: _buildPastSessionsCard(),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: _buildSubscriptionHistoryCard(),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 1,
-                    child: _buildPastSessionsCard(),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
