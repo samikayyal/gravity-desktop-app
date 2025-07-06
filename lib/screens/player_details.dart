@@ -1156,8 +1156,6 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
             ],
           ),
         ),
-
-        
       ],
     );
   }
