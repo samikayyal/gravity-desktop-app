@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/models/session.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 
 final pastPlayersProvider =
@@ -91,4 +92,22 @@ final playerPhonesProvider =
     FutureProvider.family<List<String>, String>((ref, playerId) async {
   final notifier = ref.watch(pastPlayersProvider.notifier);
   return notifier.getPhoneNumbers(playerId);
+});
+
+final pastSessionsProvider =
+    FutureProvider.family<List<Session>, String>((ref, playerId) async {
+  final db = await ref.watch(databaseProvider).database;
+
+  final List<Map<String, dynamic>> result = await db.rawQuery('''
+    SELECT p.*, s.session_id, s.check_in_time, s.check_out_time,
+           sa.final_fee, sa.amount_paid, sr.minutes_used, sr.subscription_id
+    FROM players p
+    JOIN player_sessions s ON p.id = s.player_id
+    JOIN sales sa ON s.session_id = sa.session_id
+    LEFT JOIN subscription_records sr ON s.session_id = sr.session_id
+    WHERE p.id = ?
+    ORDER BY s.check_in_time DESC
+    ''', [playerId]);
+
+  return result.map((map) => Session.fromMap(map)).toList();
 });

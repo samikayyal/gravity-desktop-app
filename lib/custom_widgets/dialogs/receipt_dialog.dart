@@ -189,7 +189,10 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
 
                 // Payment details section
                 const Divider(height: 24, thickness: 1),
-                Text("Payment Summary",
+                Text(
+                    widget.player.subscriptionId == null
+                        ? "Payment Summary"
+                        : "Payment Summary (Subscription)",
                     style: AppTextStyles.sectionHeaderStyle),
                 const SizedBox(height: 12),
                 _buildInfoRow("Final Fee:", "${formatter.format(finalFee)} SYP",

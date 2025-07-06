@@ -310,6 +310,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                             ),
                             icon: const Icon(Icons.info),
                             onPressed: () async {
+                              ref.read(pastPlayersProvider.notifier).refresh();
                               final Player player = await ref
                                   .read(pastPlayersProvider.notifier)
                                   .getPlayerById(sub.playerId);

@@ -161,7 +161,7 @@ final subInfoProvider =
     SELECT s.*, p.name AS player_name
     FROM subscriptions s
     JOIN players p ON s.player_id = p.id
-    WHERE s.subscription_id = ?
+    WHERE s.player_id = ?
     ''', [subId]);
 
   if (result.isEmpty) {

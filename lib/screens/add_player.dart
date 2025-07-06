@@ -49,8 +49,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   @override
   void initState() {
     super.initState();
-
-    ref.read(pastPlayersProvider.notifier).refresh();
   }
 
   Future<void> _fillPlayerDetails(Player selection) async {

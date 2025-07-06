@@ -20,15 +20,11 @@ class MyDialog extends StatelessWidget {
       ),
       elevation: 0,
       backgroundColor: Colors.white,
-      child: SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: width ?? 480.0,
-          ),
-          child: Container(
-            // padding: const EdgeInsets.all(24.0),
-            child: child,
-          ),
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.all(24.0),
+        child: IntrinsicWidth(
+          child: child,
         ),
       ),
     );

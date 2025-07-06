@@ -74,6 +74,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: AppTextStyles.primaryButtonTextStyle),
                             onPressed: () async {
                               if (context.mounted) {
+                                ref
+                                    .read(pastPlayersProvider.notifier)
+                                    .refresh();
                                 Navigator.push(
                                     context,
                                     MaterialPageRoute(
