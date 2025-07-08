@@ -93,13 +93,13 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
         final String formattedCheckInTime =
             DateFormat('h:mm a').format(widget.player.checkInTime.toLocal());
 
-        final int finalFee = widget.player.subscriptionId == null
-            ? calculateFinalFee(
+        final int finalFee = widget.player.subscriptionId != null
+            ? 0
+            : calculateFinalFee(
                 timeSpent: timeSpent,
                 prices: prices,
                 productsBought: widget.player.productsBought,
-                allProducts: products)
-            : 0;
+                allProducts: products);
         // amount paid be 0 if the player has a subscription
         final int amountLeft = finalFee - widget.player.amountPaid;
 

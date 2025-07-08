@@ -308,9 +308,25 @@ class DatabaseHelper {
               'last_modified': nowIso,
             },
           );
-        }
 
-        // TODO: Update product quantities after sale
+          // TODO: Update product quantities after sale
+          final originalQuantity = await txn.rawQuery(
+              'SELECT quantity_available FROM products WHERE product_id = ?',
+              [entry['product_id']]);
+          if (originalQuantity.isEmpty) {
+            throw Exception("Could not find product original quantity");
+          }
+
+          await txn.update(
+              'products',
+              {
+                'quantity_available':
+                    (originalQuantity.first['quantity']! as int) -
+                        entry['quantity']
+              },
+              where: 'product_id = ?',
+              whereArgs: [entry['product_id']]);
+        }
       }
 
       // Subscription shit
