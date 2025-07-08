@@ -301,19 +301,12 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                                 const EdgeInsets.symmetric(
                                     horizontal: 0, vertical: 2),
                               ),
-                              minimumSize: WidgetStateProperty.all(
-                                Size(
-                                  // width
-                                  MediaQuery.of(context).size.width * 0.07,
-                                  // height
-                                  AppButtonStyles.primaryButton.minimumSize!
-                                      .resolve({})!.height,
-                                ),
-                              ),
                             ),
                             icon: const Icon(Icons.info),
                             onPressed: () async {
-                              await ref.read(pastPlayersProvider.notifier).refresh();
+                              await ref
+                                  .read(pastPlayersProvider.notifier)
+                                  .refresh();
                               final Player player = await ref
                                   .read(pastPlayersProvider.notifier)
                                   .getPlayerById(sub.playerId);
@@ -325,18 +318,6 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                             },
                           ),
                           const SizedBox(width: 5),
-                          ElevatedButton.icon(
-                              label: Text("Edit Profile",
-                                  style: AppTextStyles.primaryButtonTextStyle),
-                              icon: const Icon(Icons.edit),
-                              style: AppButtonStyles.primaryButton.copyWith(
-                                padding: WidgetStateProperty.all(
-                                  const EdgeInsets.symmetric(
-                                      horizontal: 0, vertical: 2),
-                                ),
-                              ),
-                              onPressed: () async =>
-                                  await _editProfile(context, sub)),
                           if (sub.amountPaid < sub.totalFee) ...[
                             const SizedBox(width: 5),
                             ElevatedButton.icon(
@@ -350,7 +331,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                               style: AppButtonStyles.primaryButton.copyWith(
                                 padding: WidgetStateProperty.all(
                                   const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
+                                      horizontal: 10, vertical: 2),
                                 ),
                               ),
                             ),
@@ -959,17 +940,6 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                 )
               ],
             ),
-          );
-        });
-  }
-
-  Future<void> _editProfile(BuildContext context, Subscription sub) async {
-    await showDialog(
-        context: context,
-        builder: (context) {
-          return MyDialog(
-            width: MediaQuery.of(context).size.width * 0.3,
-            child: EditProfileDialog(playerId: sub.playerId),
           );
         });
   }
