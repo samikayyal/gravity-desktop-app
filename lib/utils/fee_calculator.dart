@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';

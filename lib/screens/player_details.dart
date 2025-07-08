@@ -330,6 +330,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                       return EditProfileDialog(
                           playerId: widget.player.playerID);
                     });
+                setState(() {});
               },
               icon: Icon(
                 Icons.edit,
