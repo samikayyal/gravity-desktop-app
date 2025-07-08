@@ -108,7 +108,6 @@ int calculateFinalFee({
   return total;
 }
 
-// TODO: ASK Dad how its calculated
 int calculateSubscriptionFee(
     {required int discount,
     required int hours,
@@ -120,5 +119,9 @@ int calculateSubscriptionFee(
   if (prices.isEmpty) throw ArgumentError('Prices must not be empty.');
 
   // Calculate the total fee for the subscription duration
-  return ((hours * prices[TimeSlice.hour]!) * (100 - discount) / 100).ceil();
+  final double rawFee =
+      (hours * prices[TimeSlice.hour]!) * (100 - discount) / 100;
+
+  // Round up to the nearest 10000
+  return ((rawFee / 10000).ceil()) * 10000;
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/home.dart';
+import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -40,22 +42,55 @@ void main() async {
   sqfliteFfiInit(); // Initialize sqflite with FFI support
   databaseFactory = databaseFactoryFfi; // Use FFI database factory
 
-  runApp(ProviderScope(
-      child: MaterialApp(
-    title: 'Gravity Desktop App',
-    home: HomeScreen(),
-  )));
+  runApp(ProviderScope(child: GravityApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class GravityApp extends StatelessWidget {
+  const GravityApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gravity Desktop App',
       home: HomeScreen(),
     );
+  }
+}
+
+class TestScreen extends ConsumerStatefulWidget {
+  const TestScreen({super.key});
+
+  @override
+  ConsumerState<TestScreen> createState() => _TestScreenState();
+}
+
+class _TestScreenState extends ConsumerState<TestScreen> {
+  final controller = TextEditingController();
+  int price = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: ref.watch(pricesProvider).when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => const Center(
+                child: Text('Error loading prices. Please try again later.')),
+            data: (prices) {
+              return Column(
+                children: [
+                  TextField(
+                    controller: controller,
+                    onChanged: (value) {
+                      setState(() {
+                        price = calculateSubscriptionFee(
+                            discount: 45,
+                            hours: int.parse(value),
+                            prices: prices);
+                      });
+                    },
+                  ),
+                  Text(price.toString()),
+                ],
+              );
+            }));
   }
 }
