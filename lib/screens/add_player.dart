@@ -562,7 +562,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                       ),
                     ),
                   ),
-                  if (i == phoneControllers.length - 1) ...[
+                  if (i == phoneControllers.length - 1 && !_detailsReadOnly) ...[
                     const SizedBox(width: 12),
                     SizedBox(
                       width: 48,
@@ -577,8 +577,8 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                         },
                       ),
                     ),
-                    if (phoneControllers.length > 1) const SizedBox(width: 8),
-                    if (phoneControllers.length > 1)
+                    if (phoneControllers.length > 1 && !_detailsReadOnly) const SizedBox(width: 8),
+                    if (phoneControllers.length > 1 && !_detailsReadOnly)
                       SizedBox(
                         width: 48,
                         height: 48,

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,16 +17,16 @@ void main() async {
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
-    // --- NEW LOGIC FOR TESTING ---
+    // // --- NEW LOGIC FOR TESTING ---
 
-    // Only run this code if we are in DEBUG mode
-    if (kDebugMode) {
-      // Hardcode the position for your second monitor.
-      // Replace 1920 with the width of your primary monitor.
-      await windowManager.setPosition(const Offset(-1080, 0));
-    }
+    // // Only run this code if we are in DEBUG mode
+    // if (kDebugMode) {
+    //   // Hardcode the position for your second monitor.
+    //   // Replace 1920 with the width of your primary monitor.
+    //   await windowManager.setPosition(const Offset(-1080, 0));
+    // }
 
-    // --- END OF NEW LOGIC ---
+    // // --- END OF NEW LOGIC ---
 
     await windowManager.show();
     await windowManager.focus();
@@ -41,7 +40,11 @@ void main() async {
   sqfliteFfiInit(); // Initialize sqflite with FFI support
   databaseFactory = databaseFactoryFfi; // Use FFI database factory
 
-  runApp(ProviderScope(child: const MyApp()));
+  runApp(ProviderScope(
+      child: MaterialApp(
+    title: 'Gravity Desktop App',
+    home: HomeScreen(),
+  )));
 }
 
 class MyApp extends StatelessWidget {

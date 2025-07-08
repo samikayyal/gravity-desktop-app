@@ -51,6 +51,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
   final TextEditingController _amountPaidController = TextEditingController();
 
   Player? _selectedPlayer;
+  bool _detailsReadOnly = false;
   int _totalFee = 0;
 
   @override
@@ -100,6 +101,8 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
   }
 
   void _resetForm() {
+    _detailsReadOnly = false;
+
     _formKey.currentState?.reset();
     _nameController.clear();
     _ageController.clear();
@@ -427,39 +430,73 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
           Text('Player Details', style: AppTextStyles.sectionHeaderStyle),
           const SizedBox(height: 16),
           Autocomplete<Player>(
-            // Autocomplete logic inspired directly from add_player.dart
             optionsBuilder: (TextEditingValue textEditingValue) {
               if (textEditingValue.text.isEmpty) {
                 return const Iterable<Player>.empty();
               }
+              return ref.watch(pastPlayersProvider).when(data: (pastPlayers) {
+                final fuse = Fuzzy(
+                  pastPlayers,
+                  options: FuzzyOptions(
+                    keys: [
+                      WeightedKey(
+                          name: 'name',
+                          weight: 1.0,
+                          getter: (Player player) => player.name)
+                    ],
+                    threshold: 0.5,
+                  ),
+                );
 
-              final pastPlayersAsync = ref.watch(pastPlayersProvider);
-              return pastPlayersAsync.when(
-                  error: (err, stack) => const Iterable<Player>.empty(),
-                  loading: () => const Iterable<Player>.empty(),
-                  data: (pastPlayers) {
-                    final fuse = Fuzzy(
-                      pastPlayers,
-                      options: FuzzyOptions(
-                        keys: [
-                          WeightedKey(
-                              name: 'name',
-                              weight: 1.0,
-                              getter: (Player p) => p.name)
-                        ],
-                        threshold: 0.8,
-                      ),
-                    );
-                    return fuse
-                        .search(textEditingValue.text)
-                        .map((r) => r.item);
-                  });
+                final results = fuse.search(textEditingValue.text);
+                return results
+                    .map((result) => result.item)
+                    .where((p) => p.subscriptionId == null);
+              }, error: (err, stack) {
+                log("Error fetching past players: $err, $stack");
+                return const Iterable<Player>.empty();
+              }, loading: () {
+                return const Iterable<Player>.empty();
+              });
             },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4.0,
+                  child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxHeight: 250, maxWidth: 400),
+                    child: ListView.builder(
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final option = options.elementAt(index);
+                        return InkWell(
+                          onTap: () => onSelected(option),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              option.subscriptionId != null
+                                  ? '${option.name} (${option.age}) - Subscription Active'
+                                  : '${option.name} (${option.age})',
+                              style: AppTextStyles.regularTextStyle,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+            displayStringForOption: (Player option) => option.name,
             onSelected: (Player selection) async {
               final phones = await ref
                   .read(pastPlayersProvider.notifier)
                   .getPhoneNumbers(selection.playerID);
               setState(() {
+                _detailsReadOnly = true;
+
                 _selectedPlayer = selection;
                 _nameController.text = selection.name;
                 _ageController.text = selection.age.toString();
@@ -472,45 +509,82 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                 }
               });
             },
-            fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+            fieldViewBuilder:
+                (context, controller, focusNode, onFieldSubmitted) {
               return TextFormField(
                 controller: controller,
                 focusNode: focusNode,
-                readOnly: _selectedPlayer != null,
+                readOnly: _detailsReadOnly,
                 onChanged: (value) {
-                  if (_selectedPlayer == null) _nameController.text = value;
+                  // if the user is typing and not selecting
+                  if (_selectedPlayer == null) {
+                    _nameController.text = value;
+                  }
                 },
+                style: AppTextStyles.regularTextStyle,
                 decoration: InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'Search or Enter Player Name',
+                  filled: _detailsReadOnly,
+                  fillColor: _detailsReadOnly
+                      ? Colors.grey.shade200
+                      : Colors.transparent,
+                  labelText: _detailsReadOnly ? "Name (Locked)" : 'Name',
+                  labelStyle: AppTextStyles.regularTextStyle,
+                  hintText: 'Enter player name',
+                  hintStyle: AppTextStyles.subtitleTextStyle,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                   suffixIcon: _selectedPlayer != null
                       ? IconButton(
-                          icon: const Icon(Icons.clear),
+                          icon: const Icon(Icons.clear,
+                              size: 24, color: Colors.red),
+                          tooltip: 'Clear Selected Player',
                           onPressed: () {
-                            controller.clear();
-                            _resetForm();
+                            setState(() {
+                              _selectedPlayer = null;
+                              _detailsReadOnly = false;
+                              _totalFee = 0;
+                              controller.clear();
+                              _nameController.clear();
+                              _ageController.clear();
+                              _phoneControllers.clear();
+                              _phoneControllers.add(TextEditingController());
+                              _hoursController.clear();
+                              _discountController.text = '45';
+                              _amountPaidController.clear();
+                            });
                           },
                         )
                       : null,
                 ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Please enter a name' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
               );
             },
-            displayStringForOption: (Player option) =>
-                '${option.name} (${option.age})',
           ),
           const SizedBox(height: 24),
           TextFormField(
             controller: _ageController,
-            readOnly: _selectedPlayer != null,
+            readOnly: _detailsReadOnly,
             decoration: InputDecoration(
-              labelText: 'Age',
+              filled: _detailsReadOnly,
+              fillColor:
+                  _detailsReadOnly ? Colors.grey.shade200 : Colors.transparent,
+              labelText: _detailsReadOnly ? "Age (Locked)" : 'Age',
+              labelStyle: AppTextStyles.regularTextStyle,
               hintText: 'Enter player age',
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              hintStyle: AppTextStyles.subtitleTextStyle,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -542,11 +616,23 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _phoneControllers[i],
-                      readOnly: _selectedPlayer != null,
+                      readOnly: _detailsReadOnly,
                       decoration: InputDecoration(
-                        labelText: 'Phone Number',
+                        filled: _detailsReadOnly,
+                        fillColor: _detailsReadOnly
+                            ? Colors.grey.shade200
+                            : Colors.transparent,
+                        labelText: _detailsReadOnly
+                            ? "Phone Number (Locked)"
+                            : 'Phone Number',
+                        labelStyle: AppTextStyles.regularTextStyle,
+                        hintText: 'Enter player phone number',
+                        hintStyle: AppTextStyles.subtitleTextStyle,
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 18),
                       ),
                       keyboardType: TextInputType.phone,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -567,7 +653,9 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                       },
                     ),
                   ),
-                  if (_phoneControllers.length <= 5) ...[
+                  if (i == _phoneControllers.length - 1 &&
+                      _phoneControllers.length <= 5 &&
+                      !_detailsReadOnly) ...[
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline),
@@ -575,7 +663,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                           () => _phoneControllers.add(TextEditingController())),
                     )
                   ],
-                  if (_phoneControllers.length > 1)
+                  if (_phoneControllers.length > 1 && !_detailsReadOnly)
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline),
                       onPressed: () =>
