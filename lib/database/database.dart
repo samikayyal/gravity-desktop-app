@@ -309,7 +309,6 @@ class DatabaseHelper {
             },
           );
 
-          // TODO: Update product quantities after sale
           final originalQuantity = await txn.rawQuery(
               'SELECT quantity_available FROM products WHERE product_id = ?',
               [entry['product_id']]);
@@ -321,7 +320,7 @@ class DatabaseHelper {
               'products',
               {
                 'quantity_available':
-                    (originalQuantity.first['quantity']! as int) -
+                    (originalQuantity.first['quantity_available']! as int) -
                         entry['quantity']
               },
               where: 'product_id = ?',
