@@ -317,18 +317,32 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                     constraints:
                         const BoxConstraints(maxHeight: 250, maxWidth: 400),
                     child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
                       itemCount: options.length,
                       itemBuilder: (context, index) {
                         final option = options.elementAt(index);
+
+                        final bool isHighlighted =
+                            AutocompleteHighlightedOption.of(context) == index;
                         return InkWell(
                           onTap: () => onSelected(option),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              option.subscriptionId != null
-                                  ? '${option.name} (${option.age}) - Subscription Active'
-                                  : '${option.name} (${option.age})',
-                              style: AppTextStyles.regularTextStyle,
+                          child: Container(
+                            color: isHighlighted
+                                ? Theme.of(context).focusColor.withAlpha(18)
+                                : null,
+                            child: ListTile(
+                              selected: isHighlighted,
+                              selectedTileColor: Colors.black.withAlpha(25),
+                              title: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text(
+                                  option.subscriptionId != null
+                                      ? '${option.name} (${option.age}) - Subscription Active'
+                                      : '${option.name} (${option.age})',
+                                  style: AppTextStyles.regularTextStyle,
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -350,6 +364,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   controller: controller,
                   focusNode: focusNode,
                   readOnly: _detailsReadOnly,
+                  onFieldSubmitted: (value) => onFieldSubmitted(),
                   onChanged: (value) {
                     // if the user is typing and not selecting
                     if (_selectedPlayer == null || _inEditMode) {
@@ -426,7 +441,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                                   if (_inEditMode) {
                                     // Cancel edit mode
                                     setState(() => _inEditMode = false);
-
                                     // Refill the player details
                                     await _fillPlayerDetails(_selectedPlayer!);
                                   } else {
@@ -562,7 +576,8 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                       ),
                     ),
                   ),
-                  if (i == phoneControllers.length - 1 && !_detailsReadOnly) ...[
+                  if (i == phoneControllers.length - 1 &&
+                      !_detailsReadOnly) ...[
                     const SizedBox(width: 12),
                     SizedBox(
                       width: 48,
@@ -577,7 +592,8 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                         },
                       ),
                     ),
-                    if (phoneControllers.length > 1 && !_detailsReadOnly) const SizedBox(width: 8),
+                    if (phoneControllers.length > 1 && !_detailsReadOnly)
+                      const SizedBox(width: 8),
                     if (phoneControllers.length > 1 && !_detailsReadOnly)
                       SizedBox(
                         width: 48,

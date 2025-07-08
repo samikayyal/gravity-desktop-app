@@ -471,15 +471,26 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                       itemCount: options.length,
                       itemBuilder: (context, index) {
                         final option = options.elementAt(index);
+                        final bool isHighlighted =
+                            AutocompleteHighlightedOption.of(context) == index;
                         return InkWell(
                           onTap: () => onSelected(option),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              option.subscriptionId != null
-                                  ? '${option.name} (${option.age}) - Subscription Active'
-                                  : '${option.name} (${option.age})',
-                              style: AppTextStyles.regularTextStyle,
+                          child: Container(
+                            color: isHighlighted
+                                ? Theme.of(context).focusColor.withAlpha(18)
+                                : null,
+                            child: ListTile(
+                              selected: isHighlighted,
+                              selectedTileColor: Colors.black.withAlpha(25),
+                              title: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text(
+                                  option.subscriptionId != null
+                                      ? '${option.name} (${option.age}) - Subscription Active'
+                                      : '${option.name} (${option.age})',
+                                  style: AppTextStyles.regularTextStyle,
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -515,6 +526,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                 controller: controller,
                 focusNode: focusNode,
                 readOnly: _detailsReadOnly,
+                onFieldSubmitted: (value) => onFieldSubmitted(),
                 onChanged: (value) {
                   // if the user is typing and not selecting
                   if (_selectedPlayer == null) {
