@@ -343,7 +343,7 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                     const SizedBox(width: 16),
                     ElevatedButton(
                       onPressed: _isCheckoutEnabled
-                          ? () {
+                          ? () async {
                               int amountReceived = int.tryParse(
                                       _amountReceivedController.text) ??
                                   0;
@@ -352,7 +352,7 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                                 amountReceived -= _change;
                               }
 
-                              ref
+                              await ref
                                   .read(currentPlayersProvider.notifier)
                                   .checkOutPlayer(
                                       sessionID: widget.player.sessionID,
@@ -360,7 +360,11 @@ class _ReceiptDialogState extends ConsumerState<ReceiptDialog> {
                                       amountPaid: amountReceived,
                                       tips: _tip);
 
-                              Navigator.of(context).pop();
+                              await ref.read(productsProvider.notifier).refresh();
+
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                              }
                             }
                           : null,
                       style: _isCheckoutEnabled

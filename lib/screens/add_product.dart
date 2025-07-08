@@ -327,7 +327,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
-                onPressed: _handleAddProduct,
+                onPressed: () async=> await _handleAddProduct(),
                 icon: const Icon(Icons.save, size: 20),
                 label: Text('Save Product',
                     style: AppTextStyles.primaryButtonTextStyle),
@@ -424,7 +424,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               ElevatedButton.icon(
-                  onPressed: _handleDeleteProduct,
+                  onPressed: () async => await _handleDeleteProduct(),
                   label: Text(
                     "Delete Product",
                     style: AppTextStyles.primaryButtonTextStyle.copyWith(
@@ -446,7 +446,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
-                onPressed: _handleUpdateProduct,
+                onPressed: () async => await _handleUpdateProduct(),
                 style: AppButtonStyles.primaryButton,
                 icon: const Icon(Icons.save, size: 20),
                 label: Text('Update Product',
@@ -470,7 +470,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     );
   }
 
-  void _handleAddProduct() async {
+  Future<void> _handleAddProduct() async {
     if (_formKey.currentState?.validate() ?? false) {
       final name = _addNameController.text;
       final price = int.parse(_addPriceController.text);
@@ -494,7 +494,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     }
   }
 
-  void _handleUpdateProduct() async {
+  Future<void> _handleUpdateProduct() async {
     if ((_formKey.currentState?.validate() ?? false) &&
         _selectedProduct != null) {
       final newPrice = int.tryParse(_editPriceController.text);
@@ -531,7 +531,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     }
   }
 
-  void _handleDeleteProduct() async {
+  Future<void> _handleDeleteProduct() async {
     if (_selectedProduct == null) return;
 
     final product = _selectedProduct!;

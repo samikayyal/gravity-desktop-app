@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:change_case/change_case.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/edit_profile_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
@@ -320,6 +321,21 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
               ],
             ),
           ),
+          const Spacer(),
+          IconButton(
+              onPressed: () async {
+                await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return EditProfileDialog(
+                          playerId: widget.player.playerID);
+                    });
+              },
+              icon: Icon(
+                Icons.edit,
+                size: 26,
+                color: const Color(0xFF3949AB),
+              ))
         ],
       ),
     );

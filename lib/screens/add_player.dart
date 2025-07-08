@@ -222,7 +222,8 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     );
   }
 
-  void _handleCheckIn(Map<TimeSlice, int> prices, int initialFee) {
+  Future<void> _handleCheckIn(
+      Map<TimeSlice, int> prices, int initialFee) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -235,7 +236,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
 
     final int totalMinutesReserved = hoursReserved * 60 + minutesReserved;
 
-    ref.read(currentPlayersProvider.notifier).checkInPlayer(
+    await ref.read(currentPlayersProvider.notifier).checkInPlayer(
           existingPlayerID: _selectedPlayer?.playerID,
           name: name,
           age: age,
@@ -248,13 +249,14 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
           phoneNumbers: phoneNumbers,
           subscriptionId: _selectedPlayer?.subscriptionId,
         );
-
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Player added successfully!'),
-      ),
-    );
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Player added successfully!'),
+        ),
+      );
+    }
   }
 
   @override
@@ -915,7 +917,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                                 !isOpenTime) ||
                             _inEditMode
                         ? null
-                        : () => _handleCheckIn(prices, initialFee),
+                        : () async => await _handleCheckIn(prices, initialFee),
                 child: const Text("Add Player"),
               ),
             ),

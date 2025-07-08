@@ -218,7 +218,7 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
           onPressed: _isAddingToDatabase
               ? null
               : _cart.isNotEmpty
-                  ? () => _onConfirmPurchase(allProducts)
+                  ? () async => await _onConfirmPurchase(allProducts)
                   : null,
           style: AppButtonStyles.primaryButton,
           child: _isAddingToDatabase

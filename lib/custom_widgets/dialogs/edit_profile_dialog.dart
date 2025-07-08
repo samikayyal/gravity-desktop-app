@@ -221,6 +221,10 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                                   await ref
                                       .read(subscriptionsProvider.notifier)
                                       .refresh();
+
+                                  await ref
+                                      .read(pastPlayersProvider.notifier)
+                                      .refresh();
                                   if (context.mounted) {
                                     MyMaterialBanner.showFloatingBanner(context,
                                         message:
