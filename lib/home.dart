@@ -293,7 +293,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 16),
                       // Notes section
                       Expanded(
-                        flex: 1,
+                        flex: 2,
                         child: Card(
                           elevation: 4,
                           child: Padding(

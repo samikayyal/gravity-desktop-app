@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/providers/notes_provider.dart';
 
 class Notes extends ConsumerStatefulWidget {
@@ -26,42 +27,69 @@ class _NotesState extends ConsumerState<Notes> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Title
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(left: 8.0, bottom: 16.0),
-          child: Text(
-            'Notes',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF3949AB),
-            ),
-          ),
+          child: Text('Notes', style: AppTextStyles.sectionHeaderStyle),
         ),
 
         // Add note section
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.shade300,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Add New Note',
+                style: AppTextStyles.regularTextStyle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF3949AB),
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _noteController,
-                decoration: const InputDecoration(
-                  hintText: 'Add a new note...',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                decoration: InputDecoration(
+                  hintText: 'Type your note here...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide:
+                        const BorderSide(color: Color(0xFF3949AB), width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
                 ),
+                style: AppTextStyles.regularTextStyle,
                 maxLines: 3,
                 minLines: 1,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -75,15 +103,27 @@ class _NotesState extends ConsumerState<Notes> {
                         _noteController.clear();
                       }
                     },
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add Note'),
+                    icon: const Icon(
+                      Icons.add,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      'Add Note',
+                      style: AppTextStyles.primaryButtonTextStyle
+                          .copyWith(color: Colors.white, fontSize: 14),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3949AB),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        horizontal: 16,
+                        vertical: 10,
                       ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 2,
                     ),
                   ),
                 ],
@@ -99,96 +139,290 @@ class _NotesState extends ConsumerState<Notes> {
           child: notesAsync.when(
             data: (notes) {
               if (notes.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'No notes yet. Add your first note above.',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Icon(
+                              Icons.note_add_outlined,
+                              size: 32,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No notes yet',
+                            style: AppTextStyles.regularTextStyle.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Add your first note above to get started',
+                            style: AppTextStyles.subtitleTextStyle.copyWith(
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               }
 
-              return ListView.builder(
-                itemCount: notes.length,
-                itemBuilder: (context, index) {
-                  final note = notes[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  note.note,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                  size: 20,
-                                ),
-                                onPressed: () async {
-                                  final shouldDelete = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Delete Note'),
-                                      content: const Text(
-                                        'Are you sure you want to delete this note?',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          child: const Text('Delete'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (shouldDelete == true) {
-                                    await ref
-                                        .read(notesProvider.notifier)
-                                        .deleteNote(note.id.toString());
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDateTime(note.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: notes.length,
+                  itemBuilder: (context, index) {
+                    final note = notes[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade300,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Note icon
+                                Container(
+                                  margin:
+                                      const EdgeInsets.only(right: 12, top: 2),
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF3949AB)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.note_alt_outlined,
+                                    size: 16,
+                                    color: Color(0xFF3949AB),
+                                  ),
+                                ),
+                                // Note content
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        note.note,
+                                        style: AppTextStyles.regularTextStyle
+                                            .copyWith(
+                                          height: 1.4,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.access_time,
+                                            size: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _formatDateTime(note.createdAt),
+                                            style: AppTextStyles
+                                                .subtitleTextStyle
+                                                .copyWith(
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Delete button
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red.shade600,
+                                      size: 18,
+                                    ),
+                                    padding: const EdgeInsets.all(8),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    onPressed: () async {
+                                      final shouldDelete =
+                                          await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          title: const Text(
+                                            'Delete Note',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF3949AB),
+                                            ),
+                                          ),
+                                          content: const Text(
+                                            'Are you sure you want to delete this note? This action cannot be undone.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(false),
+                                              child: Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () =>
+                                                  Navigator.of(context)
+                                                      .pop(true),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              child: const Text('Delete'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (shouldDelete == true) {
+                                        await ref
+                                            .read(notesProvider.notifier)
+                                            .deleteNote(note.id.toString());
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
             },
-            loading: () => const Center(
-              child: CircularProgressIndicator(),
+            loading: () => Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFF3949AB)),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Loading notes...',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            error: (error, stackTrace) => Center(
-              child: Text(
-                'Error loading notes: $error',
-                style: const TextStyle(color: Colors.red),
+            error: (error, stackTrace) => Container(
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: Icon(
+                          Icons.error_outline,
+                          size: 32,
+                          color: Colors.red.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading notes',
+                        style: AppTextStyles.regularTextStyle.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        error.toString(),
+                        style: AppTextStyles.subtitleTextStyle.copyWith(
+                          fontSize: 12,
+                          color: Colors.red.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -205,10 +439,10 @@ class _NotesState extends ConsumerState<Notes> {
       return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
     } else if (difference.inHours > 0) {
       return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
-    } else if (difference.inMinutes > 0) {
+    } else if (difference.inMinutes >= 0) {
       return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
     } else {
-      return 'Just now';
+      return "";
     }
   }
 }
