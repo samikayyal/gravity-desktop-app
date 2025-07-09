@@ -90,20 +90,31 @@ int calculateFinalFee({
   }
 
   if (productsBought != null && productsBought.isNotEmpty) {
-    for (final entry in productsBought.entries) {
-      final productId = entry.key;
-      final quantity = entry.value;
+    total += calculateProductsFee(
+        productsBought: productsBought, allProducts: allProducts!);
+  }
 
-      // Find the product by ID
-      final product = allProducts!.firstWhere(
-        (p) => p.id == productId,
-        orElse: () =>
-            throw ArgumentError('Product with ID $productId not found.'),
-      );
+  return total;
+}
 
-      // Add the product fee to the total
-      total += product.price * quantity;
-    }
+int calculateProductsFee({
+  required Map<int, int> productsBought,
+  required List<Product> allProducts,
+}) {
+  int total = 0;
+  for (final entry in productsBought.entries) {
+    final productId = entry.key;
+    final quantity = entry.value;
+
+    // Find the product by ID
+    final product = allProducts.firstWhere(
+      (p) => p.id == productId,
+      orElse: () =>
+          throw ArgumentError('Product with ID $productId not found.'),
+    );
+
+    // Add the product fee to the total
+    total += product.price * quantity;
   }
   return total;
 }
@@ -123,5 +134,6 @@ int calculateSubscriptionFee(
       (hours * prices[TimeSlice.hour]!) * (100 - discount) / 100;
 
   // Round up to the nearest 10000
+
   return ((rawFee / 10000).ceil()) * 10000;
 }

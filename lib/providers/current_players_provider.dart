@@ -43,12 +43,16 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     required int finalFee,
     required int amountPaid,
     required int tips,
+    int? discount,
+    String? discountReason,
   }) async {
     await _dbHelper.checkOutPlayer(
       sessionID: sessionID,
       finalFee: finalFee,
       amountPaid: amountPaid,
       tips: tips,
+      discount: discount,
+      discountReason: discountReason,
     );
     await refresh();
   }

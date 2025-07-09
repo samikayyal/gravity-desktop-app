@@ -81,6 +81,8 @@ class DatabaseHelper {
       amount_paid INTEGER NOT NULL,
       tips INTEGER NOT NULL DEFAULT 0,
       sale_time TEXT NOT NULL,
+      discount INTEGER DEFAULT 0,
+      discount_reason TEXT,
       last_modified TEXT NOT NULL,
       FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE SET NULL,
       FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id) ON DELETE SET NULL
@@ -246,12 +248,13 @@ class DatabaseHelper {
   }
 
   // Check out a player by session ID
-  Future<void> checkOutPlayer({
-    required int sessionID,
-    required int finalFee,
-    required int amountPaid,
-    required int tips,
-  }) async {
+  Future<void> checkOutPlayer(
+      {required int sessionID,
+      required int finalFee,
+      required int amountPaid,
+      required int tips,
+      int? discount,
+      String? discountReason}) async {
     final db = await database;
     await db.transaction((txn) async {
       final nowIso = DateTime.now().toUtc().toIso8601String();
@@ -293,6 +296,8 @@ class DatabaseHelper {
           'tips': tips,
           'sale_time': nowIso,
           'last_modified': nowIso,
+          'discount': discount ?? 0,
+          'discount_reason': discountReason ?? '',
         },
       );
       // Get products bought in this session

@@ -883,6 +883,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 if (amount == null || amount < 0) {
                   return 'Please enter a valid amount';
                 }
+                if (amount > initialFee) {
+                  return 'Amount is more than the total fee';
+                }
                 return null;
               },
             ),

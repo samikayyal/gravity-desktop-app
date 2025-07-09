@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/receipt_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
-import 'package:gravity_desktop_app/custom_widgets/dialogs/receipt_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
+import 'package:gravity_desktop_app/providers/product_provider.dart';
+import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
+import 'package:gravity_desktop_app/screens/receipt.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
@@ -84,19 +87,33 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
               style: AppButtonStyles.primaryButton,
               child: Text('Check Out',
                   style: AppTextStyles.primaryButtonTextStyle),
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
                 // Trigger the check out dialog
-                showDialog(
-                  context: context,
-                  builder: (context) => ReceiptDialog(player),
-                );
+                await _goToReceipt(context, player);
               },
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _goToReceipt(BuildContext context, Player player) async {
+    await ref.read(pricesProvider.notifier).refresh();
+    await ref.read(productsProvider.notifier).refresh();
+
+    if (context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => Receipt(player),
+        ),
+      );
+
+      // showDialog(context: context, builder:
+      // (context) => ReceiptDialog(player)
+      // );
+    }
   }
 
   @override
@@ -256,12 +273,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     ),
                   ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => ReceiptDialog(player),
-                    );
-                  },
+                  onPressed: () async => await _goToReceipt(context, player),
                 ),
               ),
               const SizedBox(width: 4),
