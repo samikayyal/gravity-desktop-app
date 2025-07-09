@@ -190,6 +190,16 @@ class DatabaseHelper {
         FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE SET NULL,
         FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id) ON DELETE SET NULL
       )''');
+
+    // notes
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS notes(
+        note_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        note TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        last_modified TEXT NOT NULL
+      )
+      ''');
   }
 
   // get the current players

@@ -7,6 +7,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/products_table.dart';
+import 'package:gravity_desktop_app/custom_widgets/notes.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
@@ -276,12 +277,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 24),
                 Expanded(
-                  child: Card(
-                    elevation: 4,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ProductsTable(),
-                    ),
+                  child: Column(
+                    children: [
+                      // Products table
+                      Expanded(
+                        flex: 1,
+                        child: Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: ProductsTable(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Notes section
+                      Expanded(
+                        flex: 1,
+                        child: Card(
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: const Notes(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
