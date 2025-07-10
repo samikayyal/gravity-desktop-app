@@ -107,7 +107,7 @@ class DatabaseHelper {
       CREATE TABLE IF NOT EXISTS phone_numbers(
         player_id TEXT NOT NULL,
         phone_number TEXT NOT NULL,
-        is_primary INTEGER NOT NULL -- 0 for false, 1 for true
+        is_primary INTEGER NOT NULL, -- 0 for false, 1 for true
         last_modified TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
         PRIMARY KEY (player_id, phone_number)
