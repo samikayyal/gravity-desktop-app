@@ -151,11 +151,11 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                           vertical: 16.0),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF3949AB)
-                                            .withOpacity(0.1),
+                                            .withAlpha(25),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                             color: const Color(0xFF3949AB)
-                                                .withOpacity(0.2)),
+                                                .withAlpha(50)),
                                       ),
                                       child: Column(
                                         children: [

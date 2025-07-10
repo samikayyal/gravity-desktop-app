@@ -225,7 +225,7 @@ class _NotesState extends ConsumerState<Notes> {
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF3949AB)
-                                        .withOpacity(0.1),
+                                        .withAlpha(25),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(

@@ -224,7 +224,6 @@ class DatabaseHelper {
     JOIN players p ON ps.player_id = p.id
     LEFT JOIN subscriptions sub ON p.id = sub.player_id
     WHERE ps.check_out_time IS NULL
-    ORDER BY ps.check_in_time ASC
   ''');
 
     final List<Player> players =
