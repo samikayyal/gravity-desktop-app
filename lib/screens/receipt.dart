@@ -8,14 +8,11 @@ import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
-import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
-import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
+import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
-import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
-import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
@@ -23,47 +20,6 @@ import 'package:intl/intl.dart';
 enum TipType { returnChange, takeAsTip }
 
 enum DiscountType { none, input, gift }
-
-class ReceiptData {
-  final Map<TimeSlice, int> prices;
-  final List<Product> allProducts;
-  final List<Subscription> allSubs;
-
-  ReceiptData(
-      {required this.prices, required this.allProducts, required this.allSubs});
-}
-
-final receiptDataProvider = Provider<AsyncValue<ReceiptData>>((ref) {
-  final pricesAsync = ref.watch(pricesProvider);
-  final productsAsync = ref.watch(productsProvider);
-  final subsAsync = ref.watch(subscriptionsProvider);
-
-  // If either provider is in an error state, the whole thing is an error
-  if (pricesAsync.hasError) {
-    return AsyncError(pricesAsync.error!, pricesAsync.stackTrace!);
-  }
-  if (productsAsync.hasError) {
-    return AsyncError(productsAsync.error!, productsAsync.stackTrace!);
-  }
-
-  if (subsAsync.hasError) {
-    return AsyncError(subsAsync.error!, subsAsync.stackTrace!);
-  }
-
-  // If either provider is loading, the whole thing is loading
-  if (pricesAsync.isLoading || productsAsync.isLoading || subsAsync.isLoading) {
-    return const AsyncLoading();
-  }
-
-  // If we get here, both have data. We can safely access it.
-  return AsyncData(
-    ReceiptData(
-      prices: pricesAsync.value!,
-      allProducts: productsAsync.value!,
-      allSubs: subsAsync.value!,
-    ),
-  );
-});
 
 class Receipt extends ConsumerStatefulWidget {
   final Player player;
