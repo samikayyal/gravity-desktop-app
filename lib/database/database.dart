@@ -243,6 +243,12 @@ class DatabaseHelper {
         player.addProduct(productId, productQuantity);
       }
     }
+    // sort by time remaining
+    players.sort((a, b) {
+      final endTimeA = a.checkInTime.add(a.timeReserved);
+      final endTimeB = b.checkInTime.add(b.timeReserved);
+      return endTimeA.compareTo(endTimeB);
+    });
 
     return players;
   }
