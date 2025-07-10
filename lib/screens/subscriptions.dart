@@ -18,6 +18,7 @@ import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/player_details.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
 
@@ -44,7 +45,8 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
   final List<TextEditingController> _phoneControllers = [
     TextEditingController()
   ];
-  final TextEditingController _hoursController = TextEditingController();
+  final TextEditingController _hoursController =
+      TextEditingController(text: '10');
   final TextEditingController _discountController =
       TextEditingController(text: '45');
   final TextEditingController _amountPaidController = TextEditingController();
@@ -109,7 +111,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
     _phoneControllers.clear();
     _phoneControllers.add(TextEditingController());
 
-    _hoursController.clear();
+    _hoursController.text = '10';
     _discountController.text = '45';
     _amountPaidController.clear();
     setState(() {
@@ -424,7 +426,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                           weight: 1.0,
                           getter: (Player player) => player.name)
                     ],
-                    threshold: 0.5,
+                    threshold: fuzzyThreshold,
                   ),
                 );
 

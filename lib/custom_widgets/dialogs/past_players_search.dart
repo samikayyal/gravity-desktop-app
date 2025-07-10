@@ -8,6 +8,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/screens/player_details.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 
 class PastPlayersSearch extends ConsumerStatefulWidget {
   const PastPlayersSearch({super.key});
@@ -109,7 +110,7 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                               weight: 1,
                             ),
                           ],
-                          threshold: 0.3,
+                          threshold: fuzzyThreshold
                         ),
                       );
 

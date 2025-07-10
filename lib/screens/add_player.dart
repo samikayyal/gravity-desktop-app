@@ -15,6 +15,7 @@ import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
 
@@ -297,7 +298,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                           weight: 1.0,
                           getter: (Player player) => player.name)
                     ],
-                    threshold: 0.5,
+                    threshold: fuzzyThreshold,
                   ),
                 );
 
