@@ -200,7 +200,8 @@ class DatabaseHelper {
         note_id INTEGER PRIMARY KEY AUTOINCREMENT,
         note TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        deleted INTEGER NOT NULL DEFAULT 0, -- 0 for not deleted, 1 for deleted
+        deleted INTEGER NOT NULL DEFAULT 0, -- 0 for not deleted, 1 for deleted,
+
         last_modified TEXT NOT NULL
       )
       ''');
@@ -260,11 +261,12 @@ class DatabaseHelper {
       required int finalFee,
       required int amountPaid,
       required int tips,
+      required String checkoutTime,
       int? discount,
       String? discountReason}) async {
     final db = await database;
     await db.transaction((txn) async {
-      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final nowIso = checkoutTime;
 
       // see if the player inside is a subscriber
       final subscriberQuery = await txn.rawQuery('''
@@ -418,6 +420,7 @@ class DatabaseHelper {
     required int amountPaid,
     List<String> phoneNumbers = const [],
     int? subscriptionId,
+    Map<int, int> productsBought = const {},
   }) async {
     // Generate a unique player ID
     var uuid = Uuid();
@@ -429,7 +432,7 @@ class DatabaseHelper {
     // Make all DB operations atomic using a transaction
     await db.transaction((txn) async {
       // ---- Player Session Insertion ----
-      await txn.insert(
+      final sessionId = await txn.insert(
         'player_sessions',
         {
           'player_id': playerID,
@@ -475,6 +478,30 @@ class DatabaseHelper {
               'phone_number': phoneNumber,
               'last_modified': nowIso,
             },
+          );
+        }
+      }
+
+      // insert session products
+      if (productsBought.isNotEmpty) {
+        for (var entry in productsBought.entries) {
+          final productId = entry.key;
+          final quantity = entry.value;
+
+          await txn.insert('session_products', {
+            'session_id': sessionId,
+            'product_id': productId,
+            'quantity': quantity,
+            'last_modified': nowIso,
+          });
+
+          await txn.rawUpdate(
+            '''
+            UPDATE products
+            SET quantity_available = quantity_available - ?
+            WHERE product_id = ?
+            ''',
+            [quantity, productId],
           );
         }
       }

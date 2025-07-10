@@ -46,3 +46,4 @@ app.*.map.json
 
 # my files
 notes.txt
+.github/

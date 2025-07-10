@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
@@ -43,6 +45,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     required int finalFee,
     required int amountPaid,
     required int tips,
+    required String checkoutTime,
     int? discount,
     String? discountReason,
   }) async {
@@ -53,6 +56,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       tips: tips,
       discount: discount,
       discountReason: discountReason,
+      checkoutTime: checkoutTime,
     );
     await refresh();
   }
@@ -68,17 +72,20 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     required int amountPaid,
     List<String> phoneNumbers = const [],
     int? subscriptionId,
+    Map<int, int> productsBought = const {},
   }) async {
     await _dbHelper.checkInPlayer(
-        existingPlayerID: existingPlayerID,
-        name: name,
-        age: age,
-        timeReservedMinutes: timeReservedMinutes,
-        isOpenTime: isOpenTime,
-        initialFee: totalFee,
-        amountPaid: amountPaid,
-        phoneNumbers: phoneNumbers,
-        subscriptionId: subscriptionId);
+      existingPlayerID: existingPlayerID,
+      name: name,
+      age: age,
+      timeReservedMinutes: timeReservedMinutes,
+      isOpenTime: isOpenTime,
+      initialFee: totalFee,
+      amountPaid: amountPaid,
+      phoneNumbers: phoneNumbers,
+      subscriptionId: subscriptionId,
+      productsBought: productsBought,
+    );
     await refresh();
   }
 
@@ -97,5 +104,52 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       'is_open_time': isOpenTime ? 1 : 0,
     });
     await refresh();
+  }
+
+  Future<Player> currentPlayerSession(int sessionId) async {
+    final db = await _dbHelper.database;
+
+    try {
+      final List<Map<String, dynamic>> query = await db.rawQuery(
+        '''SELECT ps.player_id AS id, p.name AS name, p.age AS age,
+                ps.check_in_time AS check_in_time,
+                ps.time_reserved_minutes AS time_reserved_minutes,
+                ps.is_open_time AS is_open_time,
+                ps.prepaid_amount AS amount_paid,
+                ps.initial_fee AS initial_fee,
+                ps.session_id AS session_id,
+                s.subscription_id AS subscription_id
+         FROM player_sessions ps
+         JOIN players p ON ps.player_id = p.id
+         LEFT JOIN subscriptions s ON ps.player_id = s.player_id
+         WHERE ps.session_id = ?''',
+        [sessionId],
+      );
+
+      if (query.isEmpty) {
+        throw Exception('No player session found with id $sessionId');
+      }
+      Player player = Player.fromMap(query.first);
+
+      // Fetch products bought in this session
+      final productsBought = await db.query(
+        'session_products',
+        where: 'session_id = ?',
+        whereArgs: [sessionId],
+      );
+
+      if (productsBought.isNotEmpty) {
+        for (var product in productsBought) {
+          int productId = product['product_id'] as int;
+          int quantity = product['quantity'] as int;
+          player.addProduct(productId, quantity);
+        }
+      }
+
+      return player;
+    } catch (e, st) {
+      print('Error fetching player session: $e\n$st');
+      throw Exception('Error fetching player session: $e');
+    }
   }
 }

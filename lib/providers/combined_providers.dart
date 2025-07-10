@@ -7,24 +7,17 @@ import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 
 // Models
-class ReceiptData {
+class PricesProductsSubs {
   final Map<TimeSlice, int> prices;
   final List<Product> allProducts;
   final List<Subscription> allSubs;
 
-  ReceiptData(
+  PricesProductsSubs(
       {required this.prices, required this.allProducts, required this.allSubs});
 }
 
-class AddPlayerData {
-  final Map<TimeSlice, int> prices;
-  final List<Product> allProducts;
-
-  AddPlayerData({required this.prices, required this.allProducts});
-}
-
 // Combined Providers
-final receiptDataProvider = Provider<AsyncValue<ReceiptData>>((ref) {
+final pricesProductsSubsProvider = Provider<AsyncValue<PricesProductsSubs>>((ref) {
   final pricesAsync = ref.watch(pricesProvider);
   final productsAsync = ref.watch(productsProvider);
   final subsAsync = ref.watch(subscriptionsProvider);
@@ -48,36 +41,10 @@ final receiptDataProvider = Provider<AsyncValue<ReceiptData>>((ref) {
 
   // If we get here, both have data. We can safely access it.
   return AsyncData(
-    ReceiptData(
+    PricesProductsSubs(
       prices: pricesAsync.value!,
       allProducts: productsAsync.value!,
       allSubs: subsAsync.value!,
-    ),
-  );
-});
-
-final addPlayerDataProvider = Provider<AsyncValue<AddPlayerData>>((ref) {
-  final pricesAsync = ref.watch(pricesProvider);
-  final productsAsync = ref.watch(productsProvider);
-
-  // If either provider is in an error state, the whole thing is an error
-  if (pricesAsync.hasError) {
-    return AsyncError(pricesAsync.error!, pricesAsync.stackTrace!);
-  }
-  if (productsAsync.hasError) {
-    return AsyncError(productsAsync.error!, productsAsync.stackTrace!);
-  }
-
-  // If either provider is loading, the whole thing is loading
-  if (pricesAsync.isLoading || productsAsync.isLoading) {
-    return const AsyncLoading();
-  }
-
-  // If we get here, both have data. We can safely access it.
-  return AsyncData(
-    AddPlayerData(
-      prices: pricesAsync.value!,
-      allProducts: productsAsync.value!,
     ),
   );
 });

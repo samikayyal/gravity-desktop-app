@@ -171,7 +171,7 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
             itemBuilder: (context, index) {
               final product = products[index];
               final quantityInCart = _cart[product.id] ?? 0;
-              return _ProductListItem(
+              return ProductListItem(
                 product: product,
                 quantity: quantityInCart,
                 onQuantityChanged: (newQuantity) {
@@ -235,11 +235,12 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
 }
 
 /// A private widget to represent a single product row in the purchase dialog.
-class _ProductListItem extends StatelessWidget {
-  const _ProductListItem({
+class ProductListItem extends StatelessWidget {
+  const ProductListItem({
     required this.product,
     required this.quantity,
     required this.onQuantityChanged,
+    super.key,
   });
 
   final Product product;

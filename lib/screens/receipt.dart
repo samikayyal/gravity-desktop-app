@@ -22,8 +22,8 @@ enum TipType { returnChange, takeAsTip }
 enum DiscountType { none, input, gift }
 
 class Receipt extends ConsumerStatefulWidget {
-  final Player player;
-  const Receipt(this.player, {super.key});
+  final int sessionId;
+  const Receipt(this.sessionId, {super.key});
 
   @override
   ConsumerState<Receipt> createState() => _ReceiptState();
@@ -32,8 +32,10 @@ class Receipt extends ConsumerStatefulWidget {
 class _ReceiptState extends ConsumerState<Receipt> {
   // useful variables
   final formatter = NumberFormat.decimalPattern();
+  late final String nowIso;
 
-  // player variables
+  // player! variables
+  Player? player;
   late final Duration timeSpent;
 
   // receipt variables
@@ -53,39 +55,57 @@ class _ReceiptState extends ConsumerState<Receipt> {
 
   @override
   void initState() {
-    timeSpent = DateTime.now().toUtc().difference(widget.player.checkInTime);
-
     super.initState();
+    _loadPlayer();
+    nowIso = DateTime.now().toUtc().toIso8601String();
+  }
+
+  Future<void> _loadPlayer() async {
+    try {
+      final playerData = await ref
+          .read(currentPlayersProvider.notifier)
+          .currentPlayerSession(widget.sessionId);
+      setState(() {
+        player = playerData;
+        timeSpent = DateTime.now().toUtc().difference(player!.checkInTime);
+      });
+    } catch (e, st) {
+      log('Error loading player!: $e\n$st');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ref.watch(receiptDataProvider).when(
+    if (player == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return ref.watch(pricesProductsSubsProvider).when(
           data: (receiptData) {
-            final Map<int, int> productsBought = widget.player.productsBought;
+            final Map<int, int> productsBought = player!.productsBought;
             final String formattedTimeSpent =
                 '${timeSpent.inHours}h ${timeSpent.inMinutes.remainder(60)}m';
 
-            final String formattedCheckInTime = DateFormat('h:mm a')
-                .format(widget.player.checkInTime.toLocal());
+            final String formattedCheckInTime =
+                DateFormat('h:mm a').format(player!.checkInTime.toLocal());
 
-            final int finalFee = widget.player.subscriptionId != null
+            final int finalFee = player!.subscriptionId != null
                 ? calculateProductsFee(
                     productsBought: productsBought,
                     allProducts: receiptData.allProducts)
                 : calculateFinalFee(
                     timeSpent: timeSpent,
                     prices: receiptData.prices,
-                    productsBought: widget.player.productsBought,
+                    productsBought: player!.productsBought,
                     allProducts: receiptData.allProducts);
-            // amount paid be 0 if the player has a subscription
-            final int amountLeft = finalFee - widget.player.amountPaid;
+            // amount paid be 0 if the player! has a subscription
+            final int amountLeft = finalFee - player!.amountPaid;
 
             return Scaffold(
                 appBar: MyAppBar(),
                 body: Center(
                   child: FractionallySizedBox(
-                    widthFactor: 0.75,
+                    widthFactor: 0.5,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24.0),
                       child: Row(
@@ -93,7 +113,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                         children: [
                           // LEFT SIDE - Receipt Information
                           Expanded(
-                            flex: 3,
+                            flex: 2,
                             child: SingleChildScrollView(
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 16.0),
@@ -131,7 +151,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            widget.player.name,
+                                            player!.name,
                                             style: GoogleFonts.notoSans(
                                               fontSize: 24,
                                               fontWeight: FontWeight.w500,
@@ -172,11 +192,10 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                           _buildInfoRow(
                                               "Time Spent", formattedTimeSpent),
                                           if (productsBought.isNotEmpty &&
-                                              widget.player.subscriptionId ==
-                                                  null)
+                                              player!.subscriptionId == null)
                                             _buildInfoRow("Time Fee",
                                                 "${formatter.format(calculateFinalFee(timeSpent: timeSpent, prices: receiptData.prices))} SYP"),
-                                          if (widget.player.subscriptionId !=
+                                          if (player!.subscriptionId !=
                                               null) ...[
                                             const Divider(height: 24),
                                             Row(
@@ -255,42 +274,6 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                           ],
                                         ),
                                       ),
-
-                                    const SizedBox(height: 16),
-
-                                    // Fee details
-                                    MyCard(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.receipt,
-                                                  size: 20,
-                                                  color: Color(0xFF5E35B1)),
-                                              const SizedBox(width: 8),
-                                              Text("Payment Summary",
-                                                  style: AppTextStyles
-                                                      .sectionHeaderStyle),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          const Divider(height: 1),
-                                          const SizedBox(height: 8),
-                                          _buildInfoRow("Final Fee",
-                                              "${formatter.format(finalFee)} SYP"),
-                                          if (widget.player.subscriptionId ==
-                                              null)
-                                            _buildInfoRow("Amount Paid",
-                                                "${formatter.format(widget.player.amountPaid)} SYP"),
-                                          const Divider(height: 24),
-                                          _buildInfoRow("Amount Due",
-                                              "${formatter.format(amountLeft)} SYP",
-                                              isHighlighted: true),
-                                        ],
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -562,7 +545,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                                               Colors.red),
                                                     _buildInfoRow(
                                                         "Amount Paid:",
-                                                        "${formatter.format(widget.player.amountPaid)} SYP"),
+                                                        "${formatter.format(player!.amountPaid)} SYP"),
                                                     const Divider(height: 16),
                                                     _buildInfoRow("Amount Due:",
                                                         "${formatter.format(amountLeft - _discountAmount)} SYP",
@@ -826,8 +809,8 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                                           currentPlayersProvider
                                                               .notifier)
                                                       .checkOutPlayer(
-                                                        sessionID: widget
-                                                            .player.sessionID,
+                                                        sessionID:
+                                                            player!.sessionID,
                                                         finalFee: finalFee,
                                                         amountPaid:
                                                             amountReceived,
@@ -841,6 +824,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                                                 ? _discountReasonController
                                                                     .text
                                                                 : null,
+                                                        checkoutTime: nowIso,
                                                       );
 
                                                   await ref
@@ -918,7 +902,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
   double _subRemainingTime(List<Subscription> subscriptions) {
     final double hoursUsed = _subTimeUsed();
     final sub = subscriptions.firstWhere(
-      (sub) => sub.subscriptionId == widget.player.subscriptionId,
+      (sub) => sub.subscriptionId == player!.subscriptionId,
       orElse: () => throw Exception('Subscription not found'),
     );
     return (sub.totalMinutes / 60) - hoursUsed;

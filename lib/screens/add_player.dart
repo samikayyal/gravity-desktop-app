@@ -4,17 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
+import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
-import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
@@ -40,17 +42,14 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   int hoursReserved = 0;
   int minutesReserved = 0;
   bool isOpenTime = false;
-  int totalFee = 0;
+  int initialFee = 0;
+
+  final Map<int, int> _productsCart = {}; // id -> quantity
 
   Player? _selectedPlayer; // exists if we chose an existing player
 
   bool _detailsReadOnly = false;
   bool _inEditMode = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   Future<void> _fillPlayerDetails(Player selection) async {
     final playerPhones = await ref
@@ -76,155 +75,184 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     });
   }
 
-  void _incrementTime(TimeIncrement increment) {
-    ref.watch(subscriptionsProvider).whenData((subs) {
-      final Subscription? sub = _selectedPlayer?.subscriptionId != null
-          ? subs.firstWhere(
-              (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
-              orElse: () => throw Exception('Subscription not found'),
-            )
-          : null;
+  void _incrementTime(TimeIncrement increment, PricesProductsSubs data) {
+    final Subscription? sub = _selectedPlayer?.subscriptionId != null
+        ? data.allSubs.firstWhere(
+            (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
+            orElse: () => throw Exception('Subscription not found'),
+          )
+        : null;
 
-      setState(() {
-        if (!isOpenTime) {
-          if (increment == TimeIncrement.hour) {
-            if (sub != null) {
-              if (sub.remainingMinutes <
-                  ((hoursReserved + 1) * 60 + minutesReserved + 60)) {
-                MyMaterialBanner.showBanner(context,
-                    message: 'Not enough remaining time in subscription',
-                    type: MessageType.error,
-                    durationInSeconds: 2);
-                return;
-              }
+    setState(() {
+      if (!isOpenTime) {
+        if (increment == TimeIncrement.hour) {
+          if (sub != null) {
+            if (sub.remainingMinutes <
+                ((hoursReserved + 1) * 60 + minutesReserved + 60)) {
+              MyMaterialBanner.showBanner(context,
+                  message: 'Not enough remaining time in subscription',
+                  type: MessageType.error,
+                  durationInSeconds: 2);
+              return;
             }
-            if (hoursReserved < 12) {
-              hoursReserved++;
-            }
-          } else if (increment == TimeIncrement.halfHour) {
-            final oldMinutes = minutesReserved;
-            if (minutesReserved == 0) {
-              minutesReserved = 30;
-            } else if (minutesReserved == 30 && hoursReserved < 12) {
-              hoursReserved++;
-              minutesReserved = 0;
-            }
+          }
+          if (hoursReserved < 12) {
+            hoursReserved++;
+          }
+        } else if (increment == TimeIncrement.halfHour) {
+          final oldMinutes = minutesReserved;
+          if (minutesReserved == 0) {
+            minutesReserved = 30;
+          } else if (minutesReserved == 30 && hoursReserved < 12) {
+            hoursReserved++;
+            minutesReserved = 0;
+          }
 
-            if (sub != null) {
-              if (sub.remainingMinutes <
-                  (hoursReserved * 60 + minutesReserved + 60)) {
-                MyMaterialBanner.showBanner(context,
-                    message: 'Not enough remaining time in subscription',
-                    type: MessageType.error,
-                    durationInSeconds: 2);
-                // Reset to old value if not enough time
-                minutesReserved = oldMinutes;
-                return;
-              }
+          if (sub != null) {
+            if (sub.remainingMinutes <
+                (hoursReserved * 60 + minutesReserved + 60)) {
+              MyMaterialBanner.showBanner(context,
+                  message: 'Not enough remaining time in subscription',
+                  type: MessageType.error,
+                  durationInSeconds: 2);
+              // Reset to old value if not enough time
+              minutesReserved = oldMinutes;
+              return;
             }
           }
         }
-      });
+      }
+    });
+
+    _updateTotalFee(data.prices, data.allProducts);
+  }
+
+  void _updateTotalFee(Map<TimeSlice, int> prices, List<Product> allProducts) {
+    setState(() {
+      initialFee = _selectedPlayer?.subscriptionId == null
+          ? calculatePreCheckInFee(
+              hoursReserved: hoursReserved,
+              minutesReserved: minutesReserved,
+              prices: prices,
+              isOpenTime: isOpenTime,
+            )
+          : 0;
+
+      // add products cart total to initial fee
+      for (var entry in _productsCart.entries) {
+        final Product product = allProducts.firstWhere(
+          (p) => p.id == entry.key,
+        );
+
+        initialFee += entry.value * product.price;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final pricesAsync = ref.watch(pricesProvider);
-    return pricesAsync.when(
-      data: (prices) {
-        return Scaffold(
-          appBar: const MyAppBar(),
-          body: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
-                // Page Title
-                const Text(
-                  'Add New Player',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                // Main content area
-                Expanded(
-                  child: FocusTraversalGroup(
-                    policy: OrderedTraversalPolicy(),
-                    child: Form(
-                      key: _formKey,
-                      child: Center(
-                        child: FractionallySizedBox(
-                          widthFactor:
-                              0.75, // Content will take 75% of screen width
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Left column with scrollable content
-                              Expanded(
-                                flex: 3,
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      // Player details section
-                                      _buildPlayerDetailsCard(),
-
-                                      // Phone Numbers Section
-                                      _buildPhoneNumbersCard(),
-
-                                      // Time Reservation Section
-                                      _buildTimeReservationCard()
-                                    ],
+    return ref.watch(pricesProductsSubsProvider).when(
+          data: (data) {
+            return Scaffold(
+              appBar: const MyAppBar(),
+              body: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    // Page Title
+                    Text(
+                      'Add New Player',
+                      style: AppTextStyles.pageTitleStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    // Main content area
+                    Expanded(
+                      child: FocusTraversalGroup(
+                        policy: OrderedTraversalPolicy(),
+                        child: Form(
+                          key: _formKey,
+                          child: Center(
+                            child: FractionallySizedBox(
+                              widthFactor:
+                                  0.85, // Content will take 85% of screen width
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // left column for products card
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      children: [
+                                        _buildProductsCard(
+                                            data.allProducts, data.prices),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ),
 
-                              // Right column with payment details and add player button
-                              const SizedBox(width: 24),
-                              Expanded(
-                                flex: 2,
-                                child: Column(
-                                  children: [
-                                    _buildPaymentCard(prices),
-                                    if (_selectedPlayer != null &&
-                                        _selectedPlayer!.subscriptionId != null)
-                                      _buildSubscriberCard()
-                                  ],
-                                ),
+                                  // middle column with scrollable content
+                                  Expanded(
+                                    flex: 3,
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          // Player details section
+                                          _buildPlayerDetailsCard(),
+
+                                          // Phone Numbers Section
+                                          _buildPhoneNumbersCard(),
+
+                                          // Time Reservation Section
+                                          _buildTimeReservationCard(data)
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Right column with payment details and add player button
+                                  const SizedBox(width: 24),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      children: [
+                                        _buildPaymentCard(data.prices),
+                                        if (_selectedPlayer != null &&
+                                            _selectedPlayer!.subscriptionId !=
+                                                null)
+                                          _buildSubscriberCard()
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
+            );
+          },
+          error: (err, stack) => Scaffold(
+            appBar: const MyAppBar(),
+            body: Center(
+              child: Text('Error loading prices: $err'),
             ),
           ),
+          loading: () => Scaffold(
+            appBar: const MyAppBar(),
+            body: const Center(child: CircularProgressIndicator()),
+          ),
         );
-      },
-      error: (err, stack) => Scaffold(
-        appBar: const MyAppBar(),
-        body: Center(
-          child: Text('Error loading prices: $err'),
-        ),
-      ),
-      loading: () => Scaffold(
-        appBar: const MyAppBar(),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
-    );
   }
 
-  Future<void> _handleCheckIn(
-      Map<TimeSlice, int> prices, int initialFee) async {
+  Future<void> _handleCheckIn(Map<TimeSlice, int> prices) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -249,6 +277,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               : 0,
           phoneNumbers: phoneNumbers,
           subscriptionId: _selectedPlayer?.subscriptionId,
+          productsBought: _productsCart.isNotEmpty
+              ? _productsCart
+              : const {},
         );
     if (mounted) {
       Navigator.pop(context);
@@ -620,12 +651,12 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     );
   }
 
-  MyCard _buildTimeReservationCard() {
+  MyCard _buildTimeReservationCard(PricesProductsSubs data) {
     final Subscription? sub = _selectedPlayer?.subscriptionId != null
-        ? ref.watch(subscriptionsProvider).valueOrNull?.firstWhere(
-              (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
-              orElse: () => throw Exception('Subscription not found'),
-            )
+        ? data.allSubs.firstWhere(
+            (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
+            orElse: () => throw Exception('Subscription not found'),
+          )
         : null;
     return MyCard(
       child: Column(
@@ -679,7 +710,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   ),
                   onPressed: () {
                     setState(() {
-                      _incrementTime(TimeIncrement.hour);
+                      _incrementTime(TimeIncrement.hour, data);
                     });
                   },
                 ),
@@ -700,7 +731,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   ),
                   onPressed: () {
                     setState(() {
-                      _incrementTime(TimeIncrement.halfHour);
+                      _incrementTime(TimeIncrement.halfHour, data);
                     });
                   },
                 ),
@@ -725,6 +756,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                       minutesReserved = 0;
                       isOpenTime = false;
                     });
+                    _updateTotalFee(data.prices, data.allProducts);
                   },
                 ),
               ),
@@ -792,15 +824,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   }
 
   MyCard _buildPaymentCard(Map<TimeSlice, int> prices) {
-    // If sub then 0 fee
-    final int initialFee = _selectedPlayer?.subscriptionId == null
-        ? calculatePreCheckInFee(
-            hoursReserved: hoursReserved,
-            minutesReserved: minutesReserved,
-            prices: prices,
-            isOpenTime: isOpenTime,
-          )
-        : 0;
     return MyCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -836,7 +859,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   _selectedPlayer?.subscriptionId != null
                       ? 'Subscription Active'
                       : isOpenTime
-                          ? 'Open Time'
+                          ? initialFee == 0
+                              ? 'Open Time'
+                              : 'Open Time - ${formatter.format(initialFee)} SYP'
                           : '${formatter.format(initialFee)}  SYP',
                   style: TextStyle(
                     fontSize: 28,
@@ -921,7 +946,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                                 !isOpenTime) ||
                             _inEditMode
                         ? null
-                        : () async => await _handleCheckIn(prices, initialFee),
+                        : () async => await _handleCheckIn(prices),
                 child: const Text("Add Player"),
               ),
             ),
@@ -1091,5 +1116,56 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 ),
               ),
             ));
+  }
+
+  MyCard _buildProductsCard(
+      List<Product> allProducts, Map<TimeSlice, int> prices) {
+    return MyCard(
+      child: Column(
+        children: [
+          Text("Products", style: AppTextStyles.sectionHeaderStyle),
+          allProducts.isEmpty
+              ? Center(
+                  heightFactor: 3,
+                  child: Text(
+                    'No products available for purchase.',
+                    style: AppTextStyles.subtitleTextStyle,
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: allProducts.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final product = allProducts[index];
+                    final quantityInCart = _productsCart[product.id] ?? 0;
+                    return ProductListItem(
+                      product: product,
+                      quantity: quantityInCart,
+                      onQuantityChanged: (newQuantity) {
+                        // Ensure the new quantity is within valid bounds
+                        if (newQuantity < 0 ||
+                            newQuantity > product.quantityAvailable) {
+                          return;
+                        }
+
+                        setState(() {
+                          if (newQuantity > 0) {
+                            _productsCart[product.id] = newQuantity;
+                          } else {
+                            // Remove from cart if quantity becomes zero
+                            _productsCart.remove(product.id);
+                          }
+                          // Recalculate total fee
+                          _updateTotalFee(prices, allProducts);
+                        });
+                      },
+                    );
+                  },
+                )
+        ],
+      ),
+    );
   }
 }
