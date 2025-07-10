@@ -107,6 +107,7 @@ class DatabaseHelper {
       CREATE TABLE IF NOT EXISTS phone_numbers(
         player_id TEXT NOT NULL,
         phone_number TEXT NOT NULL,
+        is_primary INTEGER NOT NULL -- 0 for false, 1 for true
         last_modified TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
         PRIMARY KEY (player_id, phone_number)
@@ -126,10 +127,10 @@ class DatabaseHelper {
     final nowIso = DateTime.now().toUtc().toIso8601String();
     await db.execute('''
       INSERT OR REPLACE INTO prices (time_slice, price, last_modified) VALUES
-      ('hour', 0, ?),
-      ('half_hour', 0, ?),
-      ('additional_hour', 0, ?),
-      ('additional_half_hour', 0, ?)
+      ('hour', 95000, ?),
+      ('half_hour', 75000, ?),
+      ('additional_hour', 70000, ?),
+      ('additional_half_hour', 45000, ?)
     ''', [nowIso, nowIso, nowIso, nowIso]);
 
     // Products
@@ -146,8 +147,8 @@ class DatabaseHelper {
     // insert water and socks products
     await db.execute('''
       INSERT OR IGNORE INTO products (name, price, quantity_available, last_modified) VALUES
-      ('Water Bottle', 5000, 50, ?),
-      ('Socks', 35000, 100, ?)
+      ('Water Bottle', 7000, 50, ?),
+      ('Socks', 25000, 100, ?)
     ''', [nowIso, nowIso]);
 
     // Table to store products bought in a session
@@ -199,6 +200,7 @@ class DatabaseHelper {
         note_id INTEGER PRIMARY KEY AUTOINCREMENT,
         note TEXT NOT NULL,
         created_at TEXT NOT NULL,
+        deleted INTEGER NOT NULL DEFAULT 0, -- 0 for not deleted, 1 for deleted
         last_modified TEXT NOT NULL
       )
       ''');

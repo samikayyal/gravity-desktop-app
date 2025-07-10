@@ -99,6 +99,15 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
     );
   }
 
+  void _handleTimeAlmostUp(BuildContext context, Player player) {
+    // Play sound
+    _audioPlayer.play(AssetSource('short-beep.mp3'));
+
+    // Show a banner at the bottom
+    MyMaterialBanner.showFloatingBanner(context,
+        message: "Time for player ${player.name} is almost up!");
+  }
+
   Future<void> _goToReceipt(BuildContext context, Player player) async {
     await ref.read(pricesProvider.notifier).refresh();
     await ref.read(productsProvider.notifier).refresh();
@@ -178,7 +187,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
               0: const FlexColumnWidth(2.5), // Name (wider)
               1: const FlexColumnWidth(0.7), // Age (narrower)
               2: const FlexColumnWidth(1.2), // Check-in
-              3: const FlexColumnWidth(1.2), // Time Left
+              3: const FlexColumnWidth(1.2), // Time left
               4: const FlexColumnWidth(1.0), // Fee
               5: const FlexColumnWidth(1.0), // Paid
               6: const FlexColumnWidth(1.0), // Left
@@ -194,6 +203,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         DateFormat('h:mm a').format(player.checkInTime.toLocal());
 
     bool isTimeUp = false;
+    bool isAlmostTimeUp = false;
     String timeRemainingString = 'Open Time';
 
     if (!player.isOpenTime) {
@@ -214,6 +224,13 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
             }
           });
         }
+      } else if (timeRemaining.inMinutes <= 3) {
+        isAlmostTimeUp = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _handleTimeAlmostUp(context, player);
+          }
+        });
       } else {
         final hours = timeRemaining.inHours;
         final minutes = timeRemaining.inMinutes.remainder(60);
@@ -223,6 +240,10 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
 
     final TextStyle cellStyle = AppTextStyles.tableCellStyle;
     final TextStyle amountStyle = AppTextStyles.amountTextStyle;
+    final TextStyle almostTimeUpStyle = AppTextStyles.tableCellStyle.copyWith(
+      fontWeight: FontWeight.bold,
+      color: Colors.orange.shade500,
+    );
     final TextStyle timeUpStyle = cellStyle.copyWith(
       fontWeight: FontWeight.bold,
       color: Colors.red,
@@ -232,9 +253,11 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
       decoration: BoxDecoration(
         color: isTimeUp
             ? Colors.red.withAlpha(30)
-            : (index.isEven
-                ? TableThemes.evenRowColor
-                : TableThemes.oddRowColor),
+            : isAlmostTimeUp
+                ? Colors.orange.withAlpha(30)
+                : (index.isEven
+                    ? TableThemes.evenRowColor
+                    : TableThemes.oddRowColor),
       ),
       children: [
         buildDataCell(player.name, style: cellStyle),
@@ -242,7 +265,11 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         buildDataCell(checkInTime, style: cellStyle),
         buildDataCell(
           timeRemainingString,
-          style: isTimeUp ? timeUpStyle : cellStyle,
+          style: isTimeUp
+              ? timeUpStyle
+              : isAlmostTimeUp
+                  ? almostTimeUpStyle
+                  : cellStyle,
         ),
         buildDataCell(
           player.isOpenTime ? 'Open' : '${player.initialFee}',
