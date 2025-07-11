@@ -383,7 +383,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                                                 DiscountType
                                                                     .gift;
                                                             _discountAmount =
-                                                                finalFee;
+                                                                amountLeft;
                                                             _amountReceivedController
                                                                 .clear();
                                                           }
@@ -813,7 +813,9 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                                             player!.sessionID,
                                                         finalFee: finalFee,
                                                         amountPaid:
-                                                            amountReceived,
+                                                            amountReceived +
+                                                                player!
+                                                                    .amountPaid,
                                                         tips: _tip,
                                                         discount:
                                                             _discountAmount,

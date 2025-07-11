@@ -123,6 +123,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
   Future<void> _handleAddSubscription() async {
     final subs = ref.read(subscriptionsProvider.notifier);
     if (!_formKey.currentState!.validate()) return;
+    log("adding new sub");
 
     final playerName = _selectedPlayer?.name ?? _nameController.text.trim();
     final playerAge =
@@ -545,7 +546,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                               _ageController.clear();
                               _phoneControllers.clear();
                               _phoneControllers.add(TextEditingController());
-                              _hoursController.clear();
+                              _hoursController.text = '10';
                               _discountController.text = '45';
                               _amountPaidController.clear();
                             });

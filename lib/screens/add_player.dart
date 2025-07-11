@@ -177,13 +177,13 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                           child: Center(
                             child: FractionallySizedBox(
                               widthFactor:
-                                  0.85, // Content will take 85% of screen width
+                                  0.88, // Content will take 85% of screen width
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // left column for products card
                                   Expanded(
-                                    flex: 2,
+                                    flex: 30,
                                     child: Column(
                                       children: [
                                         _buildProductsCard(
@@ -194,7 +194,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
 
                                   // middle column with scrollable content
                                   Expanded(
-                                    flex: 3,
+                                    flex: 45,
                                     child: SingleChildScrollView(
                                       child: Column(
                                         crossAxisAlignment:
@@ -216,7 +216,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                                   // Right column with payment details and add player button
                                   const SizedBox(width: 24),
                                   Expanded(
-                                    flex: 2,
+                                    flex: 35,
                                     child: Column(
                                       children: [
                                         _buildPaymentCard(data.prices),
@@ -277,9 +277,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               : 0,
           phoneNumbers: phoneNumbers,
           subscriptionId: _selectedPlayer?.subscriptionId,
-          productsBought: _productsCart.isNotEmpty
-              ? _productsCart
-              : const {},
+          productsBought: _productsCart.isNotEmpty ? _productsCart : const {},
         );
     if (mounted) {
       Navigator.pop(context);
@@ -857,7 +855,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 const SizedBox(height: 8),
                 Text(
                   _selectedPlayer?.subscriptionId != null
-                      ? 'Subscription Active'
+                      ? initialFee == 0
+                          ? 'Subscription Active'
+                          : 'Subscription - ${formatter.format(initialFee)} SYP'
                       : isOpenTime
                           ? initialFee == 0
                               ? 'Open Time'
@@ -880,11 +880,13 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
             child: TextFormField(
               controller: amountPaidController,
               style: AppTextStyles.regularTextStyle,
-              enabled: _selectedPlayer?.subscriptionId == null,
+              enabled:
+                  _selectedPlayer?.subscriptionId == null || initialFee > 0,
               decoration: InputDecoration(
-                  labelText: _selectedPlayer?.subscriptionId == null
-                      ? 'Amount Paid on Check-in'
-                      : 'Subscription Active',
+                  labelText:
+                      _selectedPlayer?.subscriptionId != null && initialFee == 0
+                          ? 'Subscription Active'
+                          : 'Amount Paid on Check-in',
                   labelStyle: AppTextStyles.regularTextStyle,
                   hintText: 'Enter amount paid',
                   hintStyle: AppTextStyles.subtitleTextStyle,

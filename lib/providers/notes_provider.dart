@@ -21,7 +21,7 @@ class NotesProvider extends StateNotifier<AsyncValue<List<Note>>> {
     try {
       final db = await _dbHelper.database;
       final notesQuery = await db.rawQuery(
-        'SELECT * FROM notes ORDER BY created_at DESC',
+        'SELECT * FROM notes WHERE deleted = 0 ORDER BY created_at DESC',
       );
 
       final List<Note> notes = notesQuery
@@ -54,8 +54,9 @@ class NotesProvider extends StateNotifier<AsyncValue<List<Note>>> {
     state = const AsyncValue.loading();
     try {
       final db = await _dbHelper.database;
-      await db.delete(
+      await db.update(
         'notes',
+        {'deleted': 1},
         where: 'note_id = ?',
         whereArgs: [noteId],
       );

@@ -201,7 +201,6 @@ class DatabaseHelper {
         note TEXT NOT NULL,
         created_at TEXT NOT NULL,
         deleted INTEGER NOT NULL DEFAULT 0, -- 0 for not deleted, 1 for deleted,
-
         last_modified TEXT NOT NULL
       )
       ''');
@@ -476,6 +475,7 @@ class DatabaseHelper {
             {
               'player_id': playerID,
               'phone_number': phoneNumber,
+              'is_primary': phoneNumber == phoneNumbers.first ? 1 : 0,
               'last_modified': nowIso,
             },
           );
@@ -904,6 +904,7 @@ class DatabaseHelper {
             {
               'player_id': playerID,
               'phone_number': phoneNumber,
+              'is_primary': phoneNumber == phones.first ? 1 : 0,
               'last_modified': nowIso,
             },
             conflictAlgorithm: ConflictAlgorithm.replace,

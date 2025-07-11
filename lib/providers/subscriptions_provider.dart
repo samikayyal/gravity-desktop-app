@@ -71,6 +71,7 @@ class SubscriptionsNotifier
               {
                 'player_id': playerId,
                 'phone_number': phoneNumber,
+                'is_primary': phoneNumber == phoneNumbers.first ? 1 : 0,
                 'last_modified': nowIso,
               },
               conflictAlgorithm: ConflictAlgorithm.replace,
@@ -165,7 +166,7 @@ final subInfoProvider =
     ''', [subId]);
 
   if (result.isEmpty) {
-   return [];
+    return [];
   }
 
   return result.map((map) => Subscription.fromMap(map)).toList();
