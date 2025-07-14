@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/screens/add_group.dart';
 
 final databaseProvider = Provider<DatabaseHelper>((ref) {
   return DatabaseHelper.instance;
@@ -118,7 +119,8 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
                 ps.is_open_time AS is_open_time,
                 ps.prepaid_amount AS amount_paid,
                 ps.initial_fee AS initial_fee,
-                ps.session_id AS session_id,
+                ps.group_number AS group_number,
+                ps.session_id AS session_id,s
                 s.subscription_id AS subscription_id
          FROM player_sessions ps
          JOIN players p ON ps.player_id = p.id
@@ -149,8 +151,14 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
 
       return player;
     } catch (e, st) {
-      print('Error fetching player session: $e\n$st');
+      log('Error fetching player session: $e\n$st');
       throw Exception('Error fetching player session: $e');
     }
   }
+
+  Future<void> checkInGroup({
+    required List<GroupPlayer> groupPlayers,
+    required int timeReservedMinutes,
+    required bool isOpenTime,
+  }) async {}
 }

@@ -31,6 +31,7 @@ class CurrentPlayersTable extends ConsumerStatefulWidget {
 class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   late final AudioPlayer _audioPlayer;
   final Set<String> _alertedPlayerIds = {};
+  final Set<String> _almostTimeAlertedPlayerIds = {};
 
   @override
   void initState() {
@@ -99,6 +100,9 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   }
 
   void _handleTimeAlmostUp(BuildContext context, Player player) {
+    setState(() {
+      _almostTimeAlertedPlayerIds.add(player.playerID);
+    });
     // Play sound
     _audioPlayer.play(AssetSource('short-beep.mp3'));
 
@@ -225,11 +229,17 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         }
       } else if (timeRemaining.inMinutes <= 3) {
         isAlmostTimeUp = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _handleTimeAlmostUp(context, player);
-          }
-        });
+        final hours = timeRemaining.inHours;
+        final minutes = timeRemaining.inMinutes.remainder(60);
+        timeRemainingString = '$hours h $minutes m';
+
+        if (!_almostTimeAlertedPlayerIds.contains(player.playerID)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _handleTimeAlmostUp(context, player);
+            }
+          });
+        }
       } else {
         final hours = timeRemaining.inHours;
         final minutes = timeRemaining.inMinutes.remainder(60);

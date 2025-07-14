@@ -17,11 +17,14 @@ import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
+import 'package:gravity_desktop_app/screens/add_group.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
 
 enum TimeIncrement { hour, halfHour }
+
+enum ScreenState { single, group }
 
 class AddPlayerScreen extends ConsumerStatefulWidget {
   const AddPlayerScreen({super.key});
@@ -33,6 +36,7 @@ class AddPlayerScreen extends ConsumerStatefulWidget {
 class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   final formatter = NumberFormat.decimalPattern();
   final _formKey = GlobalKey<FormState>();
+  ScreenState _screenState = ScreenState.single;
 
   TextEditingController nameController = TextEditingController();
   TextEditingController ageController = TextEditingController();
@@ -161,78 +165,55 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 16),
-                    // Page Title
-                    Text(
-                      'Add New Player',
-                      style: AppTextStyles.pageTitleStyle,
-                      textAlign: TextAlign.center,
+                    // Page Title with toggle
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _screenState == ScreenState.single
+                              ? 'Add New Player'
+                              : 'Add Group of Players',
+                          style: AppTextStyles.pageTitleStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(width: 24),
+                        ToggleButtons(
+                          isSelected: [
+                            _screenState == ScreenState.single,
+                            _screenState == ScreenState.group,
+                          ],
+                          onPressed: (index) {
+                            setState(() {
+                              _screenState = index == 0
+                                  ? ScreenState.single
+                                  : ScreenState.group;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          selectedBorderColor: Colors.blue,
+                          selectedColor: Colors.white,
+                          fillColor: Colors.blue,
+                          children: const [
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: Text('Single'),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: Text('Group'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 32),
                     // Main content area
                     Expanded(
-                      child: FocusTraversalGroup(
-                        policy: OrderedTraversalPolicy(),
-                        child: Form(
-                          key: _formKey,
-                          child: Center(
-                            child: FractionallySizedBox(
-                              widthFactor:
-                                  0.88, // Content will take 85% of screen width
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // left column for products card
-                                  Expanded(
-                                    flex: 30,
-                                    child: Column(
-                                      children: [
-                                        _buildProductsCard(
-                                            data.allProducts, data.prices),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // middle column with scrollable content
-                                  Expanded(
-                                    flex: 45,
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          // Player details section
-                                          _buildPlayerDetailsCard(),
-
-                                          // Phone Numbers Section
-                                          _buildPhoneNumbersCard(),
-
-                                          // Time Reservation Section
-                                          _buildTimeReservationCard(data)
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Right column with payment details and add player button
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    flex: 35,
-                                    child: Column(
-                                      children: [
-                                        _buildPaymentCard(data.prices),
-                                        if (_selectedPlayer != null &&
-                                            _selectedPlayer!.subscriptionId !=
-                                                null)
-                                          _buildSubscriberCard()
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: _screenState == ScreenState.single
+                          ? _addSinglePlayer(data)
+                          : AddGroup(data),
                     ),
                   ],
                 ),
@@ -298,6 +279,68 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     }
     amountPaidController.dispose();
     super.dispose();
+  }
+
+  Widget _addSinglePlayer(PricesProductsSubs data) {
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
+      child: Form(
+        key: _formKey,
+        child: Center(
+          child: FractionallySizedBox(
+            widthFactor: 0.88, // Content will take 88% of screen width
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // left column for products card
+                Expanded(
+                  flex: 30,
+                  child: Column(
+                    children: [
+                      _buildProductsCard(data.allProducts, data.prices),
+                    ],
+                  ),
+                ),
+
+                // middle column with scrollable content
+                Expanded(
+                  flex: 45,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Player details section
+                        _buildPlayerDetailsCard(),
+
+                        // Phone Numbers Section
+                        _buildPhoneNumbersCard(),
+
+                        // Time Reservation Section
+                        _buildTimeReservationCard(data)
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Right column with payment details and add player button
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: 35,
+                  child: Column(
+                    children: [
+                      _buildPaymentCard(data.prices),
+                      if (_selectedPlayer != null &&
+                          _selectedPlayer!.subscriptionId != null)
+                        _buildSubscriberCard()
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   MyCard _buildPlayerDetailsCard() {

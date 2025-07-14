@@ -65,6 +65,7 @@ class DatabaseHelper {
       -- payment info
       initial_fee INTEGER NOT NULL DEFAULT 0,
       prepaid_amount INTEGER NOT NULL DEFAULT 0,
+      group_number INTEGER DEFAULT 0, -- for grouping players in a session
       last_modified TEXT NOT NULL,       
       FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL
     )
@@ -218,6 +219,7 @@ class DatabaseHelper {
             ps.is_open_time,
             ps.session_id,
             ps.initial_fee,
+            ps.group_number,
             ps.prepaid_amount AS amount_paid,
             sub.subscription_id
     FROM player_sessions ps

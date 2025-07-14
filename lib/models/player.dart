@@ -12,6 +12,8 @@ class Player {
   // subscription ID
   int? subscriptionId;
 
+  int? groupNumber;
+
   final Map<int, int> _productsBought = {}; // Map of product ID to quantity
   Map<int, int> get productsBought => _productsBought;
 
@@ -26,6 +28,7 @@ class Player {
     required this.isOpenTime,
     required this.initialFee,
     this.subscriptionId,
+    this.groupNumber,
   });
 
   // Factory constructor to create a Player from a map
@@ -43,6 +46,7 @@ class Player {
       sessionID: map['session_id'] as int,
       initialFee: map['initial_fee'] as int,
       subscriptionId: map['subscription_id'] as int?,
+      groupNumber: map['group_number'] as int?,
     );
   }
 
