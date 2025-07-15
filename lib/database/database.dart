@@ -65,7 +65,7 @@ class DatabaseHelper {
       -- payment info
       initial_fee INTEGER NOT NULL DEFAULT 0,
       prepaid_amount INTEGER NOT NULL DEFAULT 0,
-      group_number INTEGER DEFAULT 0, -- for grouping players in a session
+      group_number INTEGER, -- for grouping players in a session
       last_modified TEXT NOT NULL,       
       FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL
     )
@@ -111,8 +111,7 @@ class DatabaseHelper {
         is_primary INTEGER NOT NULL, -- 0 for false, 1 for true
         is_deleted INTEGER NOT NULL DEFAULT 0, -- 0 for not deleted, 1 for deleted
         last_modified TEXT NOT NULL,
-        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
-        PRIMARY KEY (player_id, phone_number)
+        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL
       )
     ''');
 
@@ -159,6 +158,7 @@ class DatabaseHelper {
         session_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
         quantity INTEGER NOT NULL,
+        is_pre_check_in INTEGER NOT NULL DEFAULT 0,
         last_modified TEXT NOT NULL,
         FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT,
@@ -496,6 +496,7 @@ class DatabaseHelper {
             'session_id': sessionId,
             'product_id': productId,
             'quantity': quantity,
+            'is_pre_check_in': 1,
             'last_modified': nowIso,
           });
 
@@ -772,11 +773,9 @@ class DatabaseHelper {
 
     // Clear existing products for this session
     await db.transaction((txn) async {
-      await txn.delete(
-        'session_products',
-        where: 'session_id = ?',
-        whereArgs: [player.sessionID],
-      );
+      await txn.rawDelete(
+          'DELETE FROM session_products WHERE session_id=? AND is_pre_check_in = 0',
+          [player.sessionID]);
 
       // Insert new products bought
       for (var entry in player.productsBought.entries) {
@@ -789,6 +788,7 @@ class DatabaseHelper {
             'session_id': player.sessionID,
             'product_id': productId,
             'quantity': quantity,
+            'is_pre_check_in': 0,
             'last_modified': nowIso,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,

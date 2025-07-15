@@ -278,7 +278,9 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
 
     // Get the color for the player's group, if any.
     final Color? groupColor =
-        player.groupNumber != null ? groupColorMap[player.groupNumber!] : null;
+        (player.groupNumber != null && player.groupNumber != 0)
+            ? groupColorMap[player.groupNumber!]
+            : null;
 
     return TableRow(
       decoration: BoxDecoration(

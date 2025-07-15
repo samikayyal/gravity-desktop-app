@@ -65,6 +65,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
       final playerData = await ref
           .read(currentPlayersProvider.notifier)
           .currentPlayerSession(widget.sessionId);
+      log("${playerData.productsBought}");
       setState(() {
         player = playerData;
         timeSpent = DateTime.now().toUtc().difference(player!.checkInTime);
@@ -89,16 +90,19 @@ class _ReceiptState extends ConsumerState<Receipt> {
             final String formattedCheckInTime =
                 DateFormat('h:mm a').format(player!.checkInTime.toLocal());
 
-            final int finalFee = player!.subscriptionId != null
-                ? calculateProductsFee(
-                    productsBought: productsBought,
-                    allProducts: receiptData.allProducts)
-                : calculateFinalFee(
-                    timeSpent: timeSpent,
-                    prices: receiptData.prices,
-                    productsBought: player!.productsBought,
-                    allProducts: receiptData.allProducts);
-            // amount paid be 0 if the player! has a subscription
+            final int finalFee;
+            if (player!.subscriptionId != null) {
+              finalFee = calculateProductsFee(
+                  productsBought: productsBought,
+                  allProducts: receiptData.allProducts);
+            } else {
+              finalFee = calculateFinalFee(
+                  timeSpent: timeSpent,
+                  prices: receiptData.prices,
+                  productsBought: player!.productsBought,
+                  allProducts: receiptData.allProducts);
+            }
+            // amount paid be 0 if the player has a subscription
             final int amountLeft = finalFee - player!.amountPaid;
 
             return Scaffold(

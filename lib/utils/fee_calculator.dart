@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
@@ -56,10 +58,10 @@ int calculateFinalFee({
   }
 
   // --- Fee Calculation Logic
-  if (totalHalfHourBlocks == 0) return prices[TimeSlice.halfHour]!;
 
   int total = 0;
 
+  // if (totalHalfHourBlocks == 0) total += prices[TimeSlice.halfHour]!;
   // Case 1: Time spent is 1 hour or more (2+ half-hour blocks)
   if (totalHalfHourBlocks >= 2) {
     // Always charge the base price for the very first hour.
@@ -89,6 +91,7 @@ int calculateFinalFee({
     );
   }
 
+  log("products: $productsBought, all products: $allProducts");
   if (productsBought != null && productsBought.isNotEmpty) {
     total += calculateProductsFee(
         productsBought: productsBought, allProducts: allProducts!);

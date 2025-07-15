@@ -37,6 +37,7 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       SELECT phone_number
       FROM phone_numbers
       WHERE player_id = ?
+      AND is_deleted = 0
     ''', [playerId]);
 
     return result.map((map) => map['phone_number'] as String).toList();

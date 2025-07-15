@@ -486,6 +486,9 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                                   tooltip: 'Save Changes',
                                   onPressed: () {
                                     log("Edit player details confirmed");
+                                    if (!_formKey.currentState!.validate()) {
+                                      return;
+                                    }
                                     setState(() {
                                       _inEditMode = false;
                                       _detailsReadOnly = true;

@@ -171,22 +171,24 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await db.transaction((txn) async {
       // get a group number
       final List<Map<String, dynamic>> groupNumberQuery = await txn.rawQuery(
-        'SELECT group_number AS group_number FROM player_sessions WHERE check_out_time IS NOT NULL',
+        'SELECT group_number AS group_number FROM player_sessions WHERE check_out_time IS NULL',
       );
 
-      // get a random group number not in use
+      // get a group number not in use
       int groupNumber = 1;
       if (groupNumberQuery.isNotEmpty) {
-        final List<int> usedGroupNumbers =
-            groupNumberQuery.map((e) => e['group_number'] as int).toList();
-        while (usedGroupNumbers.contains(groupNumber)) {
-          groupNumber++;
+        while (true) {
+          if (!groupNumberQuery
+              .map((e) => e['group_number'] as int)
+              .contains(groupNumber)) {
+            break;
+          }
         }
       }
 
-      var uuid = Uuid();
       for (GroupPlayer player in groupPlayers) {
         // generate an id if it doesnt exist
+        var uuid = Uuid();
         final String playerId = player.existingPlayer?.playerID ?? uuid.v4();
 
         // if a new player add to db
@@ -203,7 +205,6 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         }
 
         // insert the player session
-        // ignore: unused_local_variable
         final int sessionId = await txn.insert(
           'player_sessions',
           {
@@ -239,6 +240,23 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
               },
             );
           }
+        }
+
+        // Products
+        for (var entry in player.productsCart.entries) {
+          await txn.insert('session_products', {
+            'session_id': sessionId,
+            'product_id': entry.key,
+            'quantity': entry.value,
+            'is_pre_check_in': 1,
+            'last_modified': nowIso,
+          });
+
+          await txn.rawUpdate('''
+            UPDATE products
+            SET quantity_available = quantity_available - ?
+            WHERE product_id = ?
+            ''', [entry.value, entry.key]);
         }
       }
     });
