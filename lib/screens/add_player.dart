@@ -829,6 +829,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                               hoursReserved = 0;
                               minutesReserved = 0;
                             }
+                            _updateTotalFee(data.prices, data.allProducts);
                           });
                         },
                       ),
@@ -954,7 +955,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                 if (amount == null || amount < 0) {
                   return 'Please enter a valid amount';
                 }
-                if (amount > initialFee) {
+                if (amount > initialFee && !isOpenTime) {
                   return 'Amount is more than the total fee';
                 }
                 return null;

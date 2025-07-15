@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/screens/add_group.dart';
+import 'package:uuid/uuid.dart';
 
 final databaseProvider = Provider<DatabaseHelper>((ref) {
   return DatabaseHelper.instance;
@@ -96,6 +97,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await _dbHelper.clearDb();
     await refresh();
   }
+  // -------- END TEST --------
 
   Future<void> extendPlayerTime(Player player,
       {required Duration timeToExtend, required bool isOpenTime}) async {
@@ -120,7 +122,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
                 ps.prepaid_amount AS amount_paid,
                 ps.initial_fee AS initial_fee,
                 ps.group_number AS group_number,
-                ps.session_id AS session_id,s
+                ps.session_id AS session_id,
                 s.subscription_id AS subscription_id
          FROM player_sessions ps
          JOIN players p ON ps.player_id = p.id
@@ -156,9 +158,90 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     }
   }
 
-  Future<void> checkInGroup({
-    required List<GroupPlayer> groupPlayers,
-    required int timeReservedMinutes,
-    required bool isOpenTime,
-  }) async {}
+  Future<void> checkInGroup(
+      {required List<GroupPlayer> groupPlayers,
+      required int timeReservedMinutes,
+      required bool isOpenTime,
+      required int initialFee,
+      required int amountPaid,
+      List<String> phoneNumbers = const []}) async {
+    final db = await _dbHelper.database;
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    await db.transaction((txn) async {
+      // get a group number
+      final List<Map<String, dynamic>> groupNumberQuery = await txn.rawQuery(
+        'SELECT group_number AS group_number FROM player_sessions WHERE check_out_time IS NOT NULL',
+      );
+
+      // get a random group number not in use
+      int groupNumber = 1;
+      if (groupNumberQuery.isNotEmpty) {
+        final List<int> usedGroupNumbers =
+            groupNumberQuery.map((e) => e['group_number'] as int).toList();
+        while (usedGroupNumbers.contains(groupNumber)) {
+          groupNumber++;
+        }
+      }
+
+      var uuid = Uuid();
+      for (GroupPlayer player in groupPlayers) {
+        // generate an id if it doesnt exist
+        final String playerId = player.existingPlayer?.playerID ?? uuid.v4();
+
+        // if a new player add to db
+        if (player.existingPlayer == null) {
+          await txn.insert(
+            'players',
+            {
+              'id': playerId,
+              'name': player.fullName,
+              'age': player.age,
+              'last_modified': nowIso,
+            },
+          );
+        }
+
+        // insert the player session
+        // ignore: unused_local_variable
+        final int sessionId = await txn.insert(
+          'player_sessions',
+          {
+            'player_id': playerId,
+            'check_in_time': nowIso,
+            'time_reserved_minutes': timeReservedMinutes,
+            'is_open_time': isOpenTime ? 1 : 0,
+            'initial_fee': initialFee ~/ groupPlayers.length,
+            'prepaid_amount': amountPaid ~/ groupPlayers.length,
+            'group_number': groupNumber,
+            'last_modified': nowIso,
+          },
+        );
+
+        // insert phone numbers if any
+        if (phoneNumbers.isNotEmpty) {
+          // delete existing phone numbers
+          await txn.update(
+            'phone_numbers',
+            {'is_deleted': 1},
+            where: 'player_id = ?',
+            whereArgs: [playerId],
+          );
+
+          for (var phoneNumber in phoneNumbers) {
+            await txn.insert(
+              'phone_numbers',
+              {
+                'player_id': playerId,
+                'phone_number': phoneNumber,
+                'is_primary': phoneNumber == phoneNumbers.first ? 1 : 0,
+                'last_modified': nowIso,
+              },
+            );
+          }
+        }
+      }
+    });
+    await refresh();
+  }
 }

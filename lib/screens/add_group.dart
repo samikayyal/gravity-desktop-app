@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
@@ -8,6 +9,8 @@ import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/combined_providers.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
+import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
@@ -18,11 +21,13 @@ class GroupPlayer {
   final TextEditingController fullNameController;
   final TextEditingController ageController;
 
-  final Player? existingPlayer;
+  Player? existingPlayer;
   bool isSibling;
   bool isMainSibling;
 
   Map<int, int> productsCart;
+
+  bool isReadOnly = false;
 
   GroupPlayer({
     required this.firstNameController,
@@ -42,6 +47,8 @@ class GroupPlayer {
       return fullNameController.text.trim();
     }
   }
+
+  int get age => int.tryParse(ageController.text) ?? -1;
 
   void dispose() {
     firstNameController.dispose();
@@ -81,6 +88,9 @@ class _AddGroupState extends ConsumerState<AddGroup> {
   final _formKey = GlobalKey<FormState>();
   int selectedPlayerIndex = 0;
   final amountPaidController = TextEditingController();
+  final List<TextEditingController> phoneControllers = [
+    TextEditingController()
+  ];
 
   // misc
   final formatter = NumberFormat.decimalPattern();
@@ -243,6 +253,57 @@ class _AddGroupState extends ConsumerState<AddGroup> {
     }
   }
 
+  Future<void> _fillPlayerDetails(Player selection, int index) async {
+    final List<String> playerPhones =
+        await ref.read(playerPhonesProvider(selection.playerID).future);
+
+    final player = groupPlayers[index];
+
+    // set sibling to false
+    if (player.isSibling) {
+      _toggleSibling(index);
+    }
+
+    setState(() {
+      player.fullNameController.text = selection.name;
+      player.ageController.text = selection.age.toString();
+
+      for (var playerPhone in playerPhones) {
+        if (playerPhone.isEmpty) continue;
+        // Add phone number only if it's not already in the list
+        if (!phoneControllers
+            .any((controller) => controller.text == playerPhone)) {
+          // Find an empty controller to fill, otherwise add a new one.
+          final emptyControllerIndex =
+              phoneControllers.indexWhere((c) => c.text.isEmpty);
+
+          if (emptyControllerIndex != -1) {
+            // An empty controller is available, so use it.
+            phoneControllers[emptyControllerIndex].text = playerPhone;
+          } else {
+            // All controllers are full, so add a new one.
+            phoneControllers.add(TextEditingController(text: playerPhone));
+          }
+        }
+      }
+
+      player.isReadOnly = true;
+    });
+  }
+
+  Future<void> _handleCheckIn() async {
+    await ref.read(currentPlayersProvider.notifier).checkInGroup(
+        groupPlayers: groupPlayers,
+        timeReservedMinutes: timeReservedMinutes,
+        isOpenTime: isOpenTime,
+        initialFee: totalFee,
+        amountPaid: int.parse(amountPaidController.text));
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -281,7 +342,14 @@ class _AddGroupState extends ConsumerState<AddGroup> {
             // Right column: Payment summary
             Expanded(
               flex: 2,
-              child: _buildPaymentCard(),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildPhoneNumbersCard(),
+                    _buildPaymentCard(),
+                  ],
+                ),
+              ),
             )
           ],
         ),
@@ -537,7 +605,9 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                 children: [
                   Checkbox(
                     value: player.isSibling,
-                    onChanged: (value) => _toggleSibling(index),
+                    onChanged: player.isReadOnly
+                        ? null
+                        : (value) => _toggleSibling(index),
                   ),
                   const Text('Sibling'),
                 ],
@@ -608,19 +678,152 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                 // Full name field for non-siblings
                 Expanded(
                   flex: 4,
-                  child: TextFormField(
-                    controller: player.fullNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Name is required';
-                      }
-                      return null;
-                    },
-                  ),
+                  child: Autocomplete<Player>(
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        if (textEditingValue.text.isEmpty) {
+                          return const Iterable<Player>.empty();
+                        }
+                        return ref.watch(pastPlayersProvider).maybeWhen(
+                            data: (pastPlayers) {
+                              final fuse = Fuzzy(
+                                pastPlayers,
+                                options: FuzzyOptions(
+                                  keys: [
+                                    WeightedKey(
+                                        name: 'name',
+                                        weight: 1.0,
+                                        getter: (Player player) => player.name)
+                                  ],
+                                  threshold: fuzzyThreshold,
+                                ),
+                              );
+
+                              final results =
+                                  fuse.search(textEditingValue.text);
+                              return results
+                                  .map((result) => result.item)
+                                  .where((p) => p.subscriptionId == null);
+                            },
+                            orElse: () => const Iterable<Player>.empty());
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4.0,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                  maxHeight: 250, maxWidth: 400),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final option = options.elementAt(index);
+
+                                  final bool isHighlighted =
+                                      AutocompleteHighlightedOption.of(
+                                              context) ==
+                                          index;
+                                  return InkWell(
+                                    onTap: () => onSelected(option),
+                                    child: Container(
+                                      color: isHighlighted
+                                          ? Theme.of(context)
+                                              .focusColor
+                                              .withAlpha(18)
+                                          : null,
+                                      child: ListTile(
+                                        selected: isHighlighted,
+                                        selectedTileColor:
+                                            Colors.black.withAlpha(25),
+                                        title: Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Text(
+                                            option.subscriptionId != null
+                                                ? '${option.name} (${option.age}) - Subscription Active'
+                                                : '${option.name} (${option.age})',
+                                            style:
+                                                AppTextStyles.regularTextStyle,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      displayStringForOption: (Player option) => option.name,
+                      onSelected: (Player selection) async {
+                        player.existingPlayer = selection;
+                        await _fillPlayerDetails(selection, index);
+                      },
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          readOnly: player.isReadOnly,
+                          onFieldSubmitted: (value) => onFieldSubmitted(),
+                          onChanged: (value) {
+                            // if the user is typing and not selecting
+                            if (value.isNotEmpty && !player.isReadOnly) {
+                              player.fullNameController.text = value;
+                            }
+                          },
+                          style: AppTextStyles.regularTextStyle,
+                          decoration: InputDecoration(
+                            filled: player.isReadOnly,
+                            fillColor: player.isReadOnly
+                                ? Colors.grey.shade200
+                                : Colors.transparent,
+                            labelText:
+                                player.isReadOnly ? "Name (Locked)" : 'Name',
+                            labelStyle: AppTextStyles.regularTextStyle,
+                            hintText: 'Enter player name',
+                            hintStyle: AppTextStyles.subtitleTextStyle,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 18),
+                            suffixIcon: player.existingPlayer != null
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.clear,
+                                            size: 24, color: Colors.red),
+                                        tooltip: 'Clear Selected Player',
+                                        onPressed: () async {
+                                          setState(() {
+                                            player.isReadOnly = false;
+                                            player.fullNameController.clear();
+                                            controller.clear();
+                                            player.firstNameController.clear();
+                                            player.lastNameController.clear();
+                                            player.ageController.clear();
+
+                                            player.existingPlayer = null;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  )
+                                : null,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a name';
+                            }
+                            return null;
+                          },
+                        );
+                      }),
                 ),
               ],
               const SizedBox(width: 12),
@@ -629,17 +832,33 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                 flex: 1,
                 child: TextFormField(
                   controller: player.ageController,
-                  decoration: const InputDecoration(
-                    labelText: 'Age',
-                    border: OutlineInputBorder(),
+                  readOnly: player.isReadOnly,
+                  style: AppTextStyles.regularTextStyle,
+                  decoration: InputDecoration(
+                    filled: player.isReadOnly,
+                    fillColor: player.isReadOnly
+                        ? Colors.grey.shade200
+                        : Colors.transparent,
+                    labelText: player.isReadOnly ? "Age (Locked)" : 'Age',
+                    labelStyle: AppTextStyles.regularTextStyle,
+                    hintText: 'Enter player age',
+                    hintStyle: AppTextStyles.subtitleTextStyle,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 18),
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Age is required';
                     }
                     final age = int.tryParse(value);
-                    if (age == null || age <= 0) {
+                    if (age == null || age < 0) {
                       return 'Enter a valid age';
                     }
                     return null;
@@ -778,10 +997,101 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               ),
               onPressed:
                   // make sure time is not 0
-                  timeReservedMinutes == 0 || !isOpenTime ? null : () async {},
+                  timeReservedMinutes == 0 && !isOpenTime
+                      ? null
+                      : () async => await _handleCheckIn(),
               child: const Text("Add Player"),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  MyCard _buildPhoneNumbersCard() {
+    return MyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Phone Numbers (optional)',
+            style:
+                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
+          ),
+          const SizedBox(height: 16),
+          for (int i = 0; i < phoneControllers.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: phoneControllers[i],
+                      style: AppTextStyles.regularTextStyle,
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        labelStyle: AppTextStyles.regularTextStyle,
+                        hintText: 'Enter phone number',
+                        hintStyle: AppTextStyles.subtitleTextStyle,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 18),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          final phone = value.trim();
+                          if (phone.length != 10) {
+                            return 'Please enter a valid phone number';
+                          }
+                          if (!phone.startsWith("09")) {
+                            return 'Phone number must start with 09';
+                          }
+                          if (phone.contains(RegExp(r'\D'))) {
+                            return 'Phone number must contain only digits';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  if (i == phoneControllers.length - 1) ...[
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton(
+                        icon: const Icon(Icons.add, size: 28),
+                        tooltip: 'Add phone number',
+                        onPressed: () {
+                          setState(() {
+                            phoneControllers.add(TextEditingController());
+                          });
+                        },
+                      ),
+                    ),
+                    if (phoneControllers.length > 1) const SizedBox(width: 8),
+                    if (phoneControllers.length > 1)
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: IconButton(
+                          icon: const Icon(Icons.remove, size: 28),
+                          tooltip: 'Remove phone number',
+                          onPressed: () {
+                            setState(() {
+                              phoneControllers.removeAt(i);
+                            });
+                          },
+                        ),
+                      ),
+                  ]
+                ],
+              ),
+            ),
         ],
       ),
     );

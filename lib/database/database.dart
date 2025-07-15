@@ -109,6 +109,7 @@ class DatabaseHelper {
         player_id TEXT NOT NULL,
         phone_number TEXT NOT NULL,
         is_primary INTEGER NOT NULL, -- 0 for false, 1 for true
+        is_deleted INTEGER NOT NULL DEFAULT 0, -- 0 for not deleted, 1 for deleted
         last_modified TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL,
         PRIMARY KEY (player_id, phone_number)
@@ -465,8 +466,9 @@ class DatabaseHelper {
       // Insert phone numbers if any
       if (phoneNumbers.isNotEmpty) {
         // delete existing phone numbers
-        await txn.delete(
+        await txn.update(
           'phone_numbers',
+          {'is_deleted': 1},
           where: 'player_id = ?',
           whereArgs: [playerID],
         );
@@ -894,8 +896,9 @@ class DatabaseHelper {
       // Update phone numbers
       if (phones.isNotEmpty) {
         // delete existing phone numbers
-        await txn.delete(
+        await txn.update(
           'phone_numbers',
+          {'is_deleted': 1},
           where: 'player_id = ?',
           whereArgs: [playerID],
         );
