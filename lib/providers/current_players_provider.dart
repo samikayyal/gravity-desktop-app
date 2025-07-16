@@ -162,7 +162,6 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       {required List<GroupPlayer> groupPlayers,
       required int timeReservedMinutes,
       required bool isOpenTime,
-      required int initialFee,
       required int amountPaid,
       List<String> phoneNumbers = const []}) async {
     final db = await _dbHelper.database;
@@ -178,8 +177,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       int groupNumber = 1;
       if (groupNumberQuery.isNotEmpty) {
         final existingGroupNumbers = groupNumberQuery
-            .map(
-                (e) => e['group_number'] as int?) // Use int? for safety
+            .map((e) => e['group_number'] as int?) // Use int? for safety
             .where((number) => number != null) // Filter out any nulls
             .toSet();
 
@@ -193,6 +191,9 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         // generate an id if it doesnt exist
         var uuid = Uuid();
         final String playerId = player.existingPlayer?.playerID ?? uuid.v4();
+
+        // get player fee
+        int playerInitialFee = player.getFee(timeReservedMinutes, isOpenTime);
 
         // if a new player add to db
         if (player.existingPlayer == null) {
@@ -215,7 +216,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
             'check_in_time': nowIso,
             'time_reserved_minutes': timeReservedMinutes,
             'is_open_time': isOpenTime ? 1 : 0,
-            'initial_fee': initialFee ~/ groupPlayers.length,
+            'initial_fee': playerInitialFee,
             'prepaid_amount': amountPaid ~/ groupPlayers.length,
             'group_number': groupNumber,
             'last_modified': nowIso,

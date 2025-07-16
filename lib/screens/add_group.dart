@@ -316,7 +316,6 @@ class _AddGroupState extends ConsumerState<AddGroup> {
         groupPlayers: groupPlayers,
         timeReservedMinutes: timeReservedMinutes,
         isOpenTime: isOpenTime,
-        initialFee: totalFee,
         amountPaid: int.parse(amountPaidController.text));
 
     if (mounted) {
