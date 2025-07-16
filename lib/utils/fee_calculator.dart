@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/product.dart';
+import 'package:gravity_desktop_app/screens/add_group.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 
 int calculatePreCheckInFee({
@@ -139,4 +140,25 @@ int calculateSubscriptionFee(
   // Round up to the nearest 10000
 
   return ((rawFee / 10000).ceil()) * 10000;
+}
+
+int calculateGroupPlayerFee({
+  required GroupPlayer player,
+  required int timeReservedMinutes,
+  required bool isOpenTime,
+  required Map<TimeSlice, int> prices,
+  required List<Product> allProducts,
+}) {
+  int fee = calculatePreCheckInFee(
+      hoursReserved: timeReservedMinutes ~/ 60,
+      minutesReserved: timeReservedMinutes % 60,
+      prices: prices,
+      isOpenTime: isOpenTime);
+
+  for (var entry in player.productsCart.entries) {
+    final product = allProducts.firstWhere((p) => p.id == entry.key);
+    fee += entry.value * product.price;
+  }
+
+  return fee;
 }

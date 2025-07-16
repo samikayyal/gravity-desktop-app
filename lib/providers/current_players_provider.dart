@@ -177,16 +177,15 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       // get a group number not in use
       int groupNumber = 1;
       if (groupNumberQuery.isNotEmpty) {
-        // Create a set of existing group numbers for efficient lookups
         final existingGroupNumbers = groupNumberQuery
             .map(
-                (e) => e['group_number'] as int?) // Use nullable int for safety
+                (e) => e['group_number'] as int?) // Use int? for safety
             .where((number) => number != null) // Filter out any nulls
             .toSet();
 
         // Keep incrementing the group number as long as it's already taken
         while (existingGroupNumbers.contains(groupNumber)) {
-          groupNumber++; // THE FIX: Increment to find the next available number
+          groupNumber++;
         }
       }
 

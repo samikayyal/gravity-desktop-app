@@ -113,7 +113,12 @@ class _AddGroupState extends ConsumerState<AddGroup> {
   void _updateTotalFee() {
     int total = 0;
     for (var player in groupPlayers) {
-      total += calculateGroupPlayerFee(player);
+      total += calculateGroupPlayerFee(
+          player: player,
+          isOpenTime: isOpenTime,
+          timeReservedMinutes: timeReservedMinutes,
+          prices: widget.data.prices,
+          allProducts: widget.data.allProducts);
     }
 
     setState(() {
@@ -292,6 +297,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
   }
 
   Future<void> _handleCheckIn() async {
+    if (!_formKey.currentState!.validate()) return;
     await ref.read(currentPlayersProvider.notifier).checkInGroup(
         groupPlayers: groupPlayers,
         timeReservedMinutes: timeReservedMinutes,
@@ -887,7 +893,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
           // detailed fee for each player
           for (var player in groupPlayers)
             Text(
-                "${player.fullName.isNotEmpty ? player.fullName : 'Player ${groupPlayers.indexOf(player) + 1}'} Fee: ${calculateGroupPlayerFee(player)}",
+                "${player.fullName.isNotEmpty ? player.fullName : 'Player ${groupPlayers.indexOf(player) + 1}'} Fee: ${calculateGroupPlayerFee(player: player, isOpenTime: isOpenTime, timeReservedMinutes: timeReservedMinutes, prices: widget.data.prices, allProducts: widget.data.allProducts)}",
                 style: AppTextStyles.regularTextStyle
                     .copyWith(fontWeight: FontWeight.bold)),
 
@@ -1103,21 +1109,5 @@ class _AddGroupState extends ConsumerState<AddGroup> {
       player.dispose();
     }
     super.dispose();
-  }
-
-  int calculateGroupPlayerFee(GroupPlayer player) {
-    int fee = calculatePreCheckInFee(
-        hoursReserved: timeReservedMinutes ~/ 60,
-        minutesReserved: timeReservedMinutes % 60,
-        prices: widget.data.prices,
-        isOpenTime: isOpenTime);
-
-    for (var entry in player.productsCart.entries) {
-      final product =
-          widget.data.allProducts.firstWhere((p) => p.id == entry.key);
-      fee += entry.value * product.price;
-    }
-
-    return fee;
   }
 }
