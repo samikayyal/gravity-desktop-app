@@ -20,6 +20,7 @@ class GroupPlayer {
   final TextEditingController lastNameController;
   final TextEditingController fullNameController;
   final TextEditingController ageController;
+  late PricesProductsSubs _data;
 
   Player? existingPlayer;
   bool isSibling;
@@ -34,10 +35,13 @@ class GroupPlayer {
     required this.lastNameController,
     required this.fullNameController,
     required this.ageController,
+    required PricesProductsSubs data,
     this.existingPlayer,
     this.isSibling = false,
     this.isMainSibling = false,
-  }) : productsCart = {};
+  }) : productsCart = {} {
+    _data = data;
+  }
 
   String get fullName {
     if (isSibling) {
@@ -49,6 +53,15 @@ class GroupPlayer {
   }
 
   int get age => int.tryParse(ageController.text) ?? -1;
+
+  int getFee(int timeReservedMinutes, bool isOpenTime) {
+    return calculateGroupPlayerFee(
+        player: this,
+        timeReservedMinutes: timeReservedMinutes,
+        isOpenTime: isOpenTime,
+        prices: _data.prices,
+        allProducts: _data.allProducts);
+  }
 
   void dispose() {
     firstNameController.dispose();
@@ -68,14 +81,7 @@ class AddGroup extends ConsumerStatefulWidget {
 
 class _AddGroupState extends ConsumerState<AddGroup> {
   // player variables
-  List<GroupPlayer> groupPlayers = [
-    GroupPlayer(
-      firstNameController: TextEditingController(),
-      lastNameController: TextEditingController(),
-      fullNameController: TextEditingController(),
-      ageController: TextEditingController(),
-    )
-  ];
+  late List<GroupPlayer> groupPlayers;
 
   String sharedLastName = '';
 
@@ -95,6 +101,19 @@ class _AddGroupState extends ConsumerState<AddGroup> {
   // misc
   final formatter = NumberFormat.decimalPattern();
 
+  @override
+  void initState() {
+    groupPlayers = [
+      GroupPlayer(
+          firstNameController: TextEditingController(),
+          lastNameController: TextEditingController(),
+          fullNameController: TextEditingController(),
+          ageController: TextEditingController(),
+          data: widget.data)
+    ];
+    super.initState();
+  }
+
   void _incrementTime(TimeIncrement increment) {
     if (timeReservedMinutes > 60 * 12) return;
 
@@ -113,12 +132,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
   void _updateTotalFee() {
     int total = 0;
     for (var player in groupPlayers) {
-      total += calculateGroupPlayerFee(
-          player: player,
-          isOpenTime: isOpenTime,
-          timeReservedMinutes: timeReservedMinutes,
-          prices: widget.data.prices,
-          allProducts: widget.data.allProducts);
+      total += player.getFee(timeReservedMinutes, isOpenTime);
     }
 
     setState(() {
@@ -131,11 +145,11 @@ class _AddGroupState extends ConsumerState<AddGroup> {
 
     setState(() {
       groupPlayers.add(GroupPlayer(
-        firstNameController: TextEditingController(),
-        lastNameController: TextEditingController(),
-        fullNameController: TextEditingController(),
-        ageController: TextEditingController(),
-      ));
+          firstNameController: TextEditingController(),
+          lastNameController: TextEditingController(),
+          fullNameController: TextEditingController(),
+          ageController: TextEditingController(),
+          data: widget.data));
     });
     _updateTotalFee();
   }
@@ -893,7 +907,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
           // detailed fee for each player
           for (var player in groupPlayers)
             Text(
-                "${player.fullName.isNotEmpty ? player.fullName : 'Player ${groupPlayers.indexOf(player) + 1}'} Fee: ${calculateGroupPlayerFee(player: player, isOpenTime: isOpenTime, timeReservedMinutes: timeReservedMinutes, prices: widget.data.prices, allProducts: widget.data.allProducts)}",
+                "${player.fullName.isNotEmpty ? player.fullName : 'Player ${groupPlayers.indexOf(player) + 1}'} Fee: ${player.getFee(timeReservedMinutes, isOpenTime)}",
                 style: AppTextStyles.regularTextStyle
                     .copyWith(fontWeight: FontWeight.bold)),
 
