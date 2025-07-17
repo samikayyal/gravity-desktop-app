@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
@@ -64,8 +66,6 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
   }
 
   Future<void> _onConfirmPurchase(List<Product> allProducts) async {
-    if (_cart.isEmpty) return;
-
     // ------------------------- SEPARATE PURCHASE
     if (widget.player == null) {
       // Create the Map<Product, int> expected by the provider
@@ -73,6 +73,8 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
         for (var entry in _cart.entries)
           allProducts.firstWhere((p) => p.id == entry.key): entry.value
       };
+
+      if (cartForProvider.isEmpty) return;
 
       try {
         await ref
@@ -91,21 +93,20 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
       // ------------------------- PLAYER PURCHASE
       final player = widget.player!;
       player.clearProducts();
+      setState(() {
+        _isAddingToDatabase = true;
+      });
 
       for (var entry in _cart.entries) {
         player.addProduct(entry.key, entry.value);
-
-        setState(() {
-          _isAddingToDatabase = true;
-        });
-
-        // update the database
-        await ref.read(databaseProvider).updatePlayerProducts(player);
-
-        setState(() {
-          _isAddingToDatabase = false;
-        });
       }
+      // update the database
+      // TODO: Move this to a provider, either products or players
+      await ref.read(databaseProvider).updatePlayerProducts(player);
+      await ref.read(productsProvider.notifier).refresh();
+      setState(() {
+        _isAddingToDatabase = false;
+      });
     }
     if (mounted) {
       Navigator.of(context).pop();
@@ -217,9 +218,7 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
         ElevatedButton(
           onPressed: _isAddingToDatabase
               ? null
-              : _cart.isNotEmpty
-                  ? () async => await _onConfirmPurchase(allProducts)
-                  : null,
+              : () async => await _onConfirmPurchase(allProducts),
           style: AppButtonStyles.primaryButton,
           child: _isAddingToDatabase
               ? const CircularProgressIndicator(
