@@ -12,9 +12,9 @@ import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
 import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
-import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
+import 'package:gravity_desktop_app/utils/provider_utils.dart';
 import 'package:intl/intl.dart';
 
 enum TipType { returnChange, takeAsTip }
@@ -833,10 +833,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                                                         checkoutTime: nowIso,
                                                       );
 
-                                                  await ref
-                                                      .read(productsProvider
-                                                          .notifier)
-                                                      .refresh();
+                                                  refreshAllProviders(ref);
 
                                                   if (context.mounted) {
                                                     Navigator.of(context).pop();
