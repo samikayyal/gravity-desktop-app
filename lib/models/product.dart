@@ -1,14 +1,14 @@
 class Product {
   final int id;
-  final String name;
+  final String na me;
   final int price;
-  final int quantityAvailable;
+  final int effectiveStock;
 
   Product({
     required this.id,
     required this.name,
     required this.price,
-    required this.quantityAvailable,
+    required this.effectiveStock,
   });
 
   factory Product.fromMap(Map<String, dynamic> map) {
@@ -16,7 +16,7 @@ class Product {
       id: map['product_id'] as int,
       name: map['name'] as String,
       price: map['price'] as int,
-      quantityAvailable: map['quantity_available'] as int,
+      effectiveStock: map['quantity_available'] as int,
     );
   }
 
@@ -25,13 +25,13 @@ class Product {
     int? id,
     String? name,
     int? price,
-    int? quantityAvailable,
+    int? effectiveStock,
   }) {
     return Product(
       id: id ?? this.id,
       name: name ?? this.name,
       price: price ?? this.price,
-      quantityAvailable: quantityAvailable ?? this.quantityAvailable,
+      effectiveStock: effectiveStock ?? this.effectiveStock,
     );
   }
 }

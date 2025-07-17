@@ -158,7 +158,6 @@ class DatabaseHelper {
         session_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
         quantity INTEGER NOT NULL,
-        is_pre_check_in INTEGER NOT NULL DEFAULT 0,
         last_modified TEXT NOT NULL,
         FOREIGN KEY (session_id) REFERENCES player_sessions(session_id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT,
@@ -335,22 +334,11 @@ class DatabaseHelper {
             },
           );
 
-          final originalQuantity = await txn.rawQuery(
-              'SELECT quantity_available FROM products WHERE product_id = ?',
-              [entry['product_id']]);
-          if (originalQuantity.isEmpty) {
-            throw Exception("Could not find product original quantity");
-          }
-
-          await txn.update(
-              'products',
-              {
-                'quantity_available':
-                    (originalQuantity.first['quantity_available']! as int) -
-                        entry['quantity']
-              },
-              where: 'product_id = ?',
-              whereArgs: [entry['product_id']]);
+          await txn.rawUpdate('''
+            UPDATE products
+            SET quantity_available = quantity_available - ?
+            WHERE product_id = ?
+          ''', [entry['quantity'], entry['product_id'] as int]);
         }
       }
 
@@ -496,18 +484,8 @@ class DatabaseHelper {
             'session_id': sessionId,
             'product_id': productId,
             'quantity': quantity,
-            'is_pre_check_in': 1,
             'last_modified': nowIso,
           });
-
-          await txn.rawUpdate(
-            '''
-            UPDATE products
-            SET quantity_available = quantity_available - ?
-            WHERE product_id = ?
-            ''',
-            [quantity, productId],
-          );
         }
       }
 
@@ -648,7 +626,43 @@ class DatabaseHelper {
     if (maps.isEmpty) {
       return [];
     }
-    return maps.map((map) => Product.fromMap(map)).toList();
+
+    List<Product> allProducts = [];
+
+    // get effective stock for products
+    for (var product in maps) {
+      final result = await db.rawQuery(
+        'SELECT quantity_available FROM products WHERE product_id = ?',
+        [product['product_id']],
+      );
+
+      if (result.isEmpty) {
+        throw Exception('Product with ID ${product['product_id']} not found');
+      }
+
+      final int stock = result.first['quantity_available'] as int;
+      final sessionProducts = await db.rawQuery(
+        'SELECT SUM(quantity) AS total_quantity '
+        'FROM session_products WHERE product_id = ?',
+        [product['product_id']],
+      );
+
+      final int sessionQuantity = sessionProducts.isNotEmpty
+          ? (sessionProducts.first['total_quantity'] as int?) ?? 0
+          : 0;
+
+      // Calculate the effective stock by subtracting session quantities from available stock
+      final int effectiveStock = stock - sessionQuantity;
+
+      allProducts.add(Product(
+        id: product['product_id'] as int,
+        name: product['name'] as String,
+        price: product['price'] as int,
+        effectiveStock: effectiveStock,
+      ));
+    }
+
+    return allProducts;
   }
 
   // Add a new product to the database
@@ -711,7 +725,7 @@ class DatabaseHelper {
     final db = await database;
 
     cart.removeWhere((Product product, quantity) =>
-        quantity <= 0 || product.quantityAvailable < quantity);
+        quantity <= 0 || product.effectiveStock < quantity);
 
     if (cart.isEmpty) {
       throw Exception('Cart is empty or all products have insufficient stock.');
@@ -725,16 +739,14 @@ class DatabaseHelper {
         final int quantity = entry.value;
         finalFee += product.price * quantity;
 
-        // Update product quantity in stock
         // update the product quantity
-        await txn.update(
-          'products',
-          {
-            'quantity_available': product.quantityAvailable - quantity,
-            'last_modified': nowIso
-          },
-          where: 'product_id = ?',
-          whereArgs: [product.id],
+        await txn.rawUpdate(
+          '''
+          UPDATE products
+          SET quantity_available = quantity_available - ?
+          WHERE product_id = ?
+          ''',
+          [quantity, product.id],
         );
       }
 
@@ -773,8 +785,7 @@ class DatabaseHelper {
 
     // Clear existing products for this session
     await db.transaction((txn) async {
-      await txn.rawDelete(
-          'DELETE FROM session_products WHERE session_id=? AND is_pre_check_in = 0',
+      await txn.rawDelete('DELETE FROM session_products WHERE session_id=?',
           [player.sessionID]);
 
       // Insert new products bought
@@ -788,7 +799,6 @@ class DatabaseHelper {
             'session_id': player.sessionID,
             'product_id': productId,
             'quantity': quantity,
-            'is_pre_check_in': 0,
             'last_modified': nowIso,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,

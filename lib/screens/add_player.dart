@@ -1195,7 +1195,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                       onQuantityChanged: (newQuantity) {
                         // Ensure the new quantity is within valid bounds
                         if (newQuantity < 0 ||
-                            newQuantity > product.quantityAvailable) {
+                            newQuantity > product.effectiveStock) {
                           return;
                         }
 

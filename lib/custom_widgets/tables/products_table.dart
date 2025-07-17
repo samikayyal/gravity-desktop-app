@@ -88,7 +88,7 @@ class _ProductsTableState extends ConsumerState<ProductsTable> {
     final String productName = product.name;
     final String productPrice = formatter.format(product.price);
     final String quantityAvailable =
-        formatter.format(product.quantityAvailable);
+        formatter.format(product.effectiveStock);
 
     final TextStyle cellStyle = AppTextStyles.tableCellStyle;
     final TextStyle amountStyle = AppTextStyles.amountTextStyle;

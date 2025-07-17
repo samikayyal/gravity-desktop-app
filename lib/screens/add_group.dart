@@ -418,7 +418,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                       quantity: quantityInCart,
                       onQuantityChanged: (newQuantity) {
                         if (newQuantity < 0 ||
-                            newQuantity > product.quantityAvailable) {
+                            newQuantity > product.effectiveStock) {
                           return;
                         }
                         setState(() {

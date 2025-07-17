@@ -41,7 +41,7 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
 
   void _onQuantityChanged(Product product, int newQuantity) {
     // Ensure the new quantity is within valid bounds
-    if (newQuantity < 0 || newQuantity > product.quantityAvailable) return;
+    if (newQuantity < 0 || newQuantity > product.effectiveStock) return;
 
     setState(() {
       if (newQuantity > 0) {
@@ -136,7 +136,7 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
                 heightFactor: 5, child: Text('Error loading products: $err')),
             data: (products) {
               final availableProducts =
-                  products.where((p) => p.quantityAvailable > 0).toList();
+                  products.where((p) => p.effectiveStock > 0).toList();
               final totalPrice = _calculateTotalPrice(products);
 
               return Column(
@@ -261,7 +261,7 @@ class ProductListItem extends StatelessWidget {
                 Text(product.name, style: AppTextStyles.regularTextStyle),
                 const SizedBox(height: 4),
                 Text(
-                  '${formatter.format(product.price)} SYP  •  ${product.quantityAvailable} in stock',
+                  '${formatter.format(product.price)} SYP  •  ${product.effectiveStock} in stock',
                   style: AppTextStyles.subtitleTextStyle,
                 ),
               ],
@@ -304,7 +304,7 @@ class ProductListItem extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: quantity < product.quantityAvailable
+            onPressed: quantity < product.effectiveStock
                 ? () => onQuantityChanged(quantity + 1)
                 : null,
             style: AppButtonStyles.iconButtonCircle.copyWith(

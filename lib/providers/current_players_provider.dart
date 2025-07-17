@@ -252,15 +252,8 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
             'session_id': sessionId,
             'product_id': entry.key,
             'quantity': entry.value,
-            'is_pre_check_in': 1,
             'last_modified': nowIso,
           });
-
-          await txn.rawUpdate('''
-            UPDATE products
-            SET quantity_available = quantity_available - ?
-            WHERE product_id = ?
-            ''', [entry.value, entry.key]);
         }
       }
     });

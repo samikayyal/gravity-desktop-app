@@ -66,7 +66,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       // Pre-fill controllers for editing
       _editPriceController.text = product.price.toString();
       _addStockController.clear();
-      _resultingQuantity = product.quantityAvailable;
+      _resultingQuantity = product.effectiveStock;
     });
   }
 
@@ -194,7 +194,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                               color: isSelected ? Color(0xFF3949AB) : null,
                             )),
                         subtitle: Text(
-                          'Price: ${_formatter.format(product.price)} SYP\nStock: ${product.quantityAvailable}',
+                          'Price: ${_formatter.format(product.price)} SYP\nStock: ${product.effectiveStock}',
                           style: AppTextStyles.subtitleTextStyle,
                         ),
                         isThreeLine: true,
@@ -327,7 +327,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
-                onPressed: () async=> await _handleAddProduct(),
+                onPressed: () async => await _handleAddProduct(),
                 icon: const Icon(Icons.save, size: 20),
                 label: Text('Save Product',
                     style: AppTextStyles.primaryButtonTextStyle),
@@ -387,7 +387,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
           const SizedBox(height: 8),
           // IMPROVEMENT: Cleaner layout for stock info.
           _buildInfoRow("Current Stock:",
-              _formatter.format(_selectedProduct!.quantityAvailable)),
+              _formatter.format(_selectedProduct!.effectiveStock)),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +405,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     if (_selectedProduct == null) return;
                     setState(() {
                       _resultingQuantity =
-                          _selectedProduct!.quantityAvailable + amountToAdd;
+                          _selectedProduct!.effectiveStock + amountToAdd;
                     });
                   },
                 ),
@@ -514,7 +514,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       await ref.read(productsProvider.notifier).updateProduct(
             productId: originalProduct.id,
             price: newPrice,
-            quantityAvailable: originalProduct.quantityAvailable + amountToAdd,
+            quantityAvailable: originalProduct.effectiveStock + amountToAdd,
           );
 
       // UI will update automatically via ref.listen.
