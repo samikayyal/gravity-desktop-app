@@ -20,6 +20,7 @@ import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
 import 'package:gravity_desktop_app/screens/add_group.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
+import 'package:gravity_desktop_app/utils/provider_utils.dart';
 import 'package:intl/intl.dart';
 
 enum TimeIncrement { hour, halfHour }
@@ -260,6 +261,8 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
           subscriptionId: _selectedPlayer?.subscriptionId,
           productsBought: _productsCart.isNotEmpty ? _productsCart : const {},
         );
+    refreshAllProviders(ref);
+
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(

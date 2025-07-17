@@ -35,6 +35,10 @@ class NotesProvider extends StateNotifier<AsyncValue<List<Note>>> {
     }
   }
 
+  Future<void> refresh() async {
+    await _fetchNotes();
+  }
+
   Future<void> addNote(String note) async {
     state = const AsyncValue.loading();
     try {

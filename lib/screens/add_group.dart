@@ -13,6 +13,7 @@ import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
+import 'package:gravity_desktop_app/utils/provider_utils.dart';
 import 'package:intl/intl.dart';
 
 class GroupPlayer {
@@ -317,6 +318,8 @@ class _AddGroupState extends ConsumerState<AddGroup> {
         timeReservedMinutes: timeReservedMinutes,
         isOpenTime: isOpenTime,
         amountPaid: int.parse(amountPaidController.text));
+
+    refreshAllProviders(ref);
 
     if (mounted) {
       Navigator.of(context).pop();
