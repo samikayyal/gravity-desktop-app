@@ -485,8 +485,10 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               ElevatedButton.icon(
                 onPressed:
                     groupPlayers.length < maxPlayersInGroup ? _addPlayer : null,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Player'),
+                style: AppButtonStyles.primaryButton,
+                icon: Icon(Icons.add, color: mainBlue),
+                label: Text('Add Player',
+                    style: AppTextStyles.primaryButtonTextStyle),
               ),
             ],
           ),
@@ -893,7 +895,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           // pay in full button
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -910,7 +912,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           TextFormField(
             controller: amountPaidController,
             style: AppTextStyles.regularTextStyle,

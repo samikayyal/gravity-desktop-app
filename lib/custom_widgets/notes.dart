@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/providers/notes_provider.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 
 class Notes extends ConsumerStatefulWidget {
   const Notes({super.key});
@@ -53,7 +54,7 @@ class _NotesState extends ConsumerState<Notes> {
                 'Add New Note',
                 style: AppTextStyles.regularTextStyle.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF3949AB),
+                  color: mainBlue,
                 ),
               ),
               const SizedBox(height: 12),
@@ -71,8 +72,7 @@ class _NotesState extends ConsumerState<Notes> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: Color(0xFF3949AB), width: 2),
+                    borderSide: const BorderSide(color: mainBlue, width: 2),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -114,7 +114,7 @@ class _NotesState extends ConsumerState<Notes> {
                           .copyWith(color: Colors.white, fontSize: 14),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3949AB),
+                      backgroundColor: mainBlue,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -224,14 +224,13 @@ class _NotesState extends ConsumerState<Notes> {
                                       const EdgeInsets.only(right: 12, top: 2),
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF3949AB)
-                                        .withAlpha(25),
+                                    color: mainBlue.withAlpha(25),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
                                     Icons.note_alt_outlined,
                                     size: 16,
-                                    color: Color(0xFF3949AB),
+                                    color: mainBlue,
                                   ),
                                 ),
                                 // Note content
@@ -300,7 +299,7 @@ class _NotesState extends ConsumerState<Notes> {
                                             'Delete Note',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: Color(0xFF3949AB),
+                                              color: mainBlue,
                                             ),
                                           ),
                                           content: const Text(
@@ -363,8 +362,7 @@ class _NotesState extends ConsumerState<Notes> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xFF3949AB)),
+                        valueColor: AlwaysStoppedAnimation<Color>(mainBlue),
                       ),
                       SizedBox(height: 16),
                       Text(

@@ -241,16 +241,16 @@ class _ReceiptState extends ConsumerState<Receipt> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF3949AB).withAlpha(25),
+        color: mainBlue.withAlpha(25),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3949AB).withAlpha(50)),
+        border: Border.all(color: mainBlue.withAlpha(50)),
       ),
       child: Column(
         children: [
           const Icon(
             Icons.receipt_long,
             size: 36,
-            color: Color(0xFF3949AB),
+            color: mainBlue,
           ),
           const SizedBox(height: 8),
           Text(
@@ -258,7 +258,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
             style: GoogleFonts.notoSans(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF3949AB),
+              color: mainBlue,
             ),
           ),
           const SizedBox(height: 4),
@@ -288,7 +288,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
         children: [
           Row(
             children: [
-              const Icon(Icons.timer, size: 20, color: Color(0xFF3949AB)),
+              const Icon(Icons.timer, size: 20, color: mainBlue),
               const SizedBox(width: 8),
               Text(
                   isGroupCheckout ? "Group Session Details" : "Session Details",

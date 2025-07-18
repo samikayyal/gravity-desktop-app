@@ -15,6 +15,7 @@ import 'package:gravity_desktop_app/screens/add_player.dart';
 import 'package:gravity_desktop_app/screens/add_product.dart';
 import 'package:gravity_desktop_app/screens/edit_prices.dart';
 import 'package:gravity_desktop_app/screens/subscriptions.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -37,7 +38,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
         },
         tooltip: 'Search Past Players',
-        backgroundColor: const Color(0xFF3949AB),
+        backgroundColor: mainBlue,
         foregroundColor: Colors.white,
         elevation: 6,
         highlightElevation: 8,
@@ -78,7 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF3949AB),
+                            color: mainBlue,
                           ),
                         ),
                       ),
@@ -232,7 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF3949AB),
+                            color: mainBlue,
                           ),
                         ),
                       ),

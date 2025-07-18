@@ -59,7 +59,7 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
             children: [
               const Icon(
                 Icons.search,
-                color: Color(0xFF3949AB),
+                color: mainBlue,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -102,16 +102,13 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                     data: (pastPlayers) {
                       final fuse = Fuzzy(
                         pastPlayers,
-                        options: FuzzyOptions(
-                          keys: [
-                            WeightedKey(
-                              name: 'name',
-                              getter: (Player player) => player.name,
-                              weight: 1,
-                            ),
-                          ],
-                          threshold: fuzzyThreshold
-                        ),
+                        options: FuzzyOptions(keys: [
+                          WeightedKey(
+                            name: 'name',
+                            getter: (Player player) => player.name,
+                            weight: 1,
+                          ),
+                        ], threshold: fuzzyThreshold),
                       );
 
                       final results = fuse.search(textEditingValue.text);
@@ -162,7 +159,7 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF3949AB),
+                                    color: mainBlue,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Center(
@@ -235,7 +232,7 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                   hintStyle: AppTextStyles.subtitleTextStyle,
                   prefixIcon: const Icon(
                     Icons.search,
-                    color: Color(0xFF3949AB),
+                    color: mainBlue,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -244,7 +241,7 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(
-                      color: Color(0xFF3949AB),
+                      color: mainBlue,
                       width: 2,
                     ),
                   ),
@@ -292,14 +289,14 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3949AB).withAlpha(25),
+                      color: mainBlue.withAlpha(25),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.people,
-                          color: const Color(0xFF3949AB),
+                          color: mainBlue,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -307,7 +304,7 @@ class _PastPlayersSearchState extends ConsumerState<PastPlayersSearch> {
                           '${players.length} players available for search',
                           style: AppTextStyles.subtitleTextStyle.copyWith(
                             fontSize: 14,
-                            color: const Color(0xFF3949AB),
+                            color: mainBlue,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

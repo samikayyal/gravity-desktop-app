@@ -11,6 +11,7 @@ import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/session.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/subscriptions_provider.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
 
 class PlayerDetails extends ConsumerStatefulWidget {
@@ -100,12 +101,12 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3949AB).withAlpha(25),
+                        color: mainBlue.withAlpha(25),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.person,
-                        color: const Color(0xFF3949AB),
+                        color: mainBlue,
                         size: 20,
                       ),
                     ),
@@ -169,7 +170,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      color: const Color(0xFF3949AB),
+                      color: mainBlue,
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -219,7 +220,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
         color: Colors.white.withAlpha(128),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF3949AB).withAlpha(20),
+          color: mainBlue.withAlpha(20),
         ),
       ),
       child: Row(
@@ -227,12 +228,12 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: const Color(0xFF3949AB).withAlpha(20),
+              color: mainBlue.withAlpha(20),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF3949AB),
+              color: mainBlue,
               size: 18,
             ),
           ),
@@ -267,14 +268,14 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF3949AB).withAlpha(25),
-            const Color(0xFF3949AB).withAlpha(5),
+            mainBlue.withAlpha(25),
+            mainBlue.withAlpha(5),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3949AB).withAlpha(50)),
+        border: Border.all(color: mainBlue.withAlpha(50)),
       ),
       child: Row(
         children: [
@@ -282,7 +283,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFF3949AB),
+              color: mainBlue,
               borderRadius: BorderRadius.circular(30),
             ),
             child: Center(
@@ -307,7 +308,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                   widget.player.name,
                   style: AppTextStyles.sectionHeaderStyle.copyWith(
                     fontSize: 28,
-                    color: const Color(0xFF3949AB),
+                    color: mainBlue,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -335,7 +336,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
               icon: Icon(
                 Icons.edit,
                 size: 26,
-                color: const Color(0xFF3949AB),
+                color: mainBlue,
               ))
         ],
       ),
@@ -351,7 +352,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
             children: [
               Icon(
                 Icons.analytics_outlined,
-                color: const Color(0xFF3949AB),
+                color: mainBlue,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -422,17 +423,17 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3949AB).withAlpha(5),
+        color: mainBlue.withAlpha(5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFF3949AB).withAlpha(25),
+          color: mainBlue.withAlpha(25),
         ),
       ),
       child: Row(
         children: [
           Icon(
             icon,
-            color: const Color(0xFF3949AB),
+            color: mainBlue,
             size: 18,
           ),
           const SizedBox(width: 8),
@@ -451,7 +452,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                   value,
                   style: AppTextStyles.regularTextStyle.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3949AB),
+                    color: mainBlue,
                   ),
                 ),
               ],
@@ -474,7 +475,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
               children: [
                 Icon(
                   Icons.card_membership,
-                  color: const Color(0xFF3949AB),
+                  color: mainBlue,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -538,12 +539,12 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFF3949AB).withAlpha(50),
+                              color: mainBlue.withAlpha(50),
                               width: 2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF3949AB).withAlpha(20),
+                                color: mainBlue.withAlpha(20),
                                 spreadRadius: 2,
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
@@ -631,7 +632,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF3949AB).withAlpha(25),
+                                  color: mainBlue.withAlpha(25),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Column(
@@ -641,7 +642,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                                         Icon(
                                           Icons.calendar_today,
                                           size: 16,
-                                          color: const Color(0xFF3949AB),
+                                          color: mainBlue,
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
@@ -649,7 +650,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                                           style: AppTextStyles.subtitleTextStyle
                                               .copyWith(
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF3949AB),
+                                            color: mainBlue,
                                           ),
                                         ),
                                       ],
@@ -685,8 +686,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                                         Container(
                                           width: 2,
                                           height: 30,
-                                          color: const Color(0xFF3949AB)
-                                              .withAlpha(75),
+                                          color: mainBlue.withAlpha(75),
                                         ),
                                         Column(
                                           crossAxisAlignment:
@@ -971,7 +971,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
             children: [
               Icon(
                 Icons.history,
-                color: const Color(0xFF3949AB),
+                color: mainBlue,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1054,7 +1054,7 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                                     style:
                                         AppTextStyles.regularTextStyle.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF3949AB),
+                                      color: mainBlue,
                                     ),
                                   ),
                                   Container(
@@ -1063,15 +1063,14 @@ class _PlayerDetailsState extends ConsumerState<PlayerDetails> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          const Color(0xFF3949AB).withAlpha(25),
+                                      color: mainBlue.withAlpha(25),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
                                       "${sessions[i].checkOutTime.difference(sessions[i].checkInTime).inMinutes} min",
                                       style: AppTextStyles.amountTextStyle
                                           .copyWith(
-                                        color: const Color(0xFF3949AB),
+                                        color: mainBlue,
                                         fontSize: 15,
                                       ),
                                     ),

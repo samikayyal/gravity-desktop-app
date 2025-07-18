@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 const Color gravityYellow = Color(0xfffbf306);
+const Color mainBlue = Color(0xFF3949AB);
 const int leewayMinutes = 10;
 const double fuzzyThreshold = 0.5;
 const int maxPlayersInGroup = 30;

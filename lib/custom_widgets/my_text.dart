@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 
 // Text styles for consistent use throughout the app
 class AppTextStyles {
@@ -14,7 +15,7 @@ class AppTextStyles {
   static TextStyle sectionHeaderStyle = GoogleFonts.notoSans(
     fontSize: 20,
     fontWeight: FontWeight.bold,
-    color: const Color(0xFF3949AB),
+    color: mainBlue,
   );
 
   // Style for regular text
@@ -42,7 +43,7 @@ class AppTextStyles {
   static TextStyle highlightedTextStyle = GoogleFonts.notoSans(
     fontSize: 20,
     fontWeight: FontWeight.w700,
-    color: const Color(0xFF3949AB),
+    color: mainBlue,
   );
 
   // Style for table cells
@@ -56,7 +57,7 @@ class AppTextStyles {
   static TextStyle primaryButtonTextStyle = GoogleFonts.notoSans(
     fontSize: 16,
     fontWeight: FontWeight.w500,
-    color: const Color(0xFF3949AB),
+    color: mainBlue,
   );
 
   static TextStyle secondaryButtonTextStyle = GoogleFonts.notoSans(

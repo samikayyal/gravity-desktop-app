@@ -6,6 +6,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
 
 // Enum to manage the state of the right-side detail panel
@@ -134,7 +135,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(color: Color(0xFF3949AB), width: 1.5),
+        borderSide: BorderSide(color: mainBlue, width: 1.5),
       ),
       filled: true,
       fillColor: Colors.blueGrey.shade50.withAlpha(128),
@@ -179,9 +180,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                           : null,
                       shape: RoundedRectangleBorder(
                         side: BorderSide(
-                          color: isSelected
-                              ? Color(0xFF3949AB)
-                              : Colors.grey.shade300,
+                          color: isSelected ? mainBlue : Colors.grey.shade300,
                           width: isSelected ? 1.5 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -191,7 +190,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                             style: AppTextStyles.regularTextStyle.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 19,
-                              color: isSelected ? Color(0xFF3949AB) : null,
+                              color: isSelected ? mainBlue : null,
                             )),
                         subtitle: Text(
                           'Price: ${_formatter.format(product.price)} SYP\nStock: ${product.effectiveStock}',
