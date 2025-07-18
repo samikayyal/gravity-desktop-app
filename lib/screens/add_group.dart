@@ -722,9 +722,12 @@ class _AddGroupState extends ConsumerState<AddGroup> {
 
                               final results =
                                   fuse.search(textEditingValue.text);
-                              return results
-                                  .map((result) => result.item)
-                                  .where((p) => p.subscriptionId == null);
+                              return results.map((result) => result.item).where(
+                                  (p) =>
+                                      p.subscriptionId == null &&
+                                      groupPlayers.every((gp) =>
+                                          gp.existingPlayer?.playerID !=
+                                          p.playerID));
                             },
                             orElse: () => const Iterable<Player>.empty());
                       },

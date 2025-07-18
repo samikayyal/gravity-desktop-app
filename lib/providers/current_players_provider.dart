@@ -187,13 +187,11 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         }
       }
 
+      int runningAmountReceived = 0;
       for (GroupPlayer player in groupPlayers) {
         // generate an id if it doesnt exist
         var uuid = Uuid();
         final String playerId = player.existingPlayer?.playerID ?? uuid.v4();
-
-        // get player fee
-        int playerInitialFee = player.getFee(timeReservedMinutes, isOpenTime);
 
         // if a new player add to db
         if (player.existingPlayer == null) {
@@ -207,6 +205,19 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
             },
           );
         }
+        // get player fee
+        int playerInitialFee = player.getFee(timeReservedMinutes, isOpenTime);
+
+        // distribute amount paid to players
+        final int playerAmountPaid;
+        if (runningAmountReceived + playerInitialFee <= amountPaid) {
+          // if the player can be fully paid
+          playerAmountPaid = playerInitialFee;
+          runningAmountReceived += playerInitialFee;
+        } else {
+          // if the player can only be partially paid
+          playerAmountPaid = amountPaid - runningAmountReceived;
+        }
 
         // insert the player session
         final int sessionId = await txn.insert(
@@ -217,7 +228,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
             'time_reserved_minutes': timeReservedMinutes,
             'is_open_time': isOpenTime ? 1 : 0,
             'initial_fee': playerInitialFee,
-            'prepaid_amount': amountPaid ~/ groupPlayers.length,
+            'prepaid_amount': playerAmountPaid,
             'group_number': groupNumber,
             'last_modified': nowIso,
           },

@@ -37,6 +37,8 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   final Set<String> _alertedPlayerIds = {};
   final Set<String> _almostTimeAlertedPlayerIds = {};
 
+  final Set<Player> playersSelected = {};
+
   @override
   void initState() {
     super.initState();
@@ -115,20 +117,37 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         message: "Time for player ${player.name} is almost up!");
   }
 
-  Future<void> _goToReceipt(BuildContext context, Player player) async {
+  Future<void> _goToReceipt(BuildContext context, Player? player) async {
+    // if no player is provided and no selected players, throw an error
+    if (player == null && playersSelected.isEmpty) {
+      MyMaterialBanner.showFloatingBanner(context,
+          message: "No player selected for checkout.");
+      return;
+    }
+
     await ref.read(pricesProvider.notifier).refresh();
     await ref.read(productsProvider.notifier).refresh();
-
-    if (context.mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => Receipt(player.sessionID),
-        ),
-      );
-
-      // showDialog(context: context, builder:
-      // (context) => ReceiptDialog(player)
-      // );
+    // ONE PLAYER CHECKOUT
+    if (playersSelected.isEmpty) {
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => Receipt([player!.sessionID]),
+          ),
+        );
+      }
+    }
+    // PLAYER GROUP CHECKOUT
+    else {
+      final List<int> sessionIds =
+          playersSelected.map((p) => p.sessionID).toList();
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => Receipt(sessionIds),
+          ),
+        );
+      }
     }
   }
 
@@ -186,34 +205,72 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
           }
         }
 
-        // Use a vertically scrollable table that fills the available space
-        return TableContainer(
-            columnHeaders: [
-              'Name',
-              'Age',
-              'Check-in',
-              'Time Left',
-              'Fee',
-              'Paid',
-              'Left',
-              'Actions'
-            ],
-            rowData: currentPlayers
-                .asMap()
-                .entries
-                .map((entry) => _buildTableRow(
-                    context, entry.value, entry.key, groupColorMap))
-                .toList(),
-            columnWidths: {
-              0: const FlexColumnWidth(2.5), // Name (wider)
-              1: const FlexColumnWidth(0.7), // Age (narrower)
-              2: const FlexColumnWidth(1.2), // Check-in
-              3: const FlexColumnWidth(1.2), // Time left
-              4: const FlexColumnWidth(1.0), // Fee
-              5: const FlexColumnWidth(1.0), // Paid
-              6: const FlexColumnWidth(1.0), // Left
-              7: const FlexColumnWidth(2.5), // Actions (wider)
-            });
+        return Column(
+          children: [
+            TableContainer(
+                columnHeaders: [
+                  '',
+                  'Name',
+                  'Age',
+                  'Check-in',
+                  'Time Left',
+                  'Fee',
+                  'Paid',
+                  'Left',
+                  'Actions'
+                ],
+                rowData: currentPlayers
+                    .asMap()
+                    .entries
+                    .map((entry) => _buildTableRow(
+                        context, entry.value, entry.key, groupColorMap))
+                    .toList(),
+                columnWidths: {
+                  0: const FlexColumnWidth(0.3), // checkbox
+                  1: const FlexColumnWidth(2.5), // Name (wider)
+                  2: const FlexColumnWidth(0.7), // Age (narrower)
+                  3: const FlexColumnWidth(1.2), // Check-in
+                  4: const FlexColumnWidth(1.2), // Time left
+                  5: const FlexColumnWidth(1.0), // Fee
+                  6: const FlexColumnWidth(1.0), // Paid
+                  7: const FlexColumnWidth(1.0), // Left
+                  8: const FlexColumnWidth(2.5), // Actions (wider)
+                }),
+
+            // Buttons for selected players
+            if (playersSelected.length >= 2 && playersSelected.length <= 4)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check, size: 24),
+                      label: Text(
+                        "Checkout Selected",
+                        style: AppTextStyles.primaryButtonTextStyle,
+                      ),
+                      style: AppButtonStyles.primaryButton.copyWith(
+                        padding: WidgetStateProperty.all(
+                          const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (playersSelected.isEmpty) return;
+
+                        // Navigate to receipt for the first selected player
+                        await _goToReceipt(context, null);
+                        setState(() {
+                          playersSelected.clear();
+                        });
+                      },
+                    )
+                  ],
+                ),
+              )
+          ],
+        );
       },
     );
   }
@@ -294,6 +351,27 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                     : TableThemes.oddRowColor),
       ),
       children: [
+        // checkbox
+        Checkbox(
+          activeColor: Colors.blue,
+          value: playersSelected.contains(player),
+          onChanged: (value) {
+            if (player.subscriptionId != null) {
+              MyMaterialBanner.showFloatingBanner(context,
+                  message: "Cannot select players with subscriptions.");
+              return;
+            }
+            setState(() {
+              if (value == true) {
+                playersSelected.add(player);
+              } else {
+                playersSelected.remove(player);
+              }
+            });
+          },
+        ),
+
+        // name and group color if exists
         Row(
           children: [
             Container(width: 4.0, color: groupColor, child: Text("")),
