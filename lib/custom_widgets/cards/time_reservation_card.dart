@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 
 class TimeReservationCard extends StatefulWidget {
@@ -63,24 +64,37 @@ class _TimeReservationCardState extends State<TimeReservationCard> {
             ),
           ),
           const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: widget.oneHourOnPressed,
-                child: const Text('+1 Hour'),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: widget.halfHourOnPressed,
-                child: const Text('+30 Minutes'),
-              ),
-              const SizedBox(width: 16),
-              OutlinedButton(
-                onPressed: widget.resetOnPressed,
-                child: const Text('Reset'),
-              ),
-            ],
+          Center(
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runAlignment: WrapAlignment.center,
+              alignment: WrapAlignment.center,
+              runSpacing: 16,
+              children: [
+                ElevatedButton(
+                  onPressed: widget.oneHourOnPressed,
+                  style: AppButtonStyles.primaryButton,
+                  child: Text('+1 Hour',
+                      style: AppTextStyles.primaryButtonTextStyle),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: widget.halfHourOnPressed,
+                  style: AppButtonStyles.primaryButton,
+                  child: Text('+30 Minutes',
+                      style: AppTextStyles.primaryButtonTextStyle),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: widget.resetOnPressed,
+                  style: AppButtonStyles.secondaryButton,
+                  child: Text(
+                    'Reset',
+                    style: AppTextStyles.secondaryButtonTextStyle,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           Center(
@@ -93,7 +107,10 @@ class _TimeReservationCardState extends State<TimeReservationCard> {
                     widget.isOpenTimeOnChanged(value);
                   },
                 ),
-                const Text('Open Time'),
+                Text(
+                  'Open Time',
+                  style: AppTextStyles.regularTextStyle,
+                ),
               ],
             ),
           ),
