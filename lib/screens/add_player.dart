@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/time_reservation_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
@@ -699,176 +700,52 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     );
   }
 
-  MyCard _buildTimeReservationCard(PricesProductsSubs data) {
+  Widget _buildTimeReservationCard(PricesProductsSubs data) {
     final Subscription? sub = _selectedPlayer?.subscriptionId != null
         ? data.allSubs.firstWhere(
             (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
             orElse: () => throw Exception('Subscription not found'),
           )
         : null;
-    return MyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Time Reservation',
-            style:
-                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
-          ),
-          const SizedBox(height: 24),
-
-          // Reserved Time Display
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100.withAlpha(156),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Text(
-                isOpenTime
-                    ? 'Open Time'
-                    : '$hoursReserved Hours $minutesReserved Minutes',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Time Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FocusTraversalOrder(
-                order: NumericFocusOrder(phoneControllers.length + 3.0),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  child: Text(
-                    "+1 Hour",
-                    style: AppTextStyles.primaryButtonTextStyle
-                        .copyWith(fontSize: 18),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _incrementTime(TimeIncrement.hour, data);
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              FocusTraversalOrder(
-                order: NumericFocusOrder(phoneControllers.length + 4.0),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  child: Text(
-                    "+30 Minutes",
-                    style: AppTextStyles.primaryButtonTextStyle
-                        .copyWith(fontSize: 18),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _incrementTime(TimeIncrement.halfHour, data);
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              FocusTraversalOrder(
-                order: NumericFocusOrder(phoneControllers.length + 5.0),
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  child: Text(
-                    "Reset",
-                    style: AppTextStyles.primaryButtonTextStyle
-                        .copyWith(fontSize: 18),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      hoursReserved = 0;
-                      minutesReserved = 0;
-                      isOpenTime = false;
-                    });
-                    _updateTotalFee(data.prices, data.allProducts);
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Open Time Toggle
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Transform.scale(
-                    scale: 1.4,
-                    child: FocusTraversalOrder(
-                      order: NumericFocusOrder(phoneControllers.length + 6.0),
-                      child: Checkbox(
-                        value: isOpenTime,
-                        onChanged: (value) {
-                          setState(() {
-                            isOpenTime = value ?? false;
-                            if (isOpenTime) {
-                              hoursReserved = 0;
-                              minutesReserved = 0;
-                            }
-                            _updateTotalFee(data.prices, data.allProducts);
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Open Time',
-                    style: AppTextStyles.tableCellStyle,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          if ((sub != null &&
-                  sub.remainingMinutes <
-                      (hoursReserved * 60 + minutesReserved) &&
-                  !isOpenTime) ||
-              sub != null && isOpenTime)
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: Text(
-                'Warning: This player has only ${sub.remainingMinutes ~/ 60} hours and ${sub.remainingMinutes % 60} minutes remaining in their subscription.',
-                style: AppTextStyles.subtitleTextStyle.copyWith(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-        ],
-      ),
+    return TimeReservationCard(
+      title: "Time Reservation",
+      time: Duration(hours: hoursReserved, minutes: minutesReserved),
+      isOpenTime: isOpenTime,
+      oneHourOnPressed: () {
+        setState(() {
+          _incrementTime(TimeIncrement.hour, data);
+        });
+      },
+      halfHourOnPressed: () {
+        setState(() {
+          _incrementTime(TimeIncrement.halfHour, data);
+        });
+      },
+      resetOnPressed: () {
+        setState(() {
+          hoursReserved = 0;
+          minutesReserved = 0;
+          isOpenTime = false;
+        });
+        _updateTotalFee(data.prices, data.allProducts);
+      },
+      isOpenTimeOnChanged: (value) {
+        setState(() {
+          isOpenTime = value ?? false;
+          if (isOpenTime) {
+            hoursReserved = 0;
+            minutesReserved = 0;
+          }
+          _updateTotalFee(data.prices, data.allProducts);
+        });
+      },
+      warningCondition: ((sub != null &&
+              sub.remainingMinutes < (hoursReserved * 60 + minutesReserved) &&
+              !isOpenTime) ||
+          sub != null && isOpenTime),
+      warningText: sub != null
+          ? 'Warning: This player has only ${sub.remainingMinutes ~/ 60} hours and ${sub.remainingMinutes % 60} minutes remaining in their subscription.'
+          : null,
     );
   }
 

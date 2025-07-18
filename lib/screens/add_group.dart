@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/time_reservation_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
@@ -442,87 +443,29 @@ class _AddGroupState extends ConsumerState<AddGroup> {
     );
   }
 
-  MyCard _buildTimeReservationCard() {
-    final int hoursReserved = timeReservedMinutes ~/ 60;
-    final int minutesReserved = timeReservedMinutes % 60;
-
-    return MyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Time Reservation (All Players)',
-            style:
-                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100.withAlpha(156),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Text(
-                isOpenTime
-                    ? 'Open Time'
-                    : '$hoursReserved Hours $minutesReserved Minutes',
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () => _incrementTime(TimeIncrement.hour),
-                child: const Text('+1 Hour'),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: () => _incrementTime(TimeIncrement.halfHour),
-                child: const Text('+30 Minutes'),
-              ),
-              const SizedBox(width: 16),
-              OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    timeReservedMinutes = 0;
-                    isOpenTime = false;
-                  });
-                  _updateTotalFee();
-                },
-                child: const Text('Reset'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Checkbox(
-                  value: isOpenTime,
-                  onChanged: (value) {
-                    setState(() {
-                      isOpenTime = value ?? false;
-                      if (isOpenTime) {
-                        timeReservedMinutes = 0;
-                      }
-                    });
-                    _updateTotalFee();
-                  },
-                ),
-                const Text('Open Time'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildTimeReservationCard() {
+    return TimeReservationCard(
+        title: "Time Reservation (All Players)",
+        time: Duration(minutes: timeReservedMinutes),
+        isOpenTime: isOpenTime,
+        oneHourOnPressed: () => _incrementTime(TimeIncrement.hour),
+        halfHourOnPressed: () => _incrementTime(TimeIncrement.halfHour),
+        resetOnPressed: () {
+          setState(() {
+            timeReservedMinutes = 0;
+            isOpenTime = false;
+          });
+          _updateTotalFee();
+        },
+        isOpenTimeOnChanged: (value) {
+          setState(() {
+            isOpenTime = value ?? false;
+            if (isOpenTime) {
+              timeReservedMinutes = 0;
+            }
+          });
+          _updateTotalFee();
+        });
   }
 
   MyCard _buildPlayersCard() {
