@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
@@ -922,7 +923,25 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                style: AppButtonStyles.primaryButton,
+                onPressed: () {
+                  setState(() {
+                    amountPaidController.text = '$initialFee';
+                  });
+                },
+                child: Text("Pay in Full",
+                    style: AppTextStyles.primaryButtonTextStyle),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
 
           // Input for amount paid on check-in
           FocusTraversalOrder(
