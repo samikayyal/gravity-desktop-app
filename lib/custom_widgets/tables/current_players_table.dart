@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/midsession_payment.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
@@ -14,6 +15,7 @@ import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
+import 'package:gravity_desktop_app/screens/player_details.dart';
 import 'package:gravity_desktop_app/screens/receipt.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
@@ -235,13 +237,13 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                   5: const FlexColumnWidth(0.8), // Fee
                   6: const FlexColumnWidth(1.0), // Paid
                   7: const FlexColumnWidth(1.0), // Left
-                  8: const FlexColumnWidth(2.5), // actions
+                  8: const FlexColumnWidth(3), // actions
                 }),
 
             // Buttons for selected players
             if (playersSelected.length >= 2 && playersSelected.length <= 4)
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                padding: EdgeInsets.symmetric(vertical: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -379,7 +381,12 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
             const SizedBox(
               width: 4,
             ),
-            buildDataCell(player.name, style: cellStyle)
+            GestureDetector(
+                onDoubleTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (ctx) => PlayerDetails(player)));
+                },
+                child: buildDataCell(player.name, style: cellStyle))
           ],
         ),
         Consumer(builder: (context, ref, child) {
@@ -471,7 +478,21 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                       context: context,
                       builder: (context) => ExtendTimeDialog(player));
                 },
-              )
+              ),
+              if (player.amountPaid < player.initialFee ||
+                  player.isOpenTime) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.payment, size: 22),
+                  tooltip: 'Pay Remaining Fee',
+                  style: AppButtonStyles.iconButtonCircle,
+                  onPressed: () async {
+                    await showDialog(
+                        context: context,
+                        builder: (context) => MidsessionPaymentDialog(player));
+                  },
+                ),
+              ]
             ],
           ),
         ),

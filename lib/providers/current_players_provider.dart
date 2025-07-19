@@ -270,4 +270,33 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     });
     await refresh();
   }
+
+  Future<void> makePaymentMidSession(int sessionId, int paymentAmount) async {
+    final db = await _dbHelper.database;
+
+    try {
+      // Fetch the current player session to make sure it exists
+      final List<Map<String, dynamic>> query = await db.query(
+        'player_sessions',
+        where: 'session_id = ? AND check_out_time IS NULL',
+        whereArgs: [sessionId],
+      );
+
+      if (query.isEmpty) {
+        throw Exception("Player session is unavailable");
+      }
+
+      // make the payment
+      await db.rawUpdate('''
+        UPDATE player_sessions
+        SET prepaid_amount = prepaid_amount + ?
+        WHERE session_id = ?
+        ''', [paymentAmount, sessionId]);
+
+      await refresh();
+    } catch (e, st) {
+      log('Error making mid-session payment: $e\n$st');
+      throw Exception('Error making mid-session payment: $e');
+    }
+  }
 }
