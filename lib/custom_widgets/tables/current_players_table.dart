@@ -228,14 +228,14 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                     .toList(),
                 columnWidths: {
                   0: const FlexColumnWidth(0.3), // checkbox
-                  1: const FlexColumnWidth(2.5), // Name (wider)
-                  2: const FlexColumnWidth(1.5), // Phone Number (narrower)
+                  1: const FlexColumnWidth(2.5), // Name
+                  2: const FlexColumnWidth(1.7), // Phone Number
                   3: const FlexColumnWidth(1.2), // Check-in
-                  4: const FlexColumnWidth(1.2), // Time left
-                  5: const FlexColumnWidth(1.0), // Fee
+                  4: const FlexColumnWidth(1.3), // Time left
+                  5: const FlexColumnWidth(0.8), // Fee
                   6: const FlexColumnWidth(1.0), // Paid
                   7: const FlexColumnWidth(1.0), // Left
-                  8: const FlexColumnWidth(2.5), // Actions (wider)
+                  8: const FlexColumnWidth(2.5), // actions
                 }),
 
             // Buttons for selected players
@@ -392,7 +392,15 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
             ),
             data: (phones) {
               return buildDataCell(
-                phones.isNotEmpty ? phones.firstWhere((phone) => phone.isPrimary).number : 'No Phone',
+                phones.isNotEmpty
+                    ? phones
+                        .firstWhere(
+                          (phone) => phone.isPrimary,
+                          orElse: () =>
+                              PlayerPhone(number: 'No Phone', isPrimary: false),
+                        )
+                        .number
+                    : 'No Phone',
                 style: cellStyle,
               );
             },
@@ -409,14 +417,14 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         ),
         buildDataCell(
           player.isOpenTime ? 'Open' : '${player.initialFee}',
-          style: amountStyle,
+          style: player.isOpenTime ? cellStyle : amountStyle,
         ),
         buildDataCell('${player.amountPaid}', style: amountStyle),
         buildDataCell(
           player.isOpenTime
               ? 'Open'
               : '${player.initialFee - player.amountPaid}',
-          style: amountStyle,
+          style: player.isOpenTime ? cellStyle : amountStyle,
         ),
         Padding(
           padding: const EdgeInsets.all(4.0),
