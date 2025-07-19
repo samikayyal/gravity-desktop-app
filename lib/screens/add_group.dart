@@ -8,6 +8,7 @@ import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dial
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text_field.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
@@ -473,26 +474,49 @@ class _AddGroupState extends ConsumerState<AddGroup> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Players',
-                style: AppTextStyles.sectionHeaderStyle
-                    .copyWith(color: Colors.black),
-              ),
-              ElevatedButton.icon(
-                onPressed:
-                    groupPlayers.length < maxPlayersInGroup ? _addPlayer : null,
-                style: AppButtonStyles.primaryButton,
-                icon: Icon(Icons.add, color: mainBlue),
-                label: Text('Add Player',
-                    style: AppTextStyles.primaryButtonTextStyle),
-              ),
-            ],
+          // Header with improved styling
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.groups,
+                      color: Colors.black,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Players',
+                      style: AppTextStyles.sectionHeaderStyle.copyWith(
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: groupPlayers.length < maxPlayersInGroup
+                      ? _addPlayer
+                      : null,
+                  style: AppButtonStyles.primaryButton,
+                  icon: const Icon(
+                    Icons.add,
+                    size: 20,
+                    color: mainBlue,
+                  ),
+                  label: Text(
+                    'Add Player',
+                    style: AppTextStyles.primaryButtonTextStyle,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Players List - expand and scroll as needed
           ...groupPlayers.asMap().entries.map((entry) {
@@ -514,330 +538,436 @@ class _AddGroupState extends ConsumerState<AddGroup> {
     final isFirst = index == 0;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(25),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
         border: player.isMainSibling
-            ? Border.all(color: Colors.blue.shade300)
-            : Border.all(color: Colors.grey.shade300),
+            ? Border.all(color: Colors.blue.shade400, width: 2)
+            : Border.all(color: Colors.grey.shade200, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Player header with sibling checkbox and product selection radio button
-          Row(
-            children: [
-              Radio<int>(
-                value: index,
-                groupValue: selectedPlayerIndex,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      selectedPlayerIndex = value;
-                    });
-                  }
-                },
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              Text(
-                'Player ${index + 1}',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: player.isMainSibling ? Colors.blue.shade700 : null,
-                ),
-              ),
-              if (player.isMainSibling) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.shade300),
-                  ),
-                  child: Text(
-                    'Main Sibling',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // player radio button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: selectedPlayerIndex == index
+                            ? Colors.blue.shade100
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Radio<int>(
+                        value: index,
+                        groupValue: selectedPlayerIndex,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedPlayerIndex = value;
+                            });
+                          }
+                        },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        activeColor: Colors.blue.shade600,
+                      ),
                     ),
-                  ),
-                ),
-              ],
-              const Spacer(),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Checkbox(
-                    value: player.isSibling,
-                    onChanged: player.isReadOnly
-                        ? null
-                        : (value) => _toggleSibling(index),
-                  ),
-                  const Text('Sibling'),
-                ],
-              ),
-              if (!isFirst) ...[
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () => _removePlayer(index),
-                  icon: const Icon(Icons.remove_circle_outline),
-                  color: Colors.red,
-                  tooltip: 'Remove Player',
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Name fields
-          // First name and Last name fields for siblings
-          Row(
-            children: [
-              if (player.isSibling) ...[
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: player.firstNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'First Name',
-                      border: OutlineInputBorder(),
+                    const SizedBox(width: 8),
+                    Icon(
+                      player.isSibling ? Icons.people : Icons.person,
+                      size: 16,
+                      color: Colors.grey.shade600,
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'First name is required';
-                      }
-                      return null;
-                    },
-                    onChanged: (_) {
-                      if (player.isMainSibling) {
-                        _updateSharedLastName();
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: player.lastNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Last Name',
-                      border: OutlineInputBorder(),
+                    const SizedBox(width: 8),
+                    Text(
+                      player.isSibling
+                          ? 'Sibling Information'
+                          : 'Player Information',
+                      style: AppTextStyles.regularTextStyle,
                     ),
-                    enabled: player.isMainSibling,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Last name is required';
-                      }
-                      return null;
-                    },
-                    onChanged: (_) {
-                      if (player.isMainSibling) {
-                        _updateSharedLastName();
-                      }
-                    },
-                  ),
-                ),
-              ] else ...[
-                // Full name field for non-siblings
-                Expanded(
-                  flex: 4,
-                  child: Autocomplete<Player>(
-                      optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text.isEmpty) {
-                          return const Iterable<Player>.empty();
-                        }
-                        return ref.watch(pastPlayersProvider).maybeWhen(
-                            data: (pastPlayers) {
-                              final fuse = Fuzzy(
-                                pastPlayers,
-                                options: FuzzyOptions(
-                                  keys: [
-                                    WeightedKey(
-                                        name: 'name',
-                                        weight: 1.0,
-                                        getter: (Player player) => player.name)
-                                  ],
-                                  threshold: fuzzyThreshold,
-                                ),
-                              );
-
-                              final results =
-                                  fuse.search(textEditingValue.text);
-                              return results.map((result) => result.item).where(
-                                  (p) =>
-                                      p.subscriptionId == null &&
-                                      groupPlayers.every((gp) =>
-                                          gp.existingPlayer?.playerID !=
-                                          p.playerID));
-                            },
-                            orElse: () => const Iterable<Player>.empty());
-                      },
-                      optionsViewBuilder: (context, onSelected, options) {
-                        return Align(
-                          alignment: Alignment.topLeft,
-                          child: Material(
-                            elevation: 4.0,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                  maxHeight: 250, maxWidth: 400),
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: options.length,
-                                itemBuilder: (context, index) {
-                                  final option = options.elementAt(index);
-
-                                  final bool isHighlighted =
-                                      AutocompleteHighlightedOption.of(
-                                              context) ==
-                                          index;
-                                  return InkWell(
-                                    onTap: () => onSelected(option),
-                                    child: Container(
-                                      color: isHighlighted
-                                          ? Theme.of(context)
-                                              .focusColor
-                                              .withAlpha(18)
-                                          : null,
-                                      child: ListTile(
-                                        selected: isHighlighted,
-                                        selectedTileColor:
-                                            Colors.black.withAlpha(25),
-                                        title: Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Text(
-                                            option.subscriptionId != null
-                                                ? '${option.name} (${option.age}) - Subscription Active'
-                                                : '${option.name} (${option.age})',
-                                            style:
-                                                AppTextStyles.regularTextStyle,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                    if (player.isMainSibling) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.blue.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.family_restroom,
+                              size: 12,
+                              color: Colors.blue.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Main Sibling',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
                               ),
                             ),
-                          ),
-                        );
-                      },
-                      displayStringForOption: (Player option) => option.name,
-                      onSelected: (Player selection) async {
-                        player.existingPlayer = selection;
-                        await _fillPlayerDetails(selection, index);
-                      },
-                      fieldViewBuilder:
-                          (context, controller, focusNode, onFieldSubmitted) {
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          readOnly: player.isReadOnly,
-                          onFieldSubmitted: (value) => onFieldSubmitted(),
-                          onChanged: (value) {
-                            // if the user is typing and not selecting
-                            if (value.isNotEmpty && !player.isReadOnly) {
-                              player.fullNameController.text = value;
-                            }
-                          },
-                          style: AppTextStyles.regularTextStyle,
-                          decoration: InputDecoration(
-                            filled: player.isReadOnly,
-                            fillColor: player.isReadOnly
-                                ? Colors.grey.shade200
-                                : Colors.transparent,
-                            labelText:
-                                player.isReadOnly ? "Name (Locked)" : 'Name',
-                            labelStyle: AppTextStyles.regularTextStyle,
-                            hintText: 'Enter player name',
-                            hintStyle: AppTextStyles.subtitleTextStyle,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: player.isSibling
+                            ? Colors.green.shade50
+                            : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: player.isSibling
+                              ? Colors.green.shade200
+                              : Colors.grey.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Transform.scale(
+                            scale: 0.9,
+                            child: Checkbox(
+                              value: player.isSibling,
+                              onChanged: player.isReadOnly
+                                  ? null
+                                  : (value) => _toggleSibling(index),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              activeColor: Colors.green.shade600,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 18),
-                            suffixIcon: player.existingPlayer != null
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.clear,
-                                            size: 24, color: Colors.red),
-                                        tooltip: 'Clear Selected Player',
-                                        onPressed: () async {
-                                          setState(() {
-                                            player.isReadOnly = false;
-                                            player.fullNameController.clear();
-                                            controller.clear();
-                                            player.firstNameController.clear();
-                                            player.lastNameController.clear();
-                                            player.ageController.clear();
-
-                                            player.existingPlayer = null;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  )
-                                : null,
                           ),
+                          Text(
+                            'Sibling',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: player.isSibling
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isFirst) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: IconButton(
+                          onPressed: () => _removePlayer(index),
+                          icon: const Icon(Icons.remove_circle_outline),
+                          color: Colors.red.shade600,
+                          tooltip: 'Remove Player',
+                          iconSize: 20,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (player.isSibling) ...[
+                      Expanded(
+                        flex: 2,
+                        child: MyTextField(
+                          controller: player.firstNameController,
+                          labelText: 'First Name',
+                          hintText: 'Enter first name',
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a name';
+                            if (value == null || value.trim().isEmpty) {
+                              return 'First name is required';
                             }
                             return null;
                           },
-                        );
-                      }),
+                          onChanged: (_) {
+                            if (player.isMainSibling) {
+                              _updateSharedLastName();
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: MyTextField(
+                          controller: player.lastNameController,
+                          isDisabled: !player.isMainSibling,
+                          labelText: 'Last Name',
+                          hintText: player.isMainSibling
+                              ? 'Enter last name'
+                              : 'Shared with main sibling',
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Last name is required';
+                            }
+                            return null;
+                          },
+                          onChanged: (_) {
+                            if (player.isMainSibling) {
+                              _updateSharedLastName();
+                            }
+                          },
+                        ),
+                      ),
+                    ] else ...[
+                      // Full name field for non-siblings
+                      Expanded(
+                        flex: 4,
+                        child: Autocomplete<Player>(
+                            optionsBuilder:
+                                (TextEditingValue textEditingValue) {
+                              if (textEditingValue.text.isEmpty) {
+                                return const Iterable<Player>.empty();
+                              }
+                              return ref.watch(pastPlayersProvider).maybeWhen(
+                                  data: (pastPlayers) {
+                                    final fuse = Fuzzy(
+                                      pastPlayers,
+                                      options: FuzzyOptions(
+                                        keys: [
+                                          WeightedKey(
+                                              name: 'name',
+                                              weight: 1.0,
+                                              getter: (Player player) =>
+                                                  player.name)
+                                        ],
+                                        threshold: fuzzyThreshold,
+                                      ),
+                                    );
+
+                                    final results =
+                                        fuse.search(textEditingValue.text);
+                                    return results
+                                        .map((result) => result.item)
+                                        .where((p) =>
+                                            p.subscriptionId == null &&
+                                            groupPlayers.every((gp) =>
+                                                gp.existingPlayer?.playerID !=
+                                                p.playerID));
+                                  },
+                                  orElse: () => const Iterable<Player>.empty());
+                            },
+                            optionsViewBuilder: (context, onSelected, options) {
+                              return Align(
+                                alignment: Alignment.topLeft,
+                                child: Material(
+                                  elevation: 4.0,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                        maxHeight: 250, maxWidth: 400),
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final option = options.elementAt(index);
+
+                                        final bool isHighlighted =
+                                            AutocompleteHighlightedOption.of(
+                                                    context) ==
+                                                index;
+                                        return InkWell(
+                                          onTap: () => onSelected(option),
+                                          child: Container(
+                                            color: isHighlighted
+                                                ? Theme.of(context)
+                                                    .focusColor
+                                                    .withAlpha(18)
+                                                : null,
+                                            child: ListTile(
+                                              selected: isHighlighted,
+                                              selectedTileColor:
+                                                  Colors.black.withAlpha(25),
+                                              title: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16.0),
+                                                child: Text(
+                                                  option.subscriptionId != null
+                                                      ? '${option.name} (${option.age}) - Subscription Active'
+                                                      : '${option.name} (${option.age})',
+                                                  style: AppTextStyles
+                                                      .regularTextStyle,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            displayStringForOption: (Player option) =>
+                                option.name,
+                            onSelected: (Player selection) async {
+                              player.existingPlayer = selection;
+                              await _fillPlayerDetails(selection, index);
+                            },
+                            fieldViewBuilder: (context, controller, focusNode,
+                                onFieldSubmitted) {
+                              return TextFormField(
+                                controller: controller,
+                                focusNode: focusNode,
+                                readOnly: player.isReadOnly,
+                                onFieldSubmitted: (value) => onFieldSubmitted(),
+                                onChanged: (value) {
+                                  // if the user is typing and not selecting
+                                  if (value.isNotEmpty && !player.isReadOnly) {
+                                    player.fullNameController.text = value;
+                                  }
+                                },
+                                style: AppTextStyles.regularTextStyle,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: player.isReadOnly
+                                      ? Colors.grey.shade100
+                                      : Colors.white,
+                                  labelText: player.isReadOnly
+                                      ? "Name (Locked)"
+                                      : 'Full Name',
+                                  labelStyle:
+                                      AppTextStyles.regularTextStyle.copyWith(
+                                    color: player.isReadOnly
+                                        ? Colors.grey.shade500
+                                        : Colors.grey.shade600,
+                                  ),
+                                  hintText: 'Enter player name',
+                                  hintStyle: AppTextStyles.subtitleTextStyle,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                        color: Colors.blue.shade400, width: 2),
+                                  ),
+                                  disabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 16),
+                                  prefixIcon: player.isReadOnly
+                                      ? Icon(
+                                          Icons.lock_outline,
+                                          color: Colors.grey.shade400,
+                                          size: 20,
+                                        )
+                                      : null,
+                                  suffixIcon: player.existingPlayer != null
+                                      ? Container(
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade50,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: IconButton(
+                                            icon: Icon(
+                                              Icons.clear,
+                                              size: 20,
+                                              color: Colors.red.shade600,
+                                            ),
+                                            tooltip: 'Clear Selected Player',
+                                            onPressed: () async {
+                                              setState(() {
+                                                player.isReadOnly = false;
+                                                player.fullNameController
+                                                    .clear();
+                                                controller.clear();
+                                                player.firstNameController
+                                                    .clear();
+                                                player.lastNameController
+                                                    .clear();
+                                                player.ageController.clear();
+                                                player.existingPlayer = null;
+                                              });
+                                            },
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter a name';
+                                  }
+                                  return null;
+                                },
+                              );
+                            }),
+                      ),
+                    ],
+                    const SizedBox(width: 12),
+                    // Age field with improved styling
+                    Expanded(
+                      flex: 1,
+                      child: MyTextField(
+                        controller: player.ageController,
+                        readOnly: player.isReadOnly,
+                        labelText: 'Age',
+                        hintText: 'Age',
+                        isNumberInputOnly: true,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Age is required';
+                          }
+                          final age = int.tryParse(value);
+                          if (age == null || age < 0) {
+                            return 'Enter a valid age';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
-              const SizedBox(width: 12),
-              // Age field
-              Expanded(
-                flex: 1,
-                child: TextFormField(
-                  controller: player.ageController,
-                  readOnly: player.isReadOnly,
-                  style: AppTextStyles.regularTextStyle,
-                  decoration: InputDecoration(
-                    filled: player.isReadOnly,
-                    fillColor: player.isReadOnly
-                        ? Colors.grey.shade200
-                        : Colors.transparent,
-                    labelText: player.isReadOnly ? "Age (Locked)" : 'Age',
-                    labelStyle: AppTextStyles.regularTextStyle,
-                    hintText: 'Enter player age',
-                    hintStyle: AppTextStyles.subtitleTextStyle,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 18),
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Age is required';
-                    }
-                    final age = int.tryParse(value);
-                    if (age == null || age < 0) {
-                      return 'Enter a valid age';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 12),
         ],
       ),
     );
@@ -913,24 +1043,13 @@ class _AddGroupState extends ConsumerState<AddGroup> {
             ],
           ),
           const SizedBox(height: 12),
-          TextFormField(
+          MyTextField(
             controller: amountPaidController,
-            style: AppTextStyles.regularTextStyle,
-            decoration: InputDecoration(
-                labelText: 'Amount Paid on Check-in',
-                labelStyle: AppTextStyles.regularTextStyle,
-                hintText: 'Enter amount paid',
-                hintStyle: AppTextStyles.subtitleTextStyle,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                prefixText: 'SYP   ',
-                prefixStyle: AppTextStyles.regularTextStyle
-                    .copyWith(color: Colors.black)),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            labelText: 'Amount Paid on Check-in',
+            hintText: 'Enter amount paid',
+            prefixText: 'SYP   ',
+            isNumberInputOnly: true,
+            borderRadius: 10.0,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter an amount';
@@ -995,22 +1114,12 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
+                    child: MyTextField(
                       controller: phoneControllers[i],
-                      style: AppTextStyles.regularTextStyle,
-                      decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                        labelStyle: AppTextStyles.regularTextStyle,
-                        hintText: 'Enter phone number',
-                        hintStyle: AppTextStyles.subtitleTextStyle,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 18),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      labelText: 'Phone Number',
+                      hintText: 'Enter phone number',
+                      isNumberInputOnly: true,
+                      borderRadius: 10.0,
                       validator: (value) {
                         if (value != null && value.isNotEmpty) {
                           final phone = value.trim();
