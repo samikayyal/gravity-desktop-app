@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/time_reservation_card.dart';
@@ -276,7 +275,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
   }
 
   Future<void> _fillPlayerDetails(Player selection, int index) async {
-    final List<String> playerPhones =
+    final List<PlayerPhone> playerPhones =
         await ref.read(playerPhonesProvider(selection.playerID).future);
 
     final player = groupPlayers[index];
@@ -291,20 +290,20 @@ class _AddGroupState extends ConsumerState<AddGroup> {
       player.ageController.text = selection.age.toString();
 
       for (var playerPhone in playerPhones) {
-        if (playerPhone.isEmpty) continue;
+        if (playerPhone.number.isEmpty) continue;
         // Add phone number only if it's not already in the list
         if (!phoneControllers
-            .any((controller) => controller.text == playerPhone)) {
+            .any((controller) => controller.text == playerPhone.number)) {
           // Find an empty controller to fill, otherwise add a new one.
           final emptyControllerIndex =
               phoneControllers.indexWhere((c) => c.text.isEmpty);
 
           if (emptyControllerIndex != -1) {
             // An empty controller is available, so use it.
-            phoneControllers[emptyControllerIndex].text = playerPhone;
+            phoneControllers[emptyControllerIndex].text = playerPhone.number;
           } else {
             // All controllers are full, so add a new one.
-            phoneControllers.add(TextEditingController(text: playerPhone));
+            phoneControllers.add(TextEditingController(text: playerPhone.number));
           }
         }
       }

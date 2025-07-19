@@ -11,6 +11,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
+import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/receipt.dart';
@@ -209,9 +210,9 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
           children: [
             TableContainer(
                 columnHeaders: [
-                  '',
+                  '', // checkbox
                   'Name',
-                  'Age',
+                  'Phone Number',
                   'Check-in',
                   'Time Left',
                   'Fee',
@@ -228,7 +229,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                 columnWidths: {
                   0: const FlexColumnWidth(0.3), // checkbox
                   1: const FlexColumnWidth(2.5), // Name (wider)
-                  2: const FlexColumnWidth(0.7), // Age (narrower)
+                  2: const FlexColumnWidth(1.5), // Phone Number (narrower)
                   3: const FlexColumnWidth(1.2), // Check-in
                   4: const FlexColumnWidth(1.2), // Time left
                   5: const FlexColumnWidth(1.0), // Fee
@@ -381,7 +382,22 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
             buildDataCell(player.name, style: cellStyle)
           ],
         ),
-        buildDataCell('${player.age}', style: cellStyle),
+        Consumer(builder: (context, ref, child) {
+          final playerPhones = ref.watch(playerPhonesProvider(player.playerID));
+          return playerPhones.when(
+            loading: () => buildDataCell('Loading...', style: cellStyle),
+            error: (error, stackTrace) => buildDataCell(
+              'Error',
+              style: cellStyle.copyWith(color: Colors.red),
+            ),
+            data: (phones) {
+              return buildDataCell(
+                phones.isNotEmpty ? phones.firstWhere((phone) => phone.isPrimary).number : 'No Phone',
+                style: cellStyle,
+              );
+            },
+          );
+        }),
         buildDataCell(checkInTime, style: cellStyle),
         buildDataCell(
           timeRemainingString,

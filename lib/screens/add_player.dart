@@ -76,7 +76,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
         phoneControllers.add(TextEditingController());
       } else {
         for (var phone in playerPhones) {
-          phoneControllers.add(TextEditingController(text: phone));
+          phoneControllers.add(TextEditingController(text: phone.number));
         }
       }
     });

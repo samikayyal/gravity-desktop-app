@@ -31,16 +31,16 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await _fetchPastPlayers();
   }
 
-  Future<List<String>> getPhoneNumbers(String playerId) async {
+  Future<List<PlayerPhone>> getPhoneNumbers(String playerId) async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT phone_number
+      SELECT phone_number, is_primary
       FROM phone_numbers
       WHERE player_id = ?
       AND is_deleted = 0
     ''', [playerId]);
 
-    return result.map((map) => map['phone_number'] as String).toList();
+    return result.map((map) => PlayerPhone.fromMap(map)).toList();
   }
 
   Future<void> editPlayer(
@@ -89,12 +89,6 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
   }
 }
 
-final playerPhonesProvider =
-    FutureProvider.family<List<String>, String>((ref, playerId) async {
-  final notifier = ref.watch(pastPlayersProvider.notifier);
-  return notifier.getPhoneNumbers(playerId);
-});
-
 final pastSessionsProvider =
     FutureProvider.family<List<Session>, String>((ref, playerId) async {
   final db = await ref.watch(databaseProvider).database;
@@ -111,4 +105,25 @@ final pastSessionsProvider =
     ''', [playerId]);
 
   return result.map((map) => Session.fromMap(map)).toList();
+});
+
+class PlayerPhone {
+  final String number;
+  final bool isPrimary;
+
+  PlayerPhone({required this.number, this.isPrimary = false});
+
+  PlayerPhone.fromMap(Map<String, dynamic> map)
+      : number = map['phone_number'] as String,
+        isPrimary = map['is_primary'] == 1;
+
+  @override
+  String toString() => number;
+}
+
+final playerPhonesProvider =
+    FutureProvider.family<List<PlayerPhone>, String>((ref, playerId) async {
+  final notifier = ref.watch(pastPlayersProvider.notifier);
+  final phoneNumbers = await notifier.getPhoneNumbers(playerId);
+  return phoneNumbers;
 });

@@ -499,7 +499,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                   _phoneControllers.add(TextEditingController());
                 } else {
                   _phoneControllers.addAll(
-                      phones.map((p) => TextEditingController(text: p)));
+                      phones.map((p) => TextEditingController(text: p.number)));
                 }
               });
             },

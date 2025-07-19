@@ -30,7 +30,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
     TextEditingController()
   ];
 
-  List<String> _phoneNumbers = [];
+  List<PlayerPhone> _phoneNumbers = [];
   bool _controllersInitialized = false;
 
   @override
@@ -114,7 +114,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
                   _phoneControllers.clear();
                   if (_phoneNumbers.isNotEmpty) {
                     _phoneControllers.addAll(_phoneNumbers
-                        .map((phone) => TextEditingController(text: phone))
+                        .map((phone) => TextEditingController(text: phone.number))
                         .toList());
                   } else {
                     // Ensure at least one phone field is available
