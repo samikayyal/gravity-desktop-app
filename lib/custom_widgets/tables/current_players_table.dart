@@ -11,6 +11,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
+import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
@@ -18,13 +19,14 @@ import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/player_details.dart';
 import 'package:gravity_desktop_app/screens/receipt.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
+import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 
 // Provider that emits a value every second to update the timer
 final tickerProvider = StreamProvider.autoDispose<void>((ref) {
-  return Stream.periodic(const Duration(seconds: 20));
+  return Stream.periodic(const Duration(seconds: 1));
 });
 
 class CurrentPlayersTable extends ConsumerStatefulWidget {
@@ -113,7 +115,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
       _almostTimeAlertedPlayerIds.add(player.playerID);
     });
     // Play sound
-    _audioPlayer.play(AssetSource('short-beep.mp3'));
+    _audioPlayer.play(AssetSource('almost-beep.mp3'));
 
     // Show a banner at the bottom
     MyMaterialBanner.showFloatingBanner(context,
@@ -230,11 +232,11 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                     .toList(),
                 columnWidths: {
                   0: const FlexColumnWidth(0.3), // checkbox
-                  1: const FlexColumnWidth(2.5), // Name
+                  1: const FlexColumnWidth(2.3), // Name
                   2: const FlexColumnWidth(1.7), // Phone Number
                   3: const FlexColumnWidth(1.2), // Check-in
                   4: const FlexColumnWidth(1.3), // Time left
-                  5: const FlexColumnWidth(0.8), // Fee
+                  5: const FlexColumnWidth(1.0), // Fee
                   6: const FlexColumnWidth(1.0), // Paid
                   7: const FlexColumnWidth(1.0), // Left
                   8: const FlexColumnWidth(3), // actions
@@ -287,12 +289,12 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
     bool isTimeUp = false;
     bool isAlmostTimeUp = false;
     String timeRemainingString = 'Open Time';
+    final Duration timeRemaining =
+        player.checkInTime.add(player.timeReserved).difference(DateTime.now());
+    final Duration timeSpent = DateTime.now().difference(player.checkInTime);
+    int playerFee = player.initialFee;
 
     if (!player.isOpenTime) {
-      final Duration timeRemaining = player.checkInTime
-          .add(player.timeReserved)
-          .difference(DateTime.now());
-
       if (timeRemaining.isNegative) {
         isTimeUp = true;
         timeRemainingString = 'Time Up!';
@@ -326,6 +328,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
       }
     }
 
+    // textstyles
     final TextStyle cellStyle = AppTextStyles.tableCellStyle;
     final TextStyle amountStyle = AppTextStyles.amountTextStyle;
     final TextStyle almostTimeUpStyle = AppTextStyles.tableCellStyle.copyWith(
@@ -422,16 +425,54 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                   ? almostTimeUpStyle
                   : cellStyle,
         ),
-        buildDataCell(
-          player.isOpenTime ? 'Open' : '${player.initialFee}',
-          style: player.isOpenTime ? cellStyle : amountStyle,
+        // Player fee
+        Consumer(
+          builder: (context, ref, child) {
+            return ref.watch(pricesProductsSubsProvider).when(
+                  loading: () => buildDataCell("Loading...", style: cellStyle),
+                  error: (error, stackTrace) =>
+                      buildDataCell("Error", style: amountStyle),
+                  data: (data) {
+                    playerFee = calculateFinalFee(
+                        timeSpent: timeSpent,
+                        prices: data.prices,
+                        productsBought: player.productsBought,
+                        allProducts: data.allProducts);
+
+                    log("${player.name} fee is $playerFee");
+
+                    return buildDataCell("$playerFee", style: amountStyle);
+                  },
+                );
+          },
         ),
         buildDataCell('${player.amountPaid}', style: amountStyle),
-        buildDataCell(
-          player.isOpenTime
-              ? 'Open'
-              : '${player.initialFee - player.amountPaid}',
-          style: player.isOpenTime ? cellStyle : amountStyle,
+
+        // Amount left
+        Consumer(
+          builder: (context, ref, child) {
+            return ref.watch(pricesProductsSubsProvider).when(
+                  loading: () => buildDataCell("Loading...", style: cellStyle),
+                  error: (error, stackTrace) =>
+                      buildDataCell("Error", style: amountStyle),
+                  data: (data) {
+                    playerFee = calculateFinalFee(
+                        timeSpent: timeSpent,
+                        prices: data.prices,
+                        productsBought: player.productsBought,
+                        allProducts: data.allProducts);
+
+                    log("${player.name} fee is $playerFee");
+
+                    return buildDataCell(
+                      player.isOpenTime
+                          ? 'Open'
+                          : '${playerFee - player.amountPaid}',
+                      style: player.isOpenTime ? cellStyle : amountStyle,
+                    );
+                  },
+                );
+          },
         ),
         Padding(
           padding: const EdgeInsets.all(4.0),
