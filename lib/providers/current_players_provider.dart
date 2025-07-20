@@ -102,11 +102,15 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
   Future<void> extendPlayerTime(Player player,
       {required Duration timeToExtend, required bool isOpenTime}) async {
     final db = await _dbHelper.database;
-    await db.update('player_sessions', {
-      'time_reserved_minutes':
-          player.timeReserved.inMinutes + timeToExtend.inMinutes,
-      'is_open_time': isOpenTime ? 1 : 0,
-    });
+    await db.update(
+        'player_sessions',
+        {
+          'time_reserved_minutes':
+              player.timeReserved.inMinutes + timeToExtend.inMinutes,
+          'is_open_time': isOpenTime ? 1 : 0,
+        },
+        where: 'session_id = ?',
+        whereArgs: [player.sessionID]);
     await refresh();
   }
 
