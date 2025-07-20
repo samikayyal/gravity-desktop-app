@@ -434,6 +434,8 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                       buildDataCell("Error", style: amountStyle),
                   data: (data) {
                     playerFee = calculateFinalFee(
+                        timeReserved: player.timeReserved,
+                        isOpenTime: player.isOpenTime,
                         timeSpent: timeSpent,
                         prices: data.prices,
                         productsBought: player.productsBought,
@@ -457,6 +459,8 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                       buildDataCell("Error", style: amountStyle),
                   data: (data) {
                     playerFee = calculateFinalFee(
+                        timeReserved: player.timeReserved,
+                        isOpenTime: player.isOpenTime,
                         timeSpent: timeSpent,
                         prices: data.prices,
                         productsBought: player.productsBought,

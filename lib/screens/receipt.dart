@@ -116,6 +116,8 @@ class _ReceiptState extends ConsumerState<Receipt> {
             allProducts: receiptData.allProducts);
       } else {
         finalFee = calculateFinalFee(
+            timeReserved: player.timeReserved,
+            isOpenTime: player.isOpenTime,
             timeSpent: timeSpent,
             prices: receiptData.prices,
             productsBought: player.productsBought,
@@ -137,6 +139,8 @@ class _ReceiptState extends ConsumerState<Receipt> {
               allProducts: receiptData.allProducts);
         } else {
           playerFee = calculateFinalFee(
+              timeReserved: player.timeReserved,
+              isOpenTime: player.isOpenTime,
               timeSpent: timeSpent,
               prices: receiptData.prices,
               productsBought: player.productsBought,
@@ -322,8 +326,15 @@ class _ReceiptState extends ConsumerState<Receipt> {
       _buildInfoRow("Time Spent", formattedTimeSpent),
       if (totals.combinedProductsBought.isNotEmpty &&
           player.subscriptionId == null)
-        _buildInfoRow("Time Fee",
-            "${formatter.format(calculateFinalFee(timeSpent: timeSpent, prices: receiptData.prices))} SYP"),
+        () {
+          final int playerFee = calculateFinalFee(
+              timeReserved: player.timeReserved,
+              isOpenTime: player.isOpenTime,
+              timeSpent: timeSpent,
+              prices: receiptData.prices);
+          return _buildInfoRow(
+              "Time Fee", "${formatter.format(playerFee)} SYP");
+        }(),
       if (player.subscriptionId != null) ...[
         const Divider(height: 24),
         Row(
@@ -383,12 +394,17 @@ class _ReceiptState extends ConsumerState<Receipt> {
               // Individual player fee
               ...() {
                 final playerFee = calculateFinalFee(
+                    timeReserved: player.timeReserved,
+                    isOpenTime: player.isOpenTime,
                     timeSpent: timeSpent,
                     prices: receiptData.prices,
                     productsBought: player.productsBought,
                     allProducts: receiptData.allProducts);
                 final timeFee = calculateFinalFee(
-                    timeSpent: timeSpent, prices: receiptData.prices);
+                    timeReserved: player.timeReserved,
+                    isOpenTime: player.isOpenTime,
+                    timeSpent: timeSpent,
+                    prices: receiptData.prices);
                 return [
                   _buildInfoRow(
                       "Individual Total", "${formatter.format(playerFee)} SYP",
@@ -923,6 +939,8 @@ class _ReceiptState extends ConsumerState<Receipt> {
       final timeSpent = timeSpentList[i];
 
       final int playerFee = calculateFinalFee(
+          timeReserved: player.timeReserved,
+          isOpenTime: player.isOpenTime,
           timeSpent: timeSpent,
           prices: receiptData.prices,
           productsBought: player.productsBought,

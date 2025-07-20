@@ -36,6 +36,8 @@ int calculatePreCheckInFee({
 }
 
 int calculateFinalFee({
+  required Duration timeReserved,
+  required bool isOpenTime,
   required Duration timeSpent,
   required Map<TimeSlice, int> prices,
   Map<int, int>? productsBought,
@@ -45,44 +47,44 @@ int calculateFinalFee({
     return 0;
   }
 
-  // --- Leeway Logic ---
-  final totalMinutes = timeSpent.inMinutes;
-  final fullBlocks = totalMinutes ~/ 30;
-  final remainderMinutes = totalMinutes % 30;
-
-  int totalHalfHourBlocks;
-  if (remainderMinutes > leewayMinutes) {
-    totalHalfHourBlocks = fullBlocks + 1; // Over leeway, charge for next block
-  } else {
-    totalHalfHourBlocks =
-        fullBlocks; // Within leeway, only charge for full blocks
-  }
-
   // --- Fee Calculation Logic
-
+  // handle open time
   int total = 0;
-
-  // if (totalHalfHourBlocks == 0) total += prices[TimeSlice.halfHour]!;
-  // Case 1: Time spent is 1 hour or more (2+ half-hour blocks)
-  if (totalHalfHourBlocks >= 2) {
-    // Always charge the base price for the very first hour.
-    total += prices[TimeSlice.hour]!;
-
-    // Calculate remaining time beyond the first hour.
-    int remainingHalfHourBlocks = totalHalfHourBlocks - 2;
-
-    // Charge for any additional full hours.
-    int additionalFullHours = remainingHalfHourBlocks ~/ 2;
-    total += additionalFullHours * prices[TimeSlice.additionalHour]!;
-
-    // If there's a final half-hour left, charge for it.
-    if (remainingHalfHourBlocks % 2 == 1) {
-      total += prices[TimeSlice.additionalHalfHour]!;
-    }
+  if (isOpenTime) {
+    total += _calculateOpenTimeFee(timeSpent: timeSpent, prices: prices);
   }
-  // Case 2: Time spent is less than 1 hour (exactly 1 half-hour block)
-  else {
-    total += prices[TimeSlice.halfHour]!;
+
+  // Not open time and spent more time than reserved time
+  if (timeReserved.inMinutes > 0 && timeReserved <= timeSpent && !isOpenTime) {
+    total += calculatePreCheckInFee(
+      hoursReserved: timeReserved.inHours,
+      minutesReserved: timeReserved.inMinutes % 60,
+      prices: prices,
+      isOpenTime: isOpenTime,
+    );
+  }
+
+  // --- for additional time spent ---
+  if (timeSpent > timeReserved && !isOpenTime) {
+    final totalAdditionalMinutes = timeSpent.inMinutes - timeReserved.inMinutes;
+    final fullBlocks = totalAdditionalMinutes ~/ 30; // Full half-hour blocks
+    final additionalRemainderMinutes = totalAdditionalMinutes % 30;
+
+    int additionalHalfHourBlocks;
+    if (additionalRemainderMinutes > leewayMinutes) {
+      additionalHalfHourBlocks =
+          fullBlocks + 1; // Over leeway, charge for next block
+    } else {
+      additionalHalfHourBlocks =
+          fullBlocks; // Within leeway, only charge for full blocks
+    }
+
+    // Calculate the fee for additional time spent
+    final int additionalHourBlocks = additionalHalfHourBlocks ~/ 2;
+    final int additionalHalfHourBlocksRemainder = additionalHalfHourBlocks % 2;
+    total += (additionalHourBlocks * prices[TimeSlice.additionalHour]!) +
+        (additionalHalfHourBlocksRemainder *
+            prices[TimeSlice.additionalHalfHour]!);
   }
 
   // --- Product Fees Logic ---
@@ -161,4 +163,45 @@ int calculateGroupPlayerFee({
   }
 
   return fee;
+}
+
+int _calculateOpenTimeFee(
+    {required Duration timeSpent, required Map<TimeSlice, int> prices}) {
+  final totalMinutes = timeSpent.inMinutes;
+  final fullBlocks = totalMinutes ~/ 30;
+  final remainderMinutes = totalMinutes % 30;
+
+  int totalHalfHourBlocks;
+  if (remainderMinutes > leewayMinutes) {
+    totalHalfHourBlocks = fullBlocks + 1; // Over leeway, charge for next block
+  } else {
+    totalHalfHourBlocks =
+        fullBlocks; // Within leeway, only charge for full blocks
+  }
+
+  int total = 0;
+
+  // Case 1: Time spent is 1 hour or more (2+ half-hour blocks)
+  if (totalHalfHourBlocks >= 2) {
+    // Always charge the base price for the very first hour.
+    total += prices[TimeSlice.hour]!;
+
+    // Calculate remaining time beyond the first hour.
+    int remainingHalfHourBlocks = totalHalfHourBlocks - 2;
+
+    // Charge for any additional full hours.
+    int additionalFullHours = remainingHalfHourBlocks ~/ 2;
+    total += additionalFullHours * prices[TimeSlice.additionalHour]!;
+
+    // If there's a final half-hour left, charge for it.
+    if (remainingHalfHourBlocks % 2 == 1) {
+      total += prices[TimeSlice.additionalHalfHour]!;
+    }
+  }
+  // Case 2: Time spent is less than 1 hour (exactly 1 half-hour block)
+  else {
+    total += prices[TimeSlice.halfHour]!;
+  }
+
+  return total;
 }
