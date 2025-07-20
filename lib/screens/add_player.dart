@@ -337,6 +337,13 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                               }
                             });
                           },
+                          onReorder: (int oldIndex, int newIndex) {
+                            setState(() {
+                              final controller =
+                                  phoneControllers.removeAt(oldIndex);
+                              phoneControllers.insert(newIndex, controller);
+                            });
+                          },
                         ),
 
                         // Time Reservation Section

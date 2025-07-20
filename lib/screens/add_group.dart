@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/phone_number_entry.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/time_reservation_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
@@ -369,7 +370,32 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildPhoneNumbersCard(),
+                    PhoneNumberEntryCard(
+                      title: "Phone Numbers",
+                      controllers: phoneControllers,
+                      isDisabled: groupPlayers.any((p) => p.isReadOnly),
+                      disableListModification: false,
+                      addOnPressed: () {
+                        setState(() {
+                          phoneControllers.add(TextEditingController());
+                        });
+                      },
+                      removeOnPressed: (int index) {
+                        setState(() {
+                          if (phoneControllers.length > 1) {
+                            phoneControllers[index].dispose();
+                            phoneControllers.removeAt(index);
+                          }
+                        });
+                      },
+                      onReorder: (int oldIndex, int newIndex) {
+                        setState(() {
+                          final controller =
+                              phoneControllers.removeAt(oldIndex);
+                          phoneControllers.insert(newIndex, controller);
+                        });
+                      },
+                    ),
                     _buildPaymentCard(),
                   ],
                 ),
@@ -1081,85 +1107,6 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               child: const Text("Add Player"),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  MyCard _buildPhoneNumbersCard() {
-    return MyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Phone Numbers (optional)',
-            style:
-                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
-          ),
-          const SizedBox(height: 16),
-          for (int i = 0; i < phoneControllers.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: MyTextField(
-                      controller: phoneControllers[i],
-                      labelText: 'Phone Number',
-                      hintText: 'Enter phone number',
-                      isNumberInputOnly: true,
-                      borderRadius: 10.0,
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty) {
-                          final phone = value.trim();
-                          if (phone.length != 10) {
-                            return 'Please enter a valid phone number';
-                          }
-                          if (!phone.startsWith("09")) {
-                            return 'Phone number must start with 09';
-                          }
-                          if (phone.contains(RegExp(r'\D'))) {
-                            return 'Phone number must contain only digits';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  if (i == phoneControllers.length - 1) ...[
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: IconButton(
-                        icon: const Icon(Icons.add, size: 28),
-                        tooltip: 'Add phone number',
-                        onPressed: () {
-                          setState(() {
-                            phoneControllers.add(TextEditingController());
-                          });
-                        },
-                      ),
-                    ),
-                    if (phoneControllers.length > 1) const SizedBox(width: 8),
-                    if (phoneControllers.length > 1)
-                      SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: IconButton(
-                          icon: const Icon(Icons.remove, size: 28),
-                          tooltip: 'Remove phone number',
-                          onPressed: () {
-                            setState(() {
-                              phoneControllers.removeAt(i);
-                            });
-                          },
-                        ),
-                      ),
-                  ]
-                ],
-              ),
-            ),
         ],
       ),
     );
