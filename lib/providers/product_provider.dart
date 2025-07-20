@@ -81,8 +81,63 @@ class ProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> {
     }
   }
 
-  Future<void> recordSeparatePurchase({required Map<Product, int> cart}) async {
-    await _dbHelper.recordSeparatePurchase(cart: cart);
+  Future<void> recordSeparatePurchase(
+      {required Map<Product, int> cart, required int discount}) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final db = await _dbHelper.database;
+
+    cart.removeWhere((Product product, quantity) =>
+        quantity <= 0 || product.effectiveStock < quantity);
+
+    if (cart.isEmpty) {
+      throw Exception('Cart is empty or all products have insufficient stock.');
+    }
+
+    await db.transaction((txn) async {
+      int finalFee = 0;
+      for (var entry in cart.entries) {
+        // calc final fee
+        final Product product = entry.key;
+        final int quantity = entry.value;
+        finalFee += product.price * quantity;
+
+        // update the product quantity
+        await txn.rawUpdate(
+          '''
+          UPDATE products
+          SET quantity_available = quantity_available - ?
+          WHERE product_id = ?
+          ''',
+          [quantity, product.id],
+        );
+      }
+      final int amountPaid = finalFee - discount;
+
+      // insert into sales
+      final int saleId = await txn.insert('sales', {
+        'session_id': null,
+        'final_fee': finalFee,
+        'amount_paid': amountPaid,
+        'tips': 0,
+        'discount': discount,
+        'sale_time': nowIso,
+        'last_modified': nowIso
+      });
+
+      // insert into sale_items
+      for (var entry in cart.entries) {
+        final Product product = entry.key;
+        final int quantity = entry.value;
+
+        await txn.insert('sale_items', {
+          'sale_id': saleId,
+          'product_id': product.id,
+          'quantity': quantity,
+          'price_per_item': product.price,
+          'last_modified': nowIso,
+        });
+      }
+    });
     await refresh();
   }
 }

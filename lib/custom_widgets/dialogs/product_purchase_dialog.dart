@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text_field.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
+import 'package:gravity_desktop_app/screens/receipt.dart';
 import 'package:intl/intl.dart';
 
 class ProductPurchaseDialog extends ConsumerStatefulWidget {
@@ -28,6 +30,10 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
   final formatter = NumberFormat.decimalPattern();
 
   bool _isAddingToDatabase = false;
+
+  final _formKey = GlobalKey<FormState>();
+  DiscountType _discountType = DiscountType.none;
+  final _discountController = TextEditingController();
 
   @override
   void initState() {
@@ -56,6 +62,15 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
     });
   }
 
+  int _calculateDiscount(List<Product> allProducts) {
+    if (_discountType == DiscountType.input) {
+      return int.tryParse(_discountController.text) ?? 0;
+    } else if (_discountType == DiscountType.gift) {
+      return _calculateTotalPrice(allProducts);
+    }
+    return 0;
+  }
+
   int _calculateTotalPrice(List<Product> allProducts) {
     if (_cart.isEmpty) return 0;
     int total = 0;
@@ -67,6 +82,9 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
   }
 
   Future<void> _onConfirmPurchase(List<Product> allProducts) async {
+    if (_formKey.currentState != null && !_formKey.currentState!.validate()) {
+      return;
+    }
     // ------------------------- SEPARATE PURCHASE
     if (widget.player == null) {
       // Create the Map<Product, int> expected by the provider
@@ -78,9 +96,8 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
       if (cartForProvider.isEmpty) return;
 
       try {
-        await ref
-            .read(productsProvider.notifier)
-            .recordSeparatePurchase(cart: cartForProvider);
+        await ref.read(productsProvider.notifier).recordSeparatePurchase(
+            cart: cartForProvider, discount: _calculateDiscount(allProducts));
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -139,13 +156,41 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
             data: (products) {
               final availableProducts =
                   products.where((p) => p.effectiveStock > 0).toList();
-              final totalPrice = _calculateTotalPrice(products);
-
               return Column(
                 children: [
                   _buildProductList(availableProducts),
-                  const SizedBox(height: 24),
-                  _buildPriceSummary(totalPrice),
+                  if (widget.player == null) ...[
+                    const SizedBox(height: 12),
+                    _buildDiscountButtons(),
+                  ],
+                  if (_discountType == DiscountType.input) ...[
+                    const SizedBox(height: 12),
+                    MyTextField(
+                      controller: _discountController,
+                      labelText: 'Discount Amount',
+                      hintText: 'Enter discount amount',
+                      isNumberInputOnly: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a discount amount';
+                        }
+                        final amount = int.tryParse(value);
+                        if (amount == null ||
+                            amount < 0 ||
+                            amount > _calculateTotalPrice(products)) {
+                          return 'Invalid discount amount';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          // Trigger a rebuild to update the price summary
+                        });
+                      },
+                    )
+                  ],
+                  const SizedBox(height: 12),
+                  _buildPriceSummary(products),
                   const SizedBox(height: 32),
                   _buildActionButtons(products),
                 ],
@@ -184,7 +229,10 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
           );
   }
 
-  Widget _buildPriceSummary(int totalPrice) {
+  Widget _buildPriceSummary(List<Product> allProducts) {
+    final totalPrice = _calculateTotalPrice(allProducts);
+    final discount = _calculateDiscount(allProducts);
+    final discountedPrice = totalPrice - discount;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: BoxDecoration(
@@ -193,14 +241,38 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Total Price',
-              style: AppTextStyles.regularTextStyle
-                  .copyWith(fontWeight: FontWeight.bold)),
-          Text(
-            '${formatter.format(totalPrice)} SYP',
-            style: AppTextStyles.highlightedTextStyle,
-          ),
+              style: AppTextStyles.sectionHeaderStyle
+                  .copyWith(fontWeight: FontWeight.bold, color: Colors.black)),
+          if (_discountType == DiscountType.none)
+            Text(
+              '${formatter.format(totalPrice)} SYP',
+              style: AppTextStyles.highlightedTextStyle,
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Total: ${formatter.format(totalPrice)} SYP',
+                  style: AppTextStyles.regularTextStyle,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Discount: ${formatter.format(discount)} SYP',
+                  style: AppTextStyles.regularTextStyle.copyWith(
+                      color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Final Price: ${formatter.format(discountedPrice)} SYP',
+                  style:
+                      AppTextStyles.highlightedTextStyle.copyWith(fontSize: 22),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -228,6 +300,51 @@ class _ProductPurchaseDialogState extends ConsumerState<ProductPurchaseDialog> {
                 )
               : Text('Confirm Purchase',
                   style: AppTextStyles.primaryButtonTextStyle),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiscountButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            setState(() {
+              if (_discountType == DiscountType.input) {
+                _discountType = DiscountType.none;
+              } else {
+                _discountType = DiscountType.input;
+              }
+            });
+          },
+          style: _discountType == DiscountType.input
+              ? AppButtonStyles.primaryButton
+              : AppButtonStyles.secondaryButton,
+          child: Text('Discount',
+              style: _discountType == DiscountType.input
+                  ? AppTextStyles.primaryButtonTextStyle
+                  : AppTextStyles.secondaryButtonTextStyle),
+        ),
+        const SizedBox(width: 12),
+        ElevatedButton(
+          onPressed: () {
+            setState(() {
+              if (_discountType == DiscountType.gift) {
+                _discountType = DiscountType.none;
+              } else {
+                _discountType = DiscountType.gift;
+              }
+            });
+          },
+          style: _discountType == DiscountType.gift
+              ? AppButtonStyles.primaryButton
+              : AppButtonStyles.secondaryButton,
+          child: Text('Gift',
+              style: _discountType == DiscountType.gift
+                  ? AppTextStyles.primaryButtonTextStyle
+                  : AppTextStyles.secondaryButtonTextStyle),
         ),
       ],
     );
