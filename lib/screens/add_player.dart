@@ -11,6 +11,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/phone_number_entry.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
@@ -318,7 +319,25 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
                         _buildPlayerDetailsCard(),
 
                         // Phone Numbers Section
-                        _buildPhoneNumbersCard(),
+                        PhoneNumberEntryCard(
+                          title: 'Phone Numbers (optional)',
+                          controllers: phoneControllers,
+                          isDisabled: _detailsReadOnly,
+                          disableListModification: _detailsReadOnly,
+                          addOnPressed: () {
+                            setState(() {
+                              phoneControllers.add(TextEditingController());
+                            });
+                          },
+                          removeOnPressed: (int index) {
+                            setState(() {
+                              if (phoneControllers.length > 1) {
+                                phoneControllers[index].dispose();
+                                phoneControllers.removeAt(index);
+                              }
+                            });
+                          },
+                        ),
 
                         // Time Reservation Section
                         _buildTimeReservationCard(data)
@@ -592,109 +611,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
               },
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  MyCard _buildPhoneNumbersCard() {
-    return MyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Phone Numbers (optional)',
-            style:
-                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
-          ),
-          const SizedBox(height: 16),
-          for (int i = 0; i < phoneControllers.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FocusTraversalOrder(
-                      order: NumericFocusOrder(3.0 + i),
-                      child: TextFormField(
-                        controller: phoneControllers[i],
-                        style: AppTextStyles.regularTextStyle,
-                        readOnly: _detailsReadOnly,
-                        decoration: InputDecoration(
-                          filled: _detailsReadOnly,
-                          fillColor: _detailsReadOnly
-                              ? Colors.grey.shade200
-                              : Colors.transparent,
-                          labelText: _detailsReadOnly
-                              ? "Phone Number (Locked)"
-                              : 'Phone Number',
-                          labelStyle: AppTextStyles.regularTextStyle,
-                          hintText: 'Enter phone number',
-                          hintStyle: AppTextStyles.subtitleTextStyle,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 18),
-                        ),
-                        keyboardType: TextInputType.phone,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
-                        ],
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            final phone = value.trim();
-                            if (phone.length != 10) {
-                              return 'Please enter a valid phone number';
-                            }
-                            if (!phone.startsWith("09")) {
-                              return 'Phone number must start with 09';
-                            }
-                            if (phone.contains(RegExp(r'\D'))) {
-                              return 'Phone number must contain only digits';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ),
-                  if (i == phoneControllers.length - 1 &&
-                      !_detailsReadOnly) ...[
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: IconButton(
-                        icon: const Icon(Icons.add, size: 28),
-                        tooltip: 'Add phone number',
-                        onPressed: () {
-                          setState(() {
-                            phoneControllers.add(TextEditingController());
-                          });
-                        },
-                      ),
-                    ),
-                    if (phoneControllers.length > 1 && !_detailsReadOnly)
-                      const SizedBox(width: 8),
-                    if (phoneControllers.length > 1 && !_detailsReadOnly)
-                      SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: IconButton(
-                          icon: const Icon(Icons.remove, size: 28),
-                          tooltip: 'Remove phone number',
-                          onPressed: () {
-                            setState(() {
-                              phoneControllers.removeAt(i);
-                            });
-                          },
-                        ),
-                      ),
-                  ]
-                ],
-              ),
-            ),
         ],
       ),
     );
