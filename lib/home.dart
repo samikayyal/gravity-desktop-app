@@ -29,7 +29,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(),
+      appBar: MyAppBar(
+        isHomeScreen: true,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showDialog(

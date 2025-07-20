@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const MyAppBar({super.key});
+  final bool isHomeScreen;
+  const MyAppBar({super.key, this.isHomeScreen = false});
 
   @override
   // its normaly kToolbarHeight which is 56.0
@@ -17,6 +19,28 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       centerTitle: true,
       backgroundColor: gravityYellow,
+      leadingWidth: isHomeScreen ? 200 : null,
+      leading: isHomeScreen
+          ? Consumer(
+              builder: (context, ref, child) {
+                final int playerCount =
+                    ref.watch(currentPlayersProvider).hasValue
+                        ? ref.watch(currentPlayersProvider).value!.length
+                        : 0;
+                return Center(
+                  child: Text(
+                    "Players Inside: $playerCount",
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: AppTextStyles.sectionHeaderStyle.copyWith(
+                      color: Colors.black,
+                      fontSize: 20,
+                    ),
+                  ),
+                );
+              },
+            )
+          : null,
       title: const Text(
         "Gravity",
         style: TextStyle(fontFamily: "Lazy Dog", fontSize: 50),
