@@ -697,7 +697,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                       ],
                     ),
                   ),
-                  if (!isFirst) ...[
+                  if (groupPlayers.length > 1) ...[
                     const SizedBox(width: 12),
                     Container(
                       decoration: BoxDecoration(
