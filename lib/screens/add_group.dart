@@ -303,7 +303,8 @@ class _AddGroupState extends ConsumerState<AddGroup> {
             phoneControllers[emptyControllerIndex].text = playerPhone.number;
           } else {
             // All controllers are full, so add a new one.
-            phoneControllers.add(TextEditingController(text: playerPhone.number));
+            phoneControllers
+                .add(TextEditingController(text: playerPhone.number));
           }
         }
       }
@@ -946,7 +947,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                       flex: 1,
                       child: MyTextField(
                         controller: player.ageController,
-                        readOnly: player.isReadOnly,
+                        isDisabled: player.isReadOnly,
                         labelText: 'Age',
                         hintText: 'Age',
                         isNumberInputOnly: true,

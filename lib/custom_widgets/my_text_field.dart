@@ -7,7 +7,6 @@ class MyTextField extends StatelessWidget {
   final String labelText;
   final String hintText;
   final bool isDisabled;
-  final bool readOnly;
   final bool isNumberInputOnly;
   final String? Function(String?)? validator;
   final Widget? suffixIcon;
@@ -25,7 +24,6 @@ class MyTextField extends StatelessWidget {
     required this.labelText,
     required this.hintText,
     this.isDisabled = false,
-    this.readOnly = false,
     this.isNumberInputOnly = false,
     this.validator,
     this.suffixIcon,
@@ -40,20 +38,18 @@ class MyTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isFieldDisabled = isDisabled || readOnly;
-
     return TextFormField(
       controller: controller,
       enabled: !isDisabled,
-      readOnly: readOnly,
+      readOnly: isDisabled,
       focusNode: focusNode,
       style: AppTextStyles.regularTextStyle,
       decoration: InputDecoration(
         filled: true,
-        fillColor: isFieldDisabled ? Colors.grey.shade100 : Colors.white,
-        labelText: readOnly ? "$labelText (Locked)" : labelText,
+        fillColor: isDisabled ? Colors.grey.shade100 : Colors.white,
+        labelText: isDisabled ? "$labelText (Locked)" : labelText,
         labelStyle: AppTextStyles.regularTextStyle.copyWith(
-          color: isFieldDisabled ? Colors.grey.shade500 : Colors.grey.shade600,
+          color: isDisabled ? Colors.grey.shade500 : Colors.grey.shade600,
         ),
         hintText: hintText,
         hintStyle: AppTextStyles.subtitleTextStyle,
@@ -75,7 +71,7 @@ class MyTextField extends StatelessWidget {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        prefixIcon: readOnly && prefixIcon == null
+        prefixIcon: isDisabled && prefixIcon == null
             ? Icon(
                 Icons.lock_outline,
                 color: Colors.grey.shade400,
