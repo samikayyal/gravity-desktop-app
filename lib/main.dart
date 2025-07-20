@@ -1,6 +1,10 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/home.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
@@ -64,8 +68,28 @@ class TestScreen extends ConsumerStatefulWidget {
 }
 
 class _TestScreenState extends ConsumerState<TestScreen> {
-  final controller = TextEditingController();
+  final hoursReservedController = TextEditingController();
+  final minutesReservedController = TextEditingController();
+  final hourController = TextEditingController();
+  final minuteController = TextEditingController();
   int price = 0;
+
+  void _calculateFee(Map<TimeSlice, int> prices) {
+    final hoursReserved = int.tryParse(hoursReservedController.text) ?? 0;
+    final minutesReserved = int.tryParse(minutesReservedController.text) ?? 0;
+    final hours = int.tryParse(hourController.text) ?? 0;
+    final minutes = int.tryParse(minuteController.text) ?? 0;
+
+    // Calculate the fee based on the hours and minutes
+    setState(() {
+      price = calculateFinalFee(
+          timeReserved:
+              Duration(hours: hoursReserved, minutes: minutesReserved),
+          isOpenTime: true,
+          timeSpent: Duration(hours: hours, minutes: minutes),
+          prices: prices);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,21 +99,72 @@ class _TestScreenState extends ConsumerState<TestScreen> {
             error: (err, stack) => const Center(
                 child: Text('Error loading prices. Please try again later.')),
             data: (prices) {
-              return Column(
-                children: [
-                  TextField(
-                    controller: controller,
-                    onChanged: (value) {
-                      setState(() {
-                        price = calculateSubscriptionFee(
-                            discount: 45,
-                            hours: int.parse(value),
-                            prices: prices);
-                      });
-                    },
+              return Center(
+                child: FractionallySizedBox(
+                  heightFactor: 0.5,
+                  widthFactor: 0.5,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                              child: TextFormField(
+                            controller: hoursReservedController,
+                            decoration: const InputDecoration(
+                              labelText: 'Hours Reserved',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) => _calculateFee(prices),
+                          )),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: minutesReservedController,
+                              decoration: const InputDecoration(
+                                labelText: 'Minutes Reserved',
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => _calculateFee(prices),
+                            ),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: TextFormField(
+                              controller: hourController,
+                              decoration: const InputDecoration(
+                                labelText: 'Hours',
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => _calculateFee(prices),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 1,
+                            child: TextFormField(
+                              controller: minuteController,
+                              decoration: const InputDecoration(
+                                labelText: 'Minutes',
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => _calculateFee(prices),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 100),
+                      Text(
+                        price.toString(),
+                        style: AppTextStyles.pageTitleStyle,
+                      ),
+                    ],
                   ),
-                  Text(price.toString()),
-                ],
+                ),
               );
             }));
   }
