@@ -561,7 +561,6 @@ class _AddGroupState extends ConsumerState<AddGroup> {
 
   Widget _buildPlayerForm(int index) {
     final player = groupPlayers[index];
-    final isFirst = index == 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
