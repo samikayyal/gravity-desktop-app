@@ -215,35 +215,37 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
 
         return Column(
           children: [
-            TableContainer(
-                columnHeaders: [
-                  '', // checkbox
-                  'Name',
-                  'Phone Number',
-                  'Check-in',
-                  'Time Left',
-                  'Fee',
-                  'Paid',
-                  'Left',
-                  'Actions'
-                ],
-                rowData: currentPlayers
-                    .asMap()
-                    .entries
-                    .map((entry) => _buildTableRow(
-                        context, entry.value, entry.key, groupColorMap))
-                    .toList(),
-                columnWidths: {
-                  0: const FlexColumnWidth(0.3), // checkbox
-                  1: const FlexColumnWidth(2.3), // Name
-                  2: const FlexColumnWidth(1.7), // Phone Number
-                  3: const FlexColumnWidth(1.2), // Check-in
-                  4: const FlexColumnWidth(1.3), // Time left
-                  5: const FlexColumnWidth(1.0), // Fee
-                  6: const FlexColumnWidth(1.0), // Paid
-                  7: const FlexColumnWidth(1.0), // Left
-                  8: const FlexColumnWidth(3), // actions
-                }),
+            Expanded(
+              child: TableContainer(
+                  columnHeaders: [
+                    '', // checkbox
+                    'Name',
+                    'Phone Number',
+                    'Check-in',
+                    'Time Left',
+                    'Fee',
+                    'Paid',
+                    'Left',
+                    'Actions'
+                  ],
+                  rowData: currentPlayers
+                      .asMap()
+                      .entries
+                      .map((entry) => _buildTableRow(
+                          context, entry.value, entry.key, groupColorMap))
+                      .toList(),
+                  columnWidths: {
+                    0: const FlexColumnWidth(0.3), // checkbox
+                    1: const FlexColumnWidth(2.3), // Name
+                    2: const FlexColumnWidth(1.7), // Phone Number
+                    3: const FlexColumnWidth(1.2), // Check-in
+                    4: const FlexColumnWidth(1.3), // Time left
+                    5: const FlexColumnWidth(1.0), // Fee
+                    6: const FlexColumnWidth(1.0), // Paid
+                    7: const FlexColumnWidth(1.0), // Left
+                    8: const FlexColumnWidth(3), // actions
+                  }),
+            ),
 
             // Buttons for selected players
             if (playersSelected.length >= 2 && playersSelected.length <= 4)
@@ -443,8 +445,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                         productsBought: player.productsBought,
                         allProducts: data.allProducts);
 
-                    log("${player.name} fee is $playerFee");
-
                     return buildDataCell("$playerFee", style: amountStyle);
                   },
                 );
@@ -467,8 +467,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                         prices: data.prices,
                         productsBought: player.productsBought,
                         allProducts: data.allProducts);
-
-                    log("${player.name} fee is $playerFee");
 
                     return buildDataCell(
                       player.isOpenTime
