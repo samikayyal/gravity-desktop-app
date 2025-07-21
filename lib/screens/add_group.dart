@@ -1072,9 +1072,6 @@ class _AddGroupState extends ConsumerState<AddGroup> {
               if (amount == null || amount < 0) {
                 return 'Please enter a valid amount';
               }
-              if (amount > totalFee) {
-                return 'Amount is more than the total fee';
-              }
               return null;
             },
           ),
