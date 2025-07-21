@@ -13,6 +13,7 @@ import 'package:gravity_desktop_app/custom_widgets/tables/table.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
+import 'package:gravity_desktop_app/providers/misc_providers.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
@@ -41,8 +42,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   late final AudioPlayer _audioPlayer;
   final Set<String> _alertedPlayerIds = {};
   final Set<String> _almostTimeAlertedPlayerIds = {};
-
-  final Set<Player> playersSelected = {};
 
   @override
   void initState() {
@@ -124,6 +123,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
 
   Future<void> _goToReceipt(BuildContext context, Player? player) async {
     // if no player is provided and no selected players, throw an error
+    final playersSelected = ref.read(selectedPlayersProvider);
     if (player == null && playersSelected.isEmpty) {
       MyMaterialBanner.showFloatingBanner(context,
           message: "No player selected for checkout.");
@@ -210,6 +210,9 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
           }
         }
 
+        // Selected players for checkout
+        final Set<Player> playersSelected = ref.watch(selectedPlayersProvider);
+
         return Column(
           children: [
             TableContainer(
@@ -264,11 +267,10 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                       onPressed: () async {
                         if (playersSelected.isEmpty) return;
 
-                        // Navigate to receipt for the first selected player
                         await _goToReceipt(context, null);
-                        setState(() {
-                          playersSelected.clear();
-                        });
+                        ref
+                            .read(selectedPlayersProvider.notifier)
+                            .clearSelection();
                       },
                     )
                   ],
@@ -358,22 +360,22 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
       ),
       children: [
         // checkbox
-        Checkbox(
-          activeColor: Colors.blue,
-          value: playersSelected.contains(player),
-          onChanged: (value) {
-            if (player.subscriptionId != null) {
-              MyMaterialBanner.showFloatingBanner(context,
-                  message: "Cannot select players with subscriptions.");
-              return;
-            }
-            setState(() {
-              if (value == true) {
-                playersSelected.add(player);
-              } else {
-                playersSelected.remove(player);
-              }
-            });
+        Consumer(
+          builder: (context, ref, child) {
+            final selectedPlayers = ref.watch(selectedPlayersProvider);
+
+            return Checkbox(
+              activeColor: Colors.blue,
+              value: selectedPlayers.contains(player),
+              onChanged: (value) {
+                if (player.subscriptionId != null) {
+                  MyMaterialBanner.showFloatingBanner(context,
+                      message: "Cannot select players with subscriptions.");
+                  return;
+                }
+                ref.read(selectedPlayersProvider.notifier).togglePlayer(player);
+              },
+            );
           },
         ),
 
