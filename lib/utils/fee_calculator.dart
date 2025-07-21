@@ -1,3 +1,4 @@
+// ignore: unused_import
 import 'dart:developer';
 
 import 'package:gravity_desktop_app/database/database.dart';
@@ -54,8 +55,8 @@ int calculateFinalFee({
     total += _calculateOpenTimeFee(timeSpent: timeSpent, prices: prices);
   }
 
-  // Not open time and spent more time than reserved time
-  if (timeReserved.inMinutes > 0 && timeReserved <= timeSpent && !isOpenTime) {
+  // Not open time and not yet reached time reserved
+  if (timeReserved >= timeSpent && !isOpenTime) {
     total += calculatePreCheckInFee(
       hoursReserved: timeReserved.inHours,
       minutesReserved: timeReserved.inMinutes % 60,
@@ -94,7 +95,6 @@ int calculateFinalFee({
     );
   }
 
-  log("products: $productsBought, all products: $allProducts");
   if (productsBought != null && productsBought.isNotEmpty) {
     total += calculateProductsFee(
         productsBought: productsBought, allProducts: allProducts!);
