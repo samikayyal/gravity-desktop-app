@@ -17,4 +17,10 @@ final List<Color> groupColors = [
   Colors.amber.shade600,
   Colors.cyan.shade400,
   Colors.brown.shade400,
+  Colors.red.shade400,
+  Colors.lime.shade400,
+  Colors.deepOrange.shade400,
+  Colors.lightBlue.shade400,
+  Colors.lightGreen.shade400,
+  Colors.blueGrey.shade400,
 ];
