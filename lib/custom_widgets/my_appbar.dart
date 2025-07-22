@@ -1,3 +1,6 @@
+// ignore: unused_import
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
@@ -5,6 +8,7 @@ import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
+import 'package:window_manager/window_manager.dart';
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isHomeScreen;
@@ -45,11 +49,26 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
         "Gravity",
         style: TextStyle(fontFamily: "Lazy Dog", fontSize: 50),
       ),
-      actions: const [
+      actions: [
         Padding(
           padding: EdgeInsets.only(right: 20.0),
           child: ClockWidget(),
         ),
+        if (isHomeScreen)
+          Padding(
+            padding: EdgeInsets.only(right: 20.0),
+            child: TextButton.icon(
+              onPressed: () async {
+                await windowManager.destroy();
+              },
+              label: Text(
+                "Close",
+                style: AppTextStyles.sectionHeaderStyle
+                    .copyWith(color: Colors.black),
+              ),
+              icon: Icon(Icons.close, size: 22, color: Colors.black),
+            ),
+          ),
       ],
     );
   }
