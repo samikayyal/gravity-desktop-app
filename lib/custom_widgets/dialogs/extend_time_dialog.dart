@@ -30,10 +30,12 @@ class _ExtendTimeDialogState extends ConsumerState<ExtendTimeDialog> {
 
   void _incrementTime(TimeIncrement increment, subs) {
     try {
-      sub = subs.firstWhere(
+      if (widget.player.subscriptionId != null) {
+        sub = subs.firstWhere(
         (s) => s.subscriptionId == widget.player.subscriptionId,
         orElse: () => throw Exception('Subscription not found'),
       );
+      }
     } catch (e) {
       if (e.toString().contains('Subscription not found')) {
         sub = null;

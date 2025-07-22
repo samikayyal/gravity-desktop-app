@@ -80,6 +80,7 @@ class PastPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       playerID: result[0]['id'] as String,
       checkInTime: DateTime.now(),
       timeReserved: Duration.zero,
+      timeExtended: Duration.zero,
       amountPaid: 0,
       initialFee: 0,
       isOpenTime: false,

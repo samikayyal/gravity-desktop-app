@@ -4,6 +4,7 @@ class Player {
   final int age;
   final DateTime checkInTime;
   final Duration timeReserved;
+  final Duration timeExtended;
   final bool isOpenTime;
   final int initialFee;
   int amountPaid;
@@ -23,6 +24,7 @@ class Player {
     required this.age,
     required this.checkInTime,
     required this.timeReserved,
+    required this.timeExtended,
     required this.amountPaid,
     required this.sessionID,
     required this.isOpenTime,
@@ -41,6 +43,7 @@ class Player {
       timeReserved: Duration(
         minutes: map['time_reserved_minutes'] as int,
       ),
+      timeExtended: Duration(minutes: map['time_extended_minutes'] ?? 0),
       isOpenTime: map['is_open_time'] == 1,
       amountPaid: map['amount_paid'] as int,
       sessionID: map['session_id'] as int,

@@ -86,6 +86,7 @@ class _TestScreenState extends ConsumerState<TestScreen> {
           timeReserved:
               Duration(hours: hoursReserved, minutes: minutesReserved),
           isOpenTime: true,
+          timeExtendedMinutes: 0,
           timeSpent: Duration(hours: hours, minutes: minutes),
           prices: prices);
     });

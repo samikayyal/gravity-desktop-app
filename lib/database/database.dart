@@ -60,7 +60,8 @@ class DatabaseHelper {
       check_in_time TEXT NOT NULL,
       time_reserved_minutes INTEGER NOT NULL,
       is_open_time INTEGER NOT NULL,     -- 0 for false, 1 for true
-      check_out_time TEXT,               -- *** NULL means this session is ACTIVE ***
+      time_extended_minutes INTEGER NOT NULL DEFAULT 0,
+      check_out_time TEXT,               -- ** NULL means this session is ACTIVE **
 
       -- payment info
       initial_fee INTEGER NOT NULL DEFAULT 0,
@@ -218,6 +219,7 @@ class DatabaseHelper {
             ps.time_reserved_minutes,
             ps.is_open_time,
             ps.session_id,
+            ps.time_extended_minutes,
             ps.initial_fee,
             ps.group_number,
             ps.prepaid_amount AS amount_paid,
@@ -592,6 +594,7 @@ class DatabaseHelper {
               // Placeholders, not used in past players
               checkInTime: DateTime.now(),
               timeReserved: Duration.zero,
+              timeExtended: Duration.zero,
               amountPaid: 0,
               sessionID: 0,
               isOpenTime: false,

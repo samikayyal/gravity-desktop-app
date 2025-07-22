@@ -118,6 +118,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
         finalFee = calculateFinalFee(
             timeReserved: player.timeReserved,
             isOpenTime: player.isOpenTime,
+            timeExtendedMinutes: player.timeExtended.inMinutes,
             timeSpent: timeSpent,
             prices: receiptData.prices,
             productsBought: player.productsBought,
@@ -141,6 +142,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
           playerFee = calculateFinalFee(
               timeReserved: player.timeReserved,
               isOpenTime: player.isOpenTime,
+              timeExtendedMinutes: player.timeExtended.inMinutes,
               timeSpent: timeSpent,
               prices: receiptData.prices,
               productsBought: player.productsBought,
@@ -330,6 +332,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
           final int playerFee = calculateFinalFee(
               timeReserved: player.timeReserved,
               isOpenTime: player.isOpenTime,
+              timeExtendedMinutes: player.timeExtended.inMinutes,
               timeSpent: timeSpent,
               prices: receiptData.prices);
           return _buildInfoRow(
@@ -396,6 +399,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                 final playerFee = calculateFinalFee(
                     timeReserved: player.timeReserved,
                     isOpenTime: player.isOpenTime,
+                    timeExtendedMinutes: player.timeExtended.inMinutes,
                     timeSpent: timeSpent,
                     prices: receiptData.prices,
                     productsBought: player.productsBought,
@@ -403,6 +407,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
                 final timeFee = calculateFinalFee(
                     timeReserved: player.timeReserved,
                     isOpenTime: player.isOpenTime,
+                    timeExtendedMinutes: player.timeExtended.inMinutes,
                     timeSpent: timeSpent,
                     prices: receiptData.prices);
                 return [
@@ -941,6 +946,7 @@ class _ReceiptState extends ConsumerState<Receipt> {
       final int playerFee = calculateFinalFee(
           timeReserved: player.timeReserved,
           isOpenTime: player.isOpenTime,
+          timeExtendedMinutes: player.timeExtended.inMinutes,
           timeSpent: timeSpent,
           prices: receiptData.prices,
           productsBought: player.productsBought,

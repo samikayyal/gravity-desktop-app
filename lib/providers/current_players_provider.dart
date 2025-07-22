@@ -64,7 +64,6 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     await refresh();
   }
 
-  // check in a player
   Future<void> checkInPlayer({
     String? existingPlayerID,
     required String name,
@@ -102,15 +101,12 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
   Future<void> extendPlayerTime(Player player,
       {required Duration timeToExtend, required bool isOpenTime}) async {
     final db = await _dbHelper.database;
-    await db.update(
-        'player_sessions',
-        {
-          'time_reserved_minutes':
-              player.timeReserved.inMinutes + timeToExtend.inMinutes,
-          'is_open_time': isOpenTime ? 1 : 0,
-        },
-        where: 'session_id = ?',
-        whereArgs: [player.sessionID]);
+    await db.rawUpdate('''
+      UPDATE player_sessions
+      SET time_extended_minutes = time_extended_minutes + ?,
+          is_open_time = ?
+      WHERE session_id=? 
+      ''', [timeToExtend.inMinutes, isOpenTime ? 1 : 0, player.sessionID]);
     await refresh();
   }
 
@@ -122,6 +118,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         '''SELECT ps.player_id AS id, p.name AS name, p.age AS age,
                 ps.check_in_time AS check_in_time,
                 ps.time_reserved_minutes AS time_reserved_minutes,
+                ps.time_extended_minutes as time_extended_minutes 
                 ps.is_open_time AS is_open_time,
                 ps.prepaid_amount AS amount_paid,
                 ps.initial_fee AS initial_fee,

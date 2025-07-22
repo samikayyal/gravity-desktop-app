@@ -293,8 +293,10 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
     bool isTimeUp = false;
     bool isAlmostTimeUp = false;
     String timeRemainingString = 'Open Time';
-    final Duration timeRemaining =
-        player.checkInTime.add(player.timeReserved).difference(DateTime.now());
+    final Duration timeRemaining = player.checkInTime
+        .add(player.timeReserved)
+        .add(player.timeExtended)
+        .difference(DateTime.now());
     final Duration timeSpent = DateTime.now().difference(player.checkInTime);
     int playerFee = player.initialFee;
 
@@ -396,6 +398,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                 child: buildDataCell(player.name, style: cellStyle))
           ],
         ),
+        // Phones
         Consumer(builder: (context, ref, child) {
           final playerPhones = ref.watch(playerPhonesProvider(player.playerID));
           return playerPhones.when(
@@ -440,6 +443,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                     playerFee = calculateFinalFee(
                         timeReserved: player.timeReserved,
                         isOpenTime: player.isOpenTime,
+                        timeExtendedMinutes: player.timeExtended.inMinutes,
                         timeSpent: timeSpent,
                         prices: data.prices,
                         productsBought: player.productsBought,
@@ -463,6 +467,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                     playerFee = calculateFinalFee(
                         timeReserved: player.timeReserved,
                         isOpenTime: player.isOpenTime,
+                        timeExtendedMinutes: player.timeExtended.inMinutes,
                         timeSpent: timeSpent,
                         prices: data.prices,
                         productsBought: player.productsBought,

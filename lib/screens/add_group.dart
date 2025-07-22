@@ -61,6 +61,7 @@ class GroupPlayer {
     return calculateGroupPlayerFee(
         player: this,
         timeReservedMinutes: timeReservedMinutes,
+        timeExtendedMinutes: 0,
         isOpenTime: isOpenTime,
         prices: _data.prices,
         allProducts: _data.allProducts);

@@ -141,6 +141,7 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
           ? calculatePreCheckInFee(
               hoursReserved: hoursReserved,
               minutesReserved: minutesReserved,
+              timeExtendedMinutes: 0,
               prices: prices,
               isOpenTime: isOpenTime,
             )

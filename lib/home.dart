@@ -155,6 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 totalFee: calculatePreCheckInFee(
                                   hoursReserved: 0,
                                   minutesReserved: 1,
+                                  timeExtendedMinutes: 0,
                                   prices: ref.read(pricesProvider).value!,
                                   isOpenTime: false,
                                 ),

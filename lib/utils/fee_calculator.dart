@@ -9,6 +9,7 @@ import 'package:gravity_desktop_app/utils/constants.dart';
 int calculatePreCheckInFee({
   required int hoursReserved,
   required int minutesReserved,
+  required int timeExtendedMinutes,
   required Map<TimeSlice, int> prices,
   required bool isOpenTime,
 }) {
@@ -33,6 +34,19 @@ int calculatePreCheckInFee({
     // No full hour, charge first half hour at base price
     total += prices[TimeSlice.halfHour]!;
   }
+
+  // addtional time (extended)
+  if (timeExtendedMinutes > 0) {
+    final int extendedHours = timeExtendedMinutes ~/ 60;
+    final int extendedRemainderMinutes = timeExtendedMinutes % 60;
+
+    if (extendedHours > 0) {
+      total += prices[TimeSlice.additionalHour]!;
+    }
+    if (extendedRemainderMinutes == 30) {
+      total += prices[TimeSlice.additionalHalfHour]!;
+    }
+  }
   return total;
 }
 
@@ -41,6 +55,7 @@ int calculateFinalFee({
   required bool isOpenTime,
   required Duration timeSpent,
   required Map<TimeSlice, int> prices,
+  required int timeExtendedMinutes,
   Map<int, int>? productsBought,
   List<Product>? allProducts,
 }) {
@@ -56,10 +71,11 @@ int calculateFinalFee({
   }
 
   // Not open time and not yet reached time reserved
-  if (timeReserved >= timeSpent && !isOpenTime) {
+  if (timeSpent <= timeReserved && !isOpenTime) {
     total += calculatePreCheckInFee(
       hoursReserved: timeReserved.inHours,
       minutesReserved: timeReserved.inMinutes % 60,
+      timeExtendedMinutes: timeExtendedMinutes,
       prices: prices,
       isOpenTime: isOpenTime,
     );
@@ -147,6 +163,7 @@ int calculateSubscriptionFee(
 int calculateGroupPlayerFee({
   required GroupPlayer player,
   required int timeReservedMinutes,
+  required int timeExtendedMinutes,
   required bool isOpenTime,
   required Map<TimeSlice, int> prices,
   required List<Product> allProducts,
@@ -154,6 +171,7 @@ int calculateGroupPlayerFee({
   int fee = calculatePreCheckInFee(
       hoursReserved: timeReservedMinutes ~/ 60,
       minutesReserved: timeReservedMinutes % 60,
+      timeExtendedMinutes: timeExtendedMinutes,
       prices: prices,
       isOpenTime: isOpenTime);
 
