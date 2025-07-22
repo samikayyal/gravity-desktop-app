@@ -7,20 +7,39 @@ const double fuzzyThreshold = 0.5;
 const int maxPlayersInGroup = 30;
 
 final List<Color> groupColors = [
-  Colors.blue.shade400,
-  Colors.green.shade400,
-  Colors.purple.shade400,
-  Colors.orange.shade400,
-  Colors.teal.shade400,
-  Colors.pink.shade300,
-  Colors.indigo.shade400,
-  Colors.amber.shade600,
-  Colors.cyan.shade400,
-  Colors.brown.shade400,
+  // Reds & Pinks
   Colors.red.shade400,
-  Colors.lime.shade400,
+  Colors.pink.shade300,
+  Colors.purple.shade400,
+  Colors.deepPurple.shade400,
+
+  // Blues
+  Colors.indigo.shade400,
+  Colors.blue.shade500,
+  Colors.lightBlue.shade300,
+  Colors.cyan.shade400,
+
+  // Greens
+  Colors.teal.shade400,
+  Colors.green.shade500,
+  Colors.lightGreen.shade600,
+  Colors.lime.shade700,
+
+  // Yellows & Oranges
+  Colors.yellow.shade700,
+  Colors.amber.shade600,
+  Colors.orange.shade500,
   Colors.deepOrange.shade400,
-  Colors.lightBlue.shade400,
-  Colors.lightGreen.shade400,
+
+  // Neutrals & Others
+  Colors.brown.shade400,
+  Colors.grey.shade600,
   Colors.blueGrey.shade400,
+
+  // Adding a few more distinct shades to reach 24
+  Colors.red.shade800,
+  Colors.green.shade900,
+  Colors.blue.shade800,
+  Colors.purple.shade700,
+  Colors.orange.shade900,
 ];

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'dart:developer';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -198,7 +199,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         }
         // 1. Create a map to store assigned colors for each group number.
         final Map<int, Color> groupColorMap = {};
-        int colorIndex = 0;
+        int colorIndex = math.Random().nextInt(groupColors.length - 1);
 
         // Find all unique, non-null group numbers and assign a color.
         for (final player in currentPlayers) {
