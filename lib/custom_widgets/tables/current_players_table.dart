@@ -237,13 +237,13 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                   columnWidths: {
                     0: const FlexColumnWidth(0.3), // checkbox
                     1: const FlexColumnWidth(2.3), // Name
-                    2: const FlexColumnWidth(1.7), // Phone Number
+                    2: const FlexColumnWidth(1.8), // Phone Number
                     3: const FlexColumnWidth(1.2), // Check-in
                     4: const FlexColumnWidth(1.3), // Time left
                     5: const FlexColumnWidth(1.0), // Fee
                     6: const FlexColumnWidth(1.0), // Paid
                     7: const FlexColumnWidth(1.0), // Left
-                    8: const FlexColumnWidth(3), // actions
+                    8: const FlexColumnWidth(3.23), // actions
                   }),
             ),
 
