@@ -35,47 +35,41 @@ class TableContainer extends StatelessWidget {
           ),
         ],
       ),
-      child: Scrollbar(
+      child: SingleChildScrollView(
         controller: verticalController,
-        thumbVisibility: true,
-        thickness: 8,
-        radius: const Radius.circular(4),
-        child: SingleChildScrollView(
-          controller: verticalController,
-          scrollDirection: Axis.vertical,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Table(
-                border: TableBorder(
-                  horizontalInside: BorderSide(
-                    color: Colors.grey.shade300,
-                    width: 1,
-                  ),
+        scrollDirection: Axis.vertical,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Table(
+              border: TableBorder(
+                horizontalInside: BorderSide(
+                  color: Colors.grey.shade300,
+                  width: 1,
                 ),
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                columnWidths: columnWidths,
-                children: [
-                  // Header Row
-                  TableRow(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.grey.shade400,
-                          width: 1.5,
-                        ),
+              ),
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              columnWidths: columnWidths,
+              children: [
+                // Header Row
+                TableRow(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade400,
+                        width: 1.5,
                       ),
                     ),
-                    children: [
-                      ...columnHeaders.map((header) => buildHeaderCell(header)),
-                    ],
                   ),
-                  // Data Rows
-                  ...rowData,
-                ],
-              );
-            },
-          ),
+                  children: [
+                    ...columnHeaders.map((header) => buildHeaderCell(header)),
+                  ],
+                ),
+                // Data Rows
+                ...rowData,
+              ],
+            );
+          },
         ),
       ),
     );
