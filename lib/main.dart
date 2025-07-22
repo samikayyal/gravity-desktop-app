@@ -85,7 +85,7 @@ class _TestScreenState extends ConsumerState<TestScreen> {
       price = calculateFinalFee(
           timeReserved:
               Duration(hours: hoursReserved, minutes: minutesReserved),
-          isOpenTime: true,
+          isOpenTime: false,
           timeExtendedMinutes: 0,
           timeSpent: Duration(hours: hours, minutes: minutes),
           prices: prices);

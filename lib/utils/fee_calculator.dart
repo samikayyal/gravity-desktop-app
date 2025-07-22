@@ -41,7 +41,7 @@ int calculatePreCheckInFee({
     final int extendedRemainderMinutes = timeExtendedMinutes % 60;
 
     if (extendedHours > 0) {
-      total += prices[TimeSlice.additionalHour]!;
+      total += prices[TimeSlice.additionalHour]! * extendedHours;
     }
     if (extendedRemainderMinutes == 30) {
       total += prices[TimeSlice.additionalHalfHour]!;
@@ -64,44 +64,58 @@ int calculateFinalFee({
   }
 
   // --- Fee Calculation Logic
-  // handle open time
   int total = 0;
+
   if (isOpenTime) {
-    total += _calculateOpenTimeFee(timeSpent: timeSpent, prices: prices);
-  }
-
-  // Not open time and not yet reached time reserved
-  if (timeSpent <= timeReserved && !isOpenTime) {
-    total += calculatePreCheckInFee(
-      hoursReserved: timeReserved.inHours,
-      minutesReserved: timeReserved.inMinutes % 60,
-      timeExtendedMinutes: timeExtendedMinutes,
+    total += _calculateOpenTimeFee(
+      timeSpent: timeSpent,
       prices: prices,
-      isOpenTime: isOpenTime,
     );
-  }
-
-  // --- for additional time spent ---
-  if (timeSpent > timeReserved && !isOpenTime) {
-    final totalAdditionalMinutes = timeSpent.inMinutes - timeReserved.inMinutes;
-    final fullBlocks = totalAdditionalMinutes ~/ 30; // Full half-hour blocks
-    final additionalRemainderMinutes = totalAdditionalMinutes % 30;
-
-    int additionalHalfHourBlocks;
-    if (additionalRemainderMinutes > leewayMinutes) {
-      additionalHalfHourBlocks =
-          fullBlocks + 1; // Over leeway, charge for next block
+  } else {
+    // player stayed less than the time they reserved, then charge them
+    // based on the time they spent
+    if (timeSpent < timeReserved) {
+      total += _calculateOpenTimeFee(timeSpent: timeSpent, prices: prices);
     } else {
-      additionalHalfHourBlocks =
-          fullBlocks; // Within leeway, only charge for full blocks
-    }
+      // player stayed more than the time they reserved, then charge them
+      // the full fee for the reserved time + any additional time
+      total += calculatePreCheckInFee(
+        hoursReserved: timeReserved.inHours,
+        minutesReserved: timeReserved.inMinutes % 60,
+        timeExtendedMinutes: 0,
+        prices: prices,
+        isOpenTime: isOpenTime,
+      );
 
-    // Calculate the fee for additional time spent
-    final int additionalHourBlocks = additionalHalfHourBlocks ~/ 2;
-    final int additionalHalfHourBlocksRemainder = additionalHalfHourBlocks % 2;
-    total += (additionalHourBlocks * prices[TimeSlice.additionalHour]!) +
-        (additionalHalfHourBlocksRemainder *
-            prices[TimeSlice.additionalHalfHour]!);
+      log("Total here: $total");
+
+      // If the player stayed more than the reserved time, charge for the
+      // additional time spent
+      if (timeSpent > timeReserved) {
+        final totalAdditionalMinutes =
+            timeSpent.inMinutes - timeReserved.inMinutes;
+        final fullBlocks =
+            totalAdditionalMinutes ~/ 30; // Full half-hour blocks
+        final additionalRemainderMinutes = totalAdditionalMinutes % 30;
+
+        int additionalHalfHourBlocks;
+        if (additionalRemainderMinutes > leewayMinutes) {
+          additionalHalfHourBlocks =
+              fullBlocks + 1; // Over leeway, charge for next block
+        } else {
+          additionalHalfHourBlocks =
+              fullBlocks; // Within leeway, only charge for full blocks
+        }
+
+        // Calculate the fee for additional time spent
+        final int additionalHourBlocks = additionalHalfHourBlocks ~/ 2;
+        final int additionalHalfHourBlocksRemainder =
+            additionalHalfHourBlocks % 2;
+        total += (additionalHourBlocks * prices[TimeSlice.additionalHour]!) +
+            (additionalHalfHourBlocksRemainder *
+                prices[TimeSlice.additionalHalfHour]!);
+      }
+    }
   }
 
   // --- Product Fees Logic ---
@@ -185,9 +199,8 @@ int calculateGroupPlayerFee({
 
 int _calculateOpenTimeFee(
     {required Duration timeSpent, required Map<TimeSlice, int> prices}) {
-  final totalMinutes = timeSpent.inMinutes;
-  final fullBlocks = totalMinutes ~/ 30;
-  final remainderMinutes = totalMinutes % 30;
+  final fullBlocks = timeSpent.inMinutes ~/ 30;
+  final remainderMinutes = timeSpent.inMinutes % 30;
 
   int totalHalfHourBlocks;
   if (remainderMinutes > leewayMinutes) {
