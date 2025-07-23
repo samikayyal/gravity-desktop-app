@@ -73,6 +73,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  calendar_date_picker2:
+    dependency: "direct main"
+    description:
+      name: calendar_date_picker2
+      sha256: "9c9b5586fb512bf1181d7f3a6273bffa9e65a4e16689902e112771e7d71d063b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   change_case:
     dependency: "direct main"
     description:
@@ -493,6 +501,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  syncfusion_flutter_core:
+    dependency: transitive
+    description:
+      name: syncfusion_flutter_core
+      sha256: "98580db6186b46aae965d3f480f7830b0ee6f58c4e1bbbb3fb3de6a121f61836"
+      url: "https://pub.dev"
+    source: hosted
+    version: "29.1.38"
+  syncfusion_flutter_datepicker:
+    dependency: "direct main"
+    description:
+      name: syncfusion_flutter_datepicker
+      sha256: "4abc505985b120e4a126114bb65b12dd15279c839d12464504f3596822a740ec"
+      url: "https://pub.dev"
+    source: hosted
+    version: "29.1.38"
   synchronized:
     dependency: transitive
     description:

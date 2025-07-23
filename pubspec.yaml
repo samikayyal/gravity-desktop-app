@@ -45,6 +45,8 @@ dependencies:
   audioplayers: ^6.5.0
   google_fonts: ^6.2.1
   change_case: ^2.2.0
+  syncfusion_flutter_datepicker: ^29.1.38
+  calendar_date_picker2: ^2.0.1
 
 dev_dependencies:
   flutter_test:

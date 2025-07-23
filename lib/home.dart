@@ -1,5 +1,9 @@
+// ignore: unused_import
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/date_selection_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/past_players_search.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/current_players_table.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
@@ -164,26 +168,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               );
                             },
                           ),
-
-                          ElevatedButton.icon(
-                            icon: const Icon(
-                              Icons.clear_all,
-                              size: 24,
-                            ),
-                            label: const Text(
-                              "Clear All Players",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w500),
-                            ),
-                            onPressed: () async {
-                              final db =
-                                  ref.read(currentPlayersProvider.notifier);
-                              await db.clearCurrentPlayers();
-                            },
-                            style: AppButtonStyles.dangerButton,
-                          ),
-
                           // ---------- END TEST SECTION ----------
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.history_edu, size: 24),
+                            label: Text("Reports & History",
+                                style: AppTextStyles.primaryButtonTextStyle),
+                            onPressed: () async {
+                              final results = await showDialog<List<DateTime?>>(
+                                context: context,
+                                builder: (context) =>
+                                    const DateSelectionDialog(),
+                              );
+                              
+                            },
+                            style: AppButtonStyles.primaryButton,
+                          ),
                         ],
                       ),
                     ],
