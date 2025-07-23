@@ -530,20 +530,46 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                       builder: (context) => ExtendTimeDialog(player));
                 },
               ),
-              if (player.amountPaid < player.initialFee ||
-                  player.isOpenTime) ...[
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.payment, size: 22),
-                  tooltip: 'Pay Remaining Fee',
-                  style: AppButtonStyles.iconButtonCircle,
-                  onPressed: () async {
-                    await showDialog(
-                        context: context,
-                        builder: (context) => MidsessionPaymentDialog(player));
-                  },
-                ),
-              ]
+              Consumer(
+                builder: (context, ref, child) {
+                  return ref.watch(pricesProductsSubsProvider).maybeWhen(
+                        data: (data) {
+                          final playerFee = calculateFinalFee(
+                              timeReserved: player.timeReserved,
+                              isOpenTime: player.isOpenTime,
+                              timeExtendedMinutes:
+                                  player.timeExtended.inMinutes,
+                              timeSpent: timeSpent,
+                              prices: data.prices,
+                              productsBought: player.productsBought,
+                              allProducts: data.allProducts);
+
+                          log("${player.name} - Fee: $playerFee, Paid: ${player.amountPaid}");
+
+                          if (player.isOpenTime ||
+                              playerFee <= player.amountPaid) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Padding(
+                            padding: EdgeInsets.only(left: 8.0),
+                            child: IconButton(
+                              icon: const Icon(Icons.payment, size: 22),
+                              tooltip: 'Pay Remaining Fee',
+                              style: AppButtonStyles.iconButtonCircle,
+                              onPressed: () async {
+                                await showDialog(
+                                    context: context,
+                                    builder: (context) =>
+                                        MidsessionPaymentDialog(player));
+                              },
+                            ),
+                          );
+                        },
+                        orElse: () => const SizedBox.shrink(),
+                      );
+                },
+              )
             ],
           ),
         ),

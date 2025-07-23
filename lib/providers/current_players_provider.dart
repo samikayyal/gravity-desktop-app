@@ -118,7 +118,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
         '''SELECT ps.player_id AS id, p.name AS name, p.age AS age,
                 ps.check_in_time AS check_in_time,
                 ps.time_reserved_minutes AS time_reserved_minutes,
-                ps.time_extended_minutes as time_extended_minutes 
+                ps.time_extended_minutes as time_extended_minutes,
                 ps.is_open_time AS is_open_time,
                 ps.prepaid_amount AS amount_paid,
                 ps.initial_fee AS initial_fee,

@@ -372,7 +372,7 @@ class _AddGroupState extends ConsumerState<AddGroup> {
                 child: Column(
                   children: [
                     PhoneNumberEntryCard(
-                      title: "Phone Numbers",
+                      title: "Phone Numbers (FOR THE WHOLE GROUP)",
                       controllers: phoneControllers,
                       isDisabled: groupPlayers.any((p) => p.isReadOnly),
                       disableListModification: false,
