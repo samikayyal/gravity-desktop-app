@@ -9,7 +9,6 @@ import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
-import 'package:window_manager/window_manager.dart';
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isHomeScreen;
