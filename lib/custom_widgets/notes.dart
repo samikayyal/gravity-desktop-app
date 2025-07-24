@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text_field.dart';
 import 'package:gravity_desktop_app/providers/notes_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 
@@ -30,109 +33,22 @@ class _NotesState extends ConsumerState<Notes> {
         // Title
         Padding(
           padding: EdgeInsets.only(left: 8.0, bottom: 16.0),
-          child: Text('Notes', style: AppTextStyles.sectionHeaderStyle),
-        ),
-
-        // Add note section
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.shade300,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Add New Note',
-                style: AppTextStyles.regularTextStyle.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: mainBlue,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _noteController,
-                decoration: InputDecoration(
-                  hintText: 'Type your note here...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: mainBlue, width: 2),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                style: AppTextStyles.regularTextStyle,
-                maxLines: 3,
-                minLines: 1,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final noteText = _noteController.text.trim();
-                      if (noteText.isNotEmpty) {
-                        await ref
-                            .read(notesProvider.notifier)
-                            .addNote(noteText);
-                        _noteController.clear();
-                      }
-                    },
-                    icon: const Icon(
-                      Icons.add,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      'Add Note',
-                      style: AppTextStyles.primaryButtonTextStyle
-                          .copyWith(color: Colors.white, fontSize: 14),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: mainBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
-                ],
-              ),
+              Text('Notes', style: AppTextStyles.sectionHeaderStyle),
+              ElevatedButton.icon(
+                label: Text("Add Note",
+                    style: AppTextStyles.primaryButtonTextStyle),
+                icon: const Icon(Icons.add_outlined, size: 20),
+                style: AppButtonStyles.primaryButton,
+                onPressed: () async {
+                  _showAddNoteDialog(context);
+                },
+              )
             ],
           ),
         ),
-
-        const SizedBox(height: 16),
 
         // Notes list
         Expanded(
@@ -426,6 +342,74 @@ class _NotesState extends ConsumerState<Notes> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showAddNoteDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return MyDialog(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Add Note",
+                  style: AppTextStyles.sectionHeaderStyle,
+                ),
+                const SizedBox(height: 16),
+                MyTextField(
+                  controller: _noteController,
+                  labelText: "Note",
+                  hintText: "Enter your note here",
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Note cannot be empty";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: AppButtonStyles.secondaryButton,
+                        child: Text(
+                          "Cancel",
+                          style: AppTextStyles.secondaryButtonTextStyle,
+                        )),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+                        final noteText = _noteController.text.trim();
+                        await ref
+                            .read(notesProvider.notifier)
+                            .addNote(noteText);
+                        _noteController.clear();
+
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      style: AppButtonStyles.primaryButton,
+                      child: Text(
+                        "Add Note",
+                        style: AppTextStyles.primaryButtonTextStyle,
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

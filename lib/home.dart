@@ -1,5 +1,7 @@
 // ignore: unused_import
 import 'dart:developer';
+// ignore: unused_import
+import 'package:gravity_desktop_app/custom_widgets/notes.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +13,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/products_table.dart';
-import 'package:gravity_desktop_app/custom_widgets/notes.dart';
+import 'package:gravity_desktop_app/custom_widgets/todays_stats.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
@@ -179,7 +181,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 builder: (context) =>
                                     const DateSelectionDialog(),
                               );
-                              
                             },
                             style: AppButtonStyles.primaryButton,
                           ),
@@ -284,7 +285,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       // Products table
                       Expanded(
-                        flex: 1,
+                        flex: 4,
                         child: Card(
                           elevation: 4,
                           child: Padding(
@@ -294,14 +295,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Notes section
+                      // Stats section
                       Expanded(
-                        flex: 2,
+                        flex: 6,
                         child: Card(
                           elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: const Notes(),
+                            padding: const EdgeInsets.all(16),
+                            child: TodaysStats(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Notes section
+                      Expanded(
+                        flex: 6,
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Notes(),
                           ),
                         ),
                       ),
