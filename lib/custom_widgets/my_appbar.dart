@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/main.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
@@ -59,7 +60,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: EdgeInsets.only(right: 20.0),
             child: TextButton.icon(
               onPressed: () async {
-                await windowManager.destroy();
+                await closeApp();
               },
               label: Text(
                 "Close",

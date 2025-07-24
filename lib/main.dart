@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/database/database.dart';
+import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/home.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
@@ -47,6 +48,17 @@ void main() async {
   databaseFactory = databaseFactoryFfi; // Use FFI database factory
 
   runApp(ProviderScope(child: GravityApp()));
+}
+
+Future<void> closeApp() async {
+  final container = ProviderScope.containerOf(
+    WidgetsBinding.instance.rootElement!,
+    listen: false,
+  );
+  final db = await container.read(databaseProvider).database;
+  await db.close();
+
+  await windowManager.close();
 }
 
 class GravityApp extends StatelessWidget {
