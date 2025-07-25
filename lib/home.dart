@@ -13,7 +13,7 @@ import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/tables/products_table.dart';
-import 'package:gravity_desktop_app/custom_widgets/todays_stats.dart';
+import 'package:gravity_desktop_app/custom_widgets/revenue_card.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
@@ -305,7 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
-                            child: TodaysStats(),
+                            child: RevenueCard([DateTime.now()]),
                           ),
                         ),
                       ),

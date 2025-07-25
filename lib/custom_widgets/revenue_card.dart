@@ -6,14 +6,15 @@ import 'package:gravity_desktop_app/providers/stats_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
 
-class TodaysStats extends ConsumerStatefulWidget {
-  const TodaysStats({super.key});
+class RevenueCard extends ConsumerStatefulWidget {
+  final List<DateTime> dates;
+  const RevenueCard(this.dates, {super.key});
 
   @override
-  ConsumerState<TodaysStats> createState() => _TodaysStatsState();
+  ConsumerState<RevenueCard> createState() => _RevenueCardState();
 }
 
-class _TodaysStatsState extends ConsumerState<TodaysStats> {
+class _RevenueCardState extends ConsumerState<RevenueCard> {
   late int totalIncome;
   late int totalPlayersIncome;
   late int totalProductsIncome;
@@ -35,14 +36,11 @@ class _TodaysStatsState extends ConsumerState<TodaysStats> {
       _isLoading = true;
     });
 
-    // final dates = [DateTime.now()];
-    final dates = [DateTime.now().subtract(const Duration(days: 3))]; // TEST
-
-    totalIncome = await ref.read(statsProvider).getTotalIncome(dates);
-    totalPlayersIncome = await ref.read(statsProvider).getPlayersIncome(dates);
+    totalIncome = await ref.read(statsProvider).getTotalIncome(widget.dates);
+    totalPlayersIncome = await ref.read(statsProvider).getPlayersIncome(widget.dates);
     totalProductsIncome =
-        await ref.read(statsProvider).getProductsIncome(dates);
-    totalTips = await ref.read(statsProvider).getTips(dates);
+        await ref.read(statsProvider).getProductsIncome(widget.dates);
+    totalTips = await ref.read(statsProvider).getTips(widget.dates);
 
     setState(() {
       _isLoading = false;
