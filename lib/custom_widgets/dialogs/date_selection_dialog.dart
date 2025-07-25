@@ -205,26 +205,12 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () => setState(() {
-                                _dateSelectionType = DateSelectionType.range;
-                                final lastSaturday = getLastSaturday(
-                                  fromDate: DateTime.now(),
-                                );
+                                _dates = getBusinessWeekDates(
+                                    lastDate: DateTime.now());
 
-                                // If today is Saturday, select only that date.
-                                if (DateTime.now().toYYYYMMDD() ==
-                                    lastSaturday.toYYYYMMDD()) {
-                                  _dateSelectionType = DateSelectionType.single;
-                                  _dates = [lastSaturday];
-                                } else {
-                                  _dateSelectionType = DateSelectionType.range;
-                                  final startDate = lastSaturday;
-                                  final endDate = DateTime.now();
-                                  _dates = List.generate(
-                                    endDate.difference(startDate).inDays + 1,
-                                    (index) =>
-                                        startDate.add(Duration(days: index)),
-                                  );
-                                }
+                                _dateSelectionType = _dates.length == 1
+                                    ? DateSelectionType.single
+                                    : DateSelectionType.range;
                               }),
                               style: AppButtonStyles.primaryButton.copyWith(
                                 minimumSize:
@@ -245,28 +231,14 @@ class _DateSelectionDialogState extends State<DateSelectionDialog> {
                                     WidgetStateProperty.all(const Size(0, 44)),
                               ),
                               onPressed: () => setState(() {
-                                final lastSaturday = getLastSaturday(
+                                _dates = getBusinessWeekDates(
+                                    lastDate: getLastSaturday(
                                   fromDate: DateTime.now(),
-                                  oneBeforeLast: true,
-                                );
+                                ).subtract(Duration(days: 1)));
 
-                                // If today is Saturday, select only that date.
-                                if (DateTime.now().toYYYYMMDD() ==
-                                    lastSaturday.toYYYYMMDD()) {
-                                  _dateSelectionType = DateSelectionType.single;
-                                  _dates = [lastSaturday];
-                                } else {
-                                  _dateSelectionType = DateSelectionType.range;
-                                  final startDate = lastSaturday;
-                                  final endDate = getLastSaturday(
-                                          fromDate: DateTime.now())
-                                      .subtract(Duration(days: 1)); // sunday
-                                  _dates = List.generate(
-                                    endDate.difference(startDate).inDays + 1,
-                                    (index) =>
-                                        startDate.add(Duration(days: index)),
-                                  );
-                                }
+                                _dateSelectionType = _dates.length == 1
+                                    ? DateSelectionType.single
+                                    : DateSelectionType.range;
                               }),
                               child: Text(
                                 "Last Business Week",

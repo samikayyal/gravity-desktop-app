@@ -1,11 +1,13 @@
+// ignore: unused_import
+import 'dart:developer';
+
 extension DateTimeFormatting on DateTime {
   String toYYYYMMDD() {
     return toLocal().toString().split(' ')[0];
   }
 }
 
-DateTime getLastSaturday(
-    {required DateTime fromDate, bool oneBeforeLast = false}) {
+DateTime getLastSaturday({required DateTime fromDate}) {
   // DateTime.saturday is 6 and DateTime.sunday is 7.
   // The formula `(date.weekday - DateTime.saturday + 7) % 7` ensures we get a
   // positive number of days to subtract, correctly handling the week's wrap-around.
@@ -17,14 +19,29 @@ DateTime getLastSaturday(
 
   // Subtract the calculated days to get the date of the last Saturday
   DateTime lastSaturday = fromDate.subtract(Duration(days: daysToSubtract));
-
-  if (oneBeforeLast) {
-    // If we want the Saturday before the last one, subtract 7 days
-    lastSaturday = lastSaturday.subtract(const Duration(days: 7));
-  }
   return DateTime(
     lastSaturday.year,
     lastSaturday.month,
     lastSaturday.day,
+  );
+}
+
+List<DateTime> getBusinessWeekDates({
+  required DateTime lastDate,
+}) {
+  final lastSaturday = getLastSaturday(
+    fromDate: lastDate,
+  );
+  log("last date: $lastDate, last saturday: $lastSaturday");
+
+  // If today is Saturday, select only that date.
+  if (lastDate.toYYYYMMDD() == lastSaturday.toYYYYMMDD()) {
+    return [lastSaturday];
+  }
+  final startDate = lastSaturday;
+  final endDate = lastDate;
+  return List.generate(
+    endDate.difference(startDate).inDays + 1,
+    (index) => startDate.add(Duration(days: index)),
   );
 }
