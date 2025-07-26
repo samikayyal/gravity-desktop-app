@@ -36,11 +36,15 @@ class _RevenueCardState extends ConsumerState<RevenueCard> {
       _isLoading = true;
     });
 
-    totalIncome = await ref.read(statsProvider).getTotalIncome(widget.dates);
-    totalPlayersIncome = await ref.read(statsProvider).getPlayersIncome(widget.dates);
-    totalProductsIncome =
-        await ref.read(statsProvider).getProductsIncome(widget.dates);
-    totalTips = await ref.read(statsProvider).getTips(widget.dates);
+    totalIncome = await ref.read(totalIncomeProvider(widget.dates).future);
+
+    totalPlayersIncome =
+        await ref.read(playersIncomeProvider(widget.dates).future);
+
+    totalProductsIncome = await ref
+        .read(productsIncomeProvider(ProductIncomeParams(widget.dates)).future);
+
+    totalTips = await ref.read(tipsProvider(widget.dates).future);
 
     setState(() {
       _isLoading = false;
@@ -126,11 +130,11 @@ class _RevenueCardState extends ConsumerState<RevenueCard> {
               ),
               const SizedBox(height: 8),
               // Other stats in a grid
-              Expanded(
+              Flexible(
+                fit: FlexFit.loose,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Players Income
                       Expanded(
@@ -194,7 +198,7 @@ class _RevenueCardState extends ConsumerState<RevenueCard> {
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 4),
           Text(
             '${formatter.format(amount)} SYP',
             style: AppTextStyles.amountTextStyle.copyWith(
@@ -203,7 +207,6 @@ class _RevenueCardState extends ConsumerState<RevenueCard> {
             ),
             textAlign: TextAlign.center,
           ),
-          const Spacer(),
         ],
       ),
     );

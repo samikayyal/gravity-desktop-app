@@ -8,7 +8,9 @@ import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/home.dart';
+import 'package:gravity_desktop_app/screens/stats_screen.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
+import 'package:gravity_desktop_app/utils/general.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -67,7 +69,8 @@ class GravityApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeScreen(),
+      home: StatsScreen(getBusinessWeekDates(
+          lastDate: DateTime.now().subtract(Duration(days: 1)))),
     );
   }
 }

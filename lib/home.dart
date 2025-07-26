@@ -20,6 +20,7 @@ import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/add_player.dart';
 import 'package:gravity_desktop_app/screens/add_product.dart';
 import 'package:gravity_desktop_app/screens/edit_prices.dart';
+import 'package:gravity_desktop_app/screens/stats_screen.dart';
 import 'package:gravity_desktop_app/screens/subscriptions.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
@@ -176,11 +177,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             label: Text("Reports & History",
                                 style: AppTextStyles.primaryButtonTextStyle),
                             onPressed: () async {
-                              final results = await showDialog<List<DateTime?>>(
+                              final dates = await showDialog<List<DateTime?>>(
                                 context: context,
                                 builder: (context) =>
                                     const DateSelectionDialog(),
                               );
+
+                              if (context.mounted &&
+                                  dates != null &&
+                                  dates.isNotEmpty) {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => StatsScreen(
+                                        dates.whereType<DateTime>().toList())));
+                              }
                             },
                             style: AppButtonStyles.primaryButton,
                           ),
