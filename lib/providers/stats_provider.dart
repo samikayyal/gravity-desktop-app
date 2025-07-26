@@ -1,6 +1,7 @@
 // ignore: unused_import
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/database/database.dart';
@@ -99,45 +100,50 @@ final tipsProvider =
   return tipsQuery.first['total'] as int? ?? 0;
 });
 
-
 // ---------------- total income provider ----------------
-final totalIncomeProvider = FutureProvider.autoDispose.family<int, List<DateTime>>(
-  (ref, dates) async {
-    final playersIncome = await ref.watch(playersIncomeProvider(dates).future);
-    final productsIncome =
-        await ref.watch(productsIncomeProvider(ProductIncomeParams(dates)).future);
-    final tips = await ref.watch(tipsProvider(dates).future);
+final totalIncomeProvider =
+    FutureProvider.autoDispose.family<int, List<DateTime>>((ref, dates) async {
+  final playersIncome = await ref.watch(playersIncomeProvider(dates).future);
+  final productsIncome = await ref
+      .watch(productsIncomeProvider(ProductIncomeParams(dates)).future);
+  final tips = await ref.watch(tipsProvider(dates).future);
 
-    return playersIncome + productsIncome + tips;
-  }
-);
+  return playersIncome + productsIncome + tips;
+});
 
 // ---------------- Subscription Revenue ----------------
-final subscriptionRevenueProvider = FutureProvider.autoDispose.family<int, List<DateTime>>(
-  (ref, dates) async {
+final subscriptionRevenueProvider =
+    FutureProvider.autoDispose.family<int, List<DateTime>>((ref, dates) async {
   final dbHelper = ref.watch(databaseProvider);
   final db = await dbHelper.database;
   final List<String> datesFormatted =
-        dates.map((date) => date.toYYYYMMDD()).toList();
-    final String placeholders = List.filled(dates.length, '?').join(',');
+      dates.map((date) => date.toYYYYMMDD()).toList();
+  final String placeholders = List.filled(dates.length, '?').join(',');
 
-    final query = await db.rawQuery(
-      '''
+  final query = await db.rawQuery(
+    '''
       SELECT SUM(amount_paid) AS total
       FROM sales 
       WHERE DATE(sale_time) IN ($placeholders)
       AND subscription_id IS NOT NULL
       ''',
-      datesFormatted,
-    );
+    datesFormatted,
+  );
 
-    return query.first['total'] as int? ?? 0;
-  }
-);
-
+  return query.first['total'] as int? ?? 0;
+});
 
 // ---------------- Age Groups Provider ----------------
-final ageGroupsProvider = FutureProvider.autoDispose.family<Map<String, int>, List<DateTime>>((ref, dates) async {
+class AgeGroupData {
+  final String ageGroup;
+  final int count;
+  final Color color;
+
+  AgeGroupData(this.ageGroup, this.count, this.color);
+}
+
+final ageGroupsProvider = FutureProvider.autoDispose
+    .family<List<AgeGroupData>, List<DateTime>>((ref, dates) async {
   final dbHelper = ref.watch(databaseProvider);
   final db = await dbHelper.database;
   final List<String> datesFormatted =
@@ -159,8 +165,9 @@ final ageGroupsProvider = FutureProvider.autoDispose.family<Map<String, int>, Li
         ELSE 'Over 26'
       END AS age_group,
       COUNT(*) AS count
-    FROM players
-    WHERE DATE(created_at) IN ($placeholders)
+    FROM player_sessions ps
+    LEFT JOIN players p ON p.id = ps.player_id
+    WHERE DATE(check_in_time) IN ($placeholders)
     GROUP BY age_group
     ''',
     datesFormatted,
@@ -170,10 +177,45 @@ final ageGroupsProvider = FutureProvider.autoDispose.family<Map<String, int>, Li
   for (final row in query) {
     ageGroups[row['age_group'] as String] = row['count'] as int;
   }
-  
-  return ageGroups;
-});
 
+  return ageGroups.entries.map((entry) {
+    final ageGroup = entry.key;
+    final count = entry.value;
+
+    // Assign colors based on age group
+    Color color;
+    switch (ageGroup) {
+      case '1-2':
+        color = Colors.red[700]!;
+        break;
+      case '3-5':
+        color = Colors.orange[700]!;
+        break;
+      case '6-8':
+        color = Colors.amber[800]!;
+        break;
+      case '9-11':
+        color = Colors.green[700]!;
+        break;
+      case '12-14':
+        color = Colors.blue[700]!;
+        break;
+      case '15-17':
+        color = Colors.indigo[700]!;
+        break;
+      case '18-20':
+        color = Colors.purple[700]!;
+        break;
+      case '21-26':
+        color = Colors.pink[700]!;
+        break;
+      default:
+        color = Colors.teal[700]!;
+    }
+
+    return AgeGroupData(ageGroup, count, color);
+  }).toList();
+});
 
 final statsProvider = Provider<StatsNotifier>((ref) {
   final dbHelper = ref.watch(databaseProvider);

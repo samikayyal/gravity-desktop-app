@@ -130,7 +130,10 @@ class _StatsScreen2State extends ConsumerState<StatsScreen2> {
   Widget _buildAgeDistributionCard(StatsNotifier statsNotifier) {
     return MyCard(
       child: FutureBuilder<Map<String, int>>(
-        future: statsNotifier.getPlayerAgeDistribution(widget.dates),
+        future: Future.delayed(
+          const Duration(seconds: 1), // Simulate network delay
+          () => {'Under 2': 0, '2-5': 0, '6-10': 0, '11-15': 0, '16+': 0},
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

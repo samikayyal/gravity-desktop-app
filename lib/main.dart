@@ -70,7 +70,7 @@ class GravityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: StatsScreen(getBusinessWeekDates(
-          lastDate: DateTime.now().subtract(Duration(days: 1)))),
+          lastDate: DateTime.now().subtract(Duration(days: 2)))),
     );
   }
 }

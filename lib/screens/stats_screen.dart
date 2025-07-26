@@ -1,6 +1,7 @@
 // ignore: unused_import
 import 'dart:developer';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
@@ -22,6 +23,7 @@ class StatsScreen extends ConsumerStatefulWidget {
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
   final formatter = NumberFormat.decimalPattern();
+  int _touchedPieChartIndex = -1;
 
   bool _checkIsRange() {
     final dates = widget.dates;
@@ -35,7 +37,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     }
     return true; // All dates are consecutive or the same
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // title setup
@@ -54,6 +56,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         child: FractionallySizedBox(
           widthFactor: 0.8,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Center(
                   child: Text(
@@ -72,7 +75,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     Expanded(flex: 1, child: _buildSubscriptionRevenueCard())
                   ],
                 ),
-              )
+              ),
+              const SizedBox(height: 16),
+              _buildAgePieChartCard()
             ],
           ),
         ),
@@ -143,5 +148,142 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             ],
           ));
         });
+  }
+
+  Widget _buildAgePieChartCard() {
+    return ref.watch(ageGroupsProvider(widget.dates)).maybeWhen(
+          orElse: () => MyCard(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          data: (ageGroups) {
+            return MyCard(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Age Groups Distribution",
+                      style: AppTextStyles.sectionHeaderStyle),
+                  const SizedBox(height: 16),
+                  // Check if ageGroups is empty
+                  if (ageGroups.isEmpty)
+                    SizedBox(
+                      height: 300,
+                      width: 600,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.pie_chart_outline,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No data available',
+                              style: AppTextStyles.subtitleTextStyle.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else ...[
+                    SizedBox(
+                      height: 300,
+                      width: 600,
+                      child: PieChart(
+                        PieChartData(
+                            centerSpaceRadius: 0,
+                            sectionsSpace: 0,
+                            titleSunbeamLayout: true,
+                            sections: ageGroups.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final ageGroupData = entry.value;
+                              // final ageGroup = ageGroupData.ageGroup;
+                              final percent = ageGroupData.count *
+                                  100 /
+                                  ageGroups.fold<int>(
+                                      0, (sum, item) => sum + item.count);
+
+                              final isTouched = index == _touchedPieChartIndex;
+
+                              return PieChartSectionData(
+                                value: percent,
+                                title: "${percent.round()}%",
+                                radius: isTouched ? 150 : 130,
+                                titleStyle:
+                                    AppTextStyles.subtitleTextStyle.copyWith(
+                                  color: Colors.white,
+                                ),
+                                color: ageGroupData.color,
+                                titlePositionPercentageOffset: 0.8,
+                              );
+                            }).toList(),
+                            pieTouchData: PieTouchData(
+                                enabled: true,
+                                touchCallback: (touchEvent, touchResponse) {
+                                  if (!touchEvent.isInterestedForInteractions ||
+                                      touchResponse == null ||
+                                      touchResponse.touchedSection == null) {
+                                    _touchedPieChartIndex = -1;
+                                    return;
+                                  }
+                                  setState(() {
+                                    _touchedPieChartIndex = touchResponse
+                                        .touchedSection!.touchedSectionIndex;
+                                  });
+                                })),
+                      ),
+                    ),
+
+                    // Legend
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (int i = 0; i < ageGroups.length; i++)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              i == _touchedPieChartIndex
+                                  ? Container(
+                                      color: ageGroups[i].color,
+                                      child: const SizedBox(
+                                        height: 22,
+                                        width: 22,
+                                      ),
+                                    )
+                                  : Container(
+                                      color: ageGroups[i].color,
+                                      child: const SizedBox(
+                                        height: 15,
+                                        width: 15,
+                                      ),
+                                    ),
+                              const SizedBox(
+                                width: 4,
+                              ),
+                              Text(
+                                ageGroups[i].ageGroup,
+                                style: i == _touchedPieChartIndex
+                                    ? AppTextStyles.regularTextStyle
+                                        .copyWith(fontWeight: FontWeight.bold)
+                                    : AppTextStyles.regularTextStyle,
+                              )
+                            ],
+                          )
+                      ],
+                    )
+                  ]
+                ],
+              ),
+            );
+          },
+        );
   }
 }
