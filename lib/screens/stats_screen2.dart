@@ -219,7 +219,7 @@ class _StatsScreen2State extends ConsumerState<StatsScreen2> {
   Widget _buildBusiestHoursCard(StatsNotifier statsNotifier) {
     return MyCard(
       child: FutureBuilder<Map<int, int>>(
-        future: statsNotifier.getBusiestHours(widget.dates),
+        future: Future.delayed(Duration(microseconds: 1)),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

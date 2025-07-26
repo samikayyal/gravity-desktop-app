@@ -53,33 +53,37 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     return Scaffold(
       appBar: MyAppBar(),
       body: Center(
-        child: FractionallySizedBox(
-          widthFactor: 0.8,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                  child: Text(
-                titleString,
-                style: AppTextStyles.pageTitleStyle,
-              )),
-              const SizedBox(height: 48),
-              FractionallySizedBox(
-                widthFactor: 0.7,
-                child: Row(
-                  spacing: 16,
-                  children: [
-                    Expanded(
-                        flex: 2,
-                        child: MyCard(child: RevenueCard(widget.dates))),
-                    Expanded(flex: 1, child: _buildSubscriptionRevenueCard())
-                  ],
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+                child: Text(
+              titleString,
+              style: AppTextStyles.pageTitleStyle,
+            )),
+            const SizedBox(height: 48),
+            FractionallySizedBox(
+              widthFactor: 0.56,
+              child: Row(
+                spacing: 16,
+                children: [
+                  Expanded(
+                      flex: 2, child: MyCard(child: RevenueCard(widget.dates))),
+                  Expanded(flex: 1, child: _buildSubscriptionRevenueCard())
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildAgePieChartCard()
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Row(
+                children: [
+                  _buildAgePieChartCard(),
+                  Expanded(child: _buildBusiestHoursCard())
+                ],
+              ),
+            )
+          ],
         ),
       ),
     );
@@ -192,98 +196,151 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       ),
                     )
                   else ...[
-                    SizedBox(
-                      height: 300,
-                      width: 600,
-                      child: PieChart(
-                        PieChartData(
-                            centerSpaceRadius: 0,
-                            sectionsSpace: 0,
-                            titleSunbeamLayout: true,
-                            sections: ageGroups.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final ageGroupData = entry.value;
-                              // final ageGroup = ageGroupData.ageGroup;
-                              final percent = ageGroupData.count *
-                                  100 /
-                                  ageGroups.fold<int>(
-                                      0, (sum, item) => sum + item.count);
-
-                              final isTouched = index == _touchedPieChartIndex;
-
-                              return PieChartSectionData(
-                                value: percent,
-                                title: "${percent.round()}%",
-                                radius: isTouched ? 150 : 130,
-                                titleStyle:
-                                    AppTextStyles.subtitleTextStyle.copyWith(
-                                  color: Colors.white,
-                                ),
-                                color: ageGroupData.color,
-                                titlePositionPercentageOffset: 0.8,
-                              );
-                            }).toList(),
-                            pieTouchData: PieTouchData(
-                                enabled: true,
-                                touchCallback: (touchEvent, touchResponse) {
-                                  if (!touchEvent.isInterestedForInteractions ||
-                                      touchResponse == null ||
-                                      touchResponse.touchedSection == null) {
-                                    _touchedPieChartIndex = -1;
-                                    return;
-                                  }
-                                  setState(() {
-                                    _touchedPieChartIndex = touchResponse
-                                        .touchedSection!.touchedSectionIndex;
-                                  });
-                                })),
-                      ),
-                    ),
-
-                    // Legend
-                    Column(
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        for (int i = 0; i < ageGroups.length; i++)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              i == _touchedPieChartIndex
-                                  ? Container(
-                                      color: ageGroups[i].color,
-                                      child: const SizedBox(
-                                        height: 22,
-                                        width: 22,
-                                      ),
-                                    )
-                                  : Container(
-                                      color: ageGroups[i].color,
-                                      child: const SizedBox(
-                                        height: 15,
-                                        width: 15,
-                                      ),
+                        SizedBox(
+                          height: 300,
+                          width: 300,
+                          child: PieChart(
+                            PieChartData(
+                                centerSpaceRadius: 0,
+                                sectionsSpace: 0,
+                                titleSunbeamLayout: true,
+                                sections:
+                                    ageGroups.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final ageGroupData = entry.value;
+                                  // final ageGroup = ageGroupData.ageGroup;
+                                  final percent = ageGroupData.count *
+                                      100 /
+                                      ageGroups.fold<int>(
+                                          0, (sum, item) => sum + item.count);
+
+                                  final isTouched =
+                                      index == _touchedPieChartIndex;
+
+                                  return PieChartSectionData(
+                                    value: percent,
+                                    title: "${percent.round()}%",
+                                    radius: isTouched ? 150 : 130,
+                                    titleStyle: AppTextStyles.subtitleTextStyle
+                                        .copyWith(
+                                      color: Colors.white,
                                     ),
-                              const SizedBox(
-                                width: 4,
-                              ),
-                              Text(
-                                ageGroups[i].ageGroup,
-                                style: i == _touchedPieChartIndex
-                                    ? AppTextStyles.regularTextStyle
-                                        .copyWith(fontWeight: FontWeight.bold)
-                                    : AppTextStyles.regularTextStyle,
+                                    color: ageGroupData.color,
+                                    titlePositionPercentageOffset: 0.8,
+                                  );
+                                }).toList(),
+                                pieTouchData: PieTouchData(
+                                    enabled: true,
+                                    touchCallback: (touchEvent, touchResponse) {
+                                      if (!touchEvent
+                                              .isInterestedForInteractions ||
+                                          touchResponse == null ||
+                                          touchResponse.touchedSection ==
+                                              null) {
+                                        _touchedPieChartIndex = -1;
+                                        return;
+                                      }
+                                      setState(() {
+                                        _touchedPieChartIndex = touchResponse
+                                            .touchedSection!
+                                            .touchedSectionIndex;
+                                      });
+                                    })),
+                          ),
+                        ),
+                        // Legend
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (int i = 0; i < ageGroups.length; i++)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  i == _touchedPieChartIndex
+                                      ? Container(
+                                          color: ageGroups[i].color,
+                                          child: const SizedBox(
+                                            height: 22,
+                                            width: 22,
+                                          ),
+                                        )
+                                      : Container(
+                                          color: ageGroups[i].color,
+                                          child: const SizedBox(
+                                            height: 15,
+                                            width: 15,
+                                          ),
+                                        ),
+                                  const SizedBox(
+                                    width: 4,
+                                  ),
+                                  Text(
+                                    ageGroups[i].ageGroup,
+                                    style: i == _touchedPieChartIndex
+                                        ? AppTextStyles.regularTextStyle
+                                            .copyWith(
+                                                fontWeight: FontWeight.bold)
+                                        : AppTextStyles.regularTextStyle,
+                                  )
+                                ],
                               )
-                            ],
-                          )
+                          ],
+                        )
                       ],
-                    )
+                    ),
                   ]
                 ],
               ),
             );
           },
         );
+  }
+
+  Widget _buildBusiestHoursCard() {
+    return ref.watch(busiestHoursProvider(widget.dates)).maybeWhen(
+        data: (hoursData) {
+          return MyCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Busiest Hours",
+                  style: AppTextStyles.sectionHeaderStyle,
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                for (var hourData in hoursData)
+                  Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            hourData.hours,
+                            style: AppTextStyles.regularTextStyle,
+                          ),
+                          Text(
+                            "${hourData.playerCount} players",
+                            style: AppTextStyles.regularTextStyle
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ))
+              ],
+            ),
+          );
+        },
+        orElse: () => MyCard(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ));
   }
 }

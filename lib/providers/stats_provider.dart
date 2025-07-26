@@ -217,6 +217,54 @@ final ageGroupsProvider = FutureProvider.autoDispose
   }).toList();
 });
 
+// ---------------- Busiest Hours Provider ----------------
+class BusiestHoursData {
+  final String hours;
+  final int playerCount;
+
+  const BusiestHoursData({required this.hours, required this.playerCount});
+}
+
+final busiestHoursProvider = FutureProvider.autoDispose
+    .family<List<BusiestHoursData>, List<DateTime>>((ref, dates) async {
+  final dbHelper = ref.watch(databaseProvider);
+  final db = await dbHelper.database;
+
+  final List<String> datesFormatted =
+      dates.map((date) => date.toYYYYMMDD()).toList();
+  final String placeholders = List.filled(dates.length, '?').join(',');
+
+  final query = await db.rawQuery(
+    '''
+      SELECT
+        CAST(strftime('%H', check_in_time) AS INTEGER) AS hour,
+        COUNT(*) AS count
+      FROM player_sessions
+      WHERE DATE(check_in_time) IN ($placeholders)
+      GROUP BY hour
+      ORDER BY count DESC
+      ''',
+    datesFormatted,
+  );
+
+  List<BusiestHoursData> hourlyCheckIns = [];
+  for (final row in query) {
+    final int hourInt = row['hour'] as int;
+    final int displayHour = hourInt % 12 == 0 ? 12 : hourInt % 12;
+    final String period = hourInt < 12 ? 'AM' : 'PM';
+    final String hours = '$displayHour $period';
+    hourlyCheckIns.add(BusiestHoursData(
+        hours: hours, playerCount: row['count'] as int));
+  }
+  // sort based on hour
+  hourlyCheckIns.sort((a, b) => a.hours.compareTo(b.hours));
+
+  return hourlyCheckIns;
+});
+
+
+
+
 final statsProvider = Provider<StatsNotifier>((ref) {
   final dbHelper = ref.watch(databaseProvider);
   return StatsNotifier(dbHelper);
@@ -341,31 +389,6 @@ class StatsNotifier {
   }
 
   /// Get busiest hours (hours with most check-ins)
-  Future<Map<int, int>> getBusiestHours(List<DateTime> dates) async {
-    final db = await _dbHelper.database;
-    final List<String> datesFormatted =
-        dates.map((date) => date.toYYYYMMDD()).toList();
-    final String placeholders = List.filled(dates.length, '?').join(',');
-
-    final query = await db.rawQuery(
-      '''
-      SELECT 
-        CAST(strftime('%H', check_in_time) AS INTEGER) AS hour,
-        COUNT(*) AS count
-      FROM player_sessions
-      WHERE DATE(check_in_time) IN ($placeholders)
-      GROUP BY hour
-      ORDER BY count DESC
-      ''',
-      datesFormatted,
-    );
-
-    Map<int, int> hourlyCheckIns = {};
-    for (final row in query) {
-      hourlyCheckIns[row['hour'] as int] = row['count'] as int;
-    }
-    return hourlyCheckIns;
-  }
 
   /// Get product sales details
   Future<Map<String, dynamic>> getProductSalesDetails(
