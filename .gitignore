@@ -47,3 +47,4 @@ app.*.map.json
 # my files
 notes.txt
 .github/
+lib/database/random_inserter.dart

@@ -1,5 +1,7 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
+import 'package:gravity_desktop_app/database/random_inserter.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
@@ -31,7 +33,12 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = p.join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(path, version: 1, onCreate: (db, version) async {
+      await _createDB(db, version);
+      if (kDebugMode) {
+        await insertExampleRecords(db);
+      }
+    });
   }
 
   // This runs only the first time the database is created

@@ -178,7 +178,7 @@ final ageGroupsProvider = FutureProvider.autoDispose
     ageGroups[row['age_group'] as String] = row['count'] as int;
   }
 
-  return ageGroups.entries.map((entry) {
+  final ageGroupsList = ageGroups.entries.map((entry) {
     final ageGroup = entry.key;
     final count = entry.value;
 
@@ -209,12 +209,27 @@ final ageGroupsProvider = FutureProvider.autoDispose
       case '21-26':
         color = Colors.pink[700]!;
         break;
-      default:
+      default: // over 26
         color = Colors.teal[700]!;
     }
 
     return AgeGroupData(ageGroup, count, color);
   }).toList();
+  ageGroupsList.sort((a, b) {
+    const order = [
+      '1-2',
+      '3-5',
+      '6-8',
+      '9-11',
+      '12-14',
+      '15-17',
+      '18-20',
+      '21-26',
+      'Over 26'
+    ];
+    return order.indexOf(a.ageGroup).compareTo(order.indexOf(b.ageGroup));
+  });
+  return ageGroupsList;
 });
 
 // ---------------- Busiest Hours Provider ----------------
@@ -257,7 +272,7 @@ final busiestHoursProvider = FutureProvider.autoDispose
         .add(BusiestHoursData(hours: hours, playerCount: row['count'] as int));
   }
   // sort based on hour
-  hourlyCheckIns.sort((a, b) => a.hours.compareTo(b.hours));
+  hourlyCheckIns.sort((a, b) => b.playerCount.compareTo(a.playerCount));
 
   return hourlyCheckIns;
 });
@@ -358,7 +373,59 @@ final discountDataProvider = FutureProvider.autoDispose
       totalNumberofDiscounts: (query.first['total_discounts'] as int?) ?? 0);
 });
 
-// ---------------- ----------------
+// ---------------- Top Players Provider ----------------
+class TopPlayer {
+  final String playerId;
+  final String name;
+  final Duration timeSpent;
+  final int sessionCount;
+
+  const TopPlayer({
+    required this.playerId,
+    required this.name,
+    required this.timeSpent,
+    required this.sessionCount,
+  });
+}
+
+final topPlayersProvider = FutureProvider.autoDispose
+    .family<List<TopPlayer>, List<DateTime>>((ref, dates) async {
+  final dbHelper = ref.watch(databaseProvider);
+  final db = await dbHelper.database;
+  final List<String> datesFormatted =
+      dates.map((date) => date.toYYYYMMDD()).toList();
+  final String placeholders = List.filled(dates.length, '?').join(',');
+
+  final query = await db.rawQuery(
+    '''
+      SELECT 
+        p.id,
+        p.name,
+        p.age,
+        COUNT(ps.session_id) AS visit_count,
+        SUM(CASE WHEN ps.check_out_time IS NOT NULL 
+            THEN (julianday(ps.check_out_time) - julianday(ps.check_in_time)) * 24 * 60
+            ELSE 0 END) AS total_minutes
+      FROM player_sessions ps
+      JOIN players p ON ps.player_id = p.id
+      WHERE DATE(ps.check_in_time) IN ($placeholders)
+      GROUP BY p.id, p.name, p.age
+      ORDER BY visit_count DESC, total_minutes DESC
+      LIMIT 10
+      ''',
+    datesFormatted,
+  );
+
+  return query
+      .map((row) => TopPlayer(
+          playerId: row['id'] as String,
+          name: row['name'] as String,
+          timeSpent: Duration(
+              minutes: (row['total_minutes'] as double? ?? 0.0).round()),
+          sessionCount: row['visit_count'] as int))
+      .toList();
+});
+
 // ---------------- ----------------
 // ---------------- ----------------
 // ---------------- ----------------
@@ -487,97 +554,6 @@ class StatsNotifier {
       'totalRevenue': totalRevenue,
       'totalQuantity': totalQuantity,
     };
-  }
-
-  /// Get discount statistics
-  Future<Map<String, dynamic>> getDiscountStats(List<DateTime> dates) async {
-    final db = await _dbHelper.database;
-    final List<String> datesFormatted =
-        dates.map((date) => date.toYYYYMMDD()).toList();
-    final String placeholders = List.filled(dates.length, '?').join(',');
-
-    // Total discounts given
-    final totalDiscountQuery = await db.rawQuery(
-      '''
-      SELECT SUM(discount) AS total_discount, COUNT(*) AS discount_count
-      FROM sales
-      WHERE DATE(sale_time) IN ($placeholders)
-      AND discount > 0
-      ''',
-      datesFormatted,
-    );
-
-    // Discount reasons breakdown
-    final reasonsQuery = await db.rawQuery(
-      '''
-      SELECT 
-        discount_reason,
-        SUM(discount) AS total_discount,
-        COUNT(*) AS count
-      FROM sales
-      WHERE DATE(sale_time) IN ($placeholders)
-      AND discount > 0
-      AND discount_reason IS NOT NULL
-      GROUP BY discount_reason
-      ORDER BY total_discount DESC
-      ''',
-      datesFormatted,
-    );
-
-    List<Map<String, dynamic>> discountReasons = [];
-    for (final row in reasonsQuery) {
-      discountReasons.add({
-        'reason': row['discount_reason'] as String,
-        'totalDiscount': row['total_discount'] as int,
-        'count': row['count'] as int,
-      });
-    }
-
-    return {
-      'totalDiscount': totalDiscountQuery.first['total_discount'] as int? ?? 0,
-      'discountCount': totalDiscountQuery.first['discount_count'] as int? ?? 0,
-      'discountReasons': discountReasons,
-    };
-  }
-
-  /// Get most frequent players
-  Future<List<Map<String, dynamic>>> getMostFrequentPlayers(
-      List<DateTime> dates) async {
-    final db = await _dbHelper.database;
-    final List<String> datesFormatted =
-        dates.map((date) => date.toYYYYMMDD()).toList();
-    final String placeholders = List.filled(dates.length, '?').join(',');
-
-    final query = await db.rawQuery(
-      '''
-      SELECT 
-        p.name,
-        p.age,
-        COUNT(ps.session_id) AS visit_count,
-        SUM(CASE WHEN ps.check_out_time IS NOT NULL 
-            THEN (julianday(ps.check_out_time) - julianday(ps.check_in_time)) * 24 * 60
-            ELSE 0 END) AS total_minutes
-      FROM player_sessions ps
-      JOIN players p ON ps.player_id = p.id
-      WHERE DATE(ps.check_in_time) IN ($placeholders)
-      GROUP BY p.id, p.name, p.age
-      ORDER BY visit_count DESC, total_minutes DESC
-      LIMIT 10
-      ''',
-      datesFormatted,
-    );
-
-    List<Map<String, dynamic>> frequentPlayers = [];
-    for (final row in query) {
-      frequentPlayers.add({
-        'name': row['name'] as String,
-        'age': row['age'] as int,
-        'visitCount': row['visit_count'] as int,
-        'totalMinutes': (row['total_minutes'] as double? ?? 0.0).round(),
-      });
-    }
-
-    return frequentPlayers;
   }
 
   /// Get line chart data for players checked in over time

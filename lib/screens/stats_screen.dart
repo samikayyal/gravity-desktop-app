@@ -8,7 +8,9 @@ import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/revenue_card.dart';
+import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/stats_provider.dart';
+import 'package:gravity_desktop_app/screens/player_details.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/general.dart';
 import 'package:intl/intl.dart';
@@ -99,6 +101,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       flex: 2,
                       child: _buildDiscountsCard(),
                     )
+                  ],
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildTopPlayersCard(),
+                    ),
                   ],
                 ),
               )
@@ -522,5 +534,171 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     }, orElse: () {
       return MyCard(child: Center(child: CircularProgressIndicator()));
     });
+  }
+
+  Widget _buildTopPlayersCard() {
+    return ref.watch(topPlayersProvider(widget.dates)).maybeWhen(
+        data: (topPlayers) {
+          if (topPlayers.isEmpty) {
+            log("Top Players: $topPlayers");
+            return MyCard(
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.person_off,
+                      size: 24,
+                      color: Colors.black.withAlpha(75),
+                    ),
+                    const SizedBox(
+                      height: 4,
+                    ),
+                    Text("No Players to Show.")
+                  ],
+                ),
+              ),
+            );
+          }
+          return MyCard(
+              child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Top 10 Players",
+                style: AppTextStyles.sectionHeaderStyle,
+              ),
+              const SizedBox(
+                height: 16,
+              ),
+              SizedBox(
+                height: 350,
+                width: double.infinity,
+                child: ListView.separated(
+                  itemCount: topPlayers.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final player = topPlayers[index];
+                    final totalMinutes = player.timeSpent.inMinutes;
+                    final hours = totalMinutes ~/ 60;
+                    final minutes = totalMinutes % 60;
+
+                    String timeDisplay;
+                    if (hours > 0) {
+                      timeDisplay = '${hours}h ${minutes}m';
+                    } else {
+                      timeDisplay = '${minutes}m';
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: mainBlue.withAlpha(10),
+                        borderRadius: BorderRadius.circular(8),
+                        border:
+                            Border.all(color: mainBlue.withAlpha(30), width: 1),
+                      ),
+                      child: InkWell(
+                        onTap: () async {
+                          final playerForDetails = await ref
+                              .read(pastPlayersProvider.notifier)
+                              .getPlayerById(player.playerId);
+
+                          if (context.mounted) {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) =>
+                                    PlayerDetails(playerForDetails)));
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          children: [
+                            // Rank circle
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: mainBlue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${index + 1}',
+                                  style:
+                                      AppTextStyles.subtitleTextStyle.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Player info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    player.name,
+                                    style:
+                                        AppTextStyles.regularTextStyle.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        timeDisplay,
+                                        style: AppTextStyles.subtitleTextStyle
+                                            .copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Icon(
+                                        Icons.event_repeat,
+                                        size: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${player.sessionCount} session${player.sessionCount != 1 ? 's' : ''}',
+                                        style: AppTextStyles.subtitleTextStyle
+                                            .copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Arrow indicator
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: mainBlue.withAlpha(150),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+            ],
+          ));
+        },
+        orElse: () => MyCard(
+                child: Center(
+              child: CircularProgressIndicator(),
+            )));
   }
 }

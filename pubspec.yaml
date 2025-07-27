@@ -48,6 +48,7 @@ dependencies:
   syncfusion_flutter_datepicker: ^29.1.38
   calendar_date_picker2: ^2.0.1
   fl_chart: ^0.71.0
+  faker: ^2.2.0
 
 dev_dependencies:
   flutter_test:

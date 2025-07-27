@@ -295,7 +295,7 @@ class _StatsScreen2State extends ConsumerState<StatsScreen2> {
   Widget _buildDiscountsCard(StatsNotifier statsNotifier) {
     return MyCard(
       child: FutureBuilder<Map<String, dynamic>>(
-        future: statsNotifier.getDiscountStats(widget.dates),
+        future: Future.delayed(Duration(microseconds: 1)),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -338,7 +338,7 @@ class _StatsScreen2State extends ConsumerState<StatsScreen2> {
   Widget _buildMostFrequentPlayersCard(StatsNotifier statsNotifier) {
     return MyCard(
       child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: statsNotifier.getMostFrequentPlayers(widget.dates),
+        future: Future.delayed(Duration(microseconds: 1)),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
