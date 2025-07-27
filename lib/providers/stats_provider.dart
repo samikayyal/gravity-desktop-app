@@ -426,7 +426,60 @@ final topPlayersProvider = FutureProvider.autoDispose
       .toList();
 });
 
-// ---------------- ----------------
+// ---------------- Product Sales Provider ----------------
+class ProductSale {
+  final String name;
+  final int productId;
+  final int quantitySold;
+  final int totalRevenue;
+
+  const ProductSale({
+    required this.name,
+    required this.productId,
+    required this.quantitySold,
+    required this.totalRevenue,
+  });
+}
+
+final productSalesProvider =
+    FutureProvider.autoDispose.family<List<ProductSale>, List<DateTime>>(
+  (ref, dates) async {
+    final dbHelper = ref.watch(databaseProvider);
+    final db = await dbHelper.database;
+    final List<String> datesFormatted =
+        dates.map((date) => date.toYYYYMMDD()).toList();
+    final String placeholders = List.filled(dates.length, '?').join(',');
+
+    // Total sales per product
+    final salesQuery = await db.rawQuery(
+      '''
+      SELECT 
+        p.product_id,
+        p.name,
+        SUM(si.quantity) AS total_quantity,
+        SUM(si.quantity * si.price_per_item) AS total_revenue
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.sale_id
+      JOIN products p ON si.product_id = p.product_id
+      WHERE DATE(s.sale_time) IN ($placeholders)
+      GROUP BY p.product_id, p.name
+      ORDER BY total_revenue DESC
+      ''',
+      datesFormatted,
+    );
+
+    List<ProductSale> productSales = [];
+    for (var sale in salesQuery) {
+      productSales.add(ProductSale(
+          name: sale['name'] as String,
+          productId: sale['product_id'] as int,
+          quantitySold: sale['total_quantity'] as int,
+          totalRevenue: sale['total_revenue'] as int));
+    }
+    return productSales;
+  },
+);
+
 // ---------------- ----------------
 // ---------------- ----------------
 // ---------------- ----------------

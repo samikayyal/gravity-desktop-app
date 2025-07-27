@@ -109,8 +109,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 child: Row(
                   children: [
                     Expanded(
+                      flex: 1,
                       child: _buildTopPlayersCard(),
                     ),
+                    Expanded(
+                      flex: 1,
+                      child: _buildProductSalesCard(),
+                    )
                   ],
                 ),
               )
@@ -553,7 +558,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     const SizedBox(
                       height: 4,
                     ),
-                    Text("No Players to Show.")
+                    Text(
+                      "No Players to Show.",
+                      style: AppTextStyles.regularTextStyle
+                          .copyWith(color: Colors.black.withAlpha(150)),
+                    )
                   ],
                 ),
               ),
@@ -700,5 +709,169 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 child: Center(
               child: CircularProgressIndicator(),
             )));
+  }
+
+  Widget _buildProductSalesCard() {
+    return ref.watch(productSalesProvider(widget.dates)).maybeWhen(
+        data: (productSales) {
+          if (productSales.isEmpty) {
+            return MyCard(
+                child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Product Sales",
+                  style: AppTextStyles.sectionHeaderStyle,
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                SizedBox(
+                  height: 200,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.remove_shopping_cart,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No Products to show",
+                          style: AppTextStyles.regularTextStyle
+                              .copyWith(color: Colors.grey[600]),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ));
+          }
+
+          // Calculate total revenue for percentage display
+          final totalRevenue = productSales.fold<int>(
+              0, (sum, product) => sum + product.totalRevenue);
+
+          return MyCard(
+              child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Product Sales",
+                style: AppTextStyles.sectionHeaderStyle,
+              ),
+              const SizedBox(
+                height: 16,
+              ),
+              // Products list
+              SizedBox(
+                height: 350,
+                child: ListView.separated(
+                  itemCount: productSales.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final product = productSales[index];
+                    final revenuePercentage = totalRevenue > 0
+                        ? (product.totalRevenue / totalRevenue * 100)
+                        : 0.0;
+
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!, width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(5),
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  product.name,
+                                  style:
+                                      AppTextStyles.regularTextStyle.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: mainBlue.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${revenuePercentage.toStringAsFixed(1)}%',
+                                  style:
+                                      AppTextStyles.subtitleTextStyle.copyWith(
+                                    color: mainBlue,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.inventory,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${product.quantitySold} sold',
+                                    style: AppTextStyles.subtitleTextStyle
+                                        .copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '${formatter.format(product.totalRevenue)} SYP',
+                                style: AppTextStyles.regularTextStyle.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: mainBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ));
+        },
+        orElse: () => MyCard(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ));
   }
 }
