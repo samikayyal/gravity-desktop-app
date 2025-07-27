@@ -181,7 +181,10 @@ class _StatsScreen2State extends ConsumerState<StatsScreen2> {
   Widget _buildPeakCapacityCard(StatsNotifier statsNotifier) {
     return MyCard(
       child: FutureBuilder<int>(
-        future: statsNotifier.getPeakCapacity(widget.dates),
+        future: Future.delayed(
+          const Duration(seconds: 1), // Simulate network delay
+          () => 100, // Replace with actual peak capacity logic
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

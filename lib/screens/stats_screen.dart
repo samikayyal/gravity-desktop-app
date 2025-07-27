@@ -82,6 +82,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   Expanded(child: _buildBusiestHoursCard())
                 ],
               ),
+            ),
+            FractionallySizedBox(
+              widthFactor: 0.4,
+              child: Row(
+                children: [Expanded(child: _buildPeakCapacityCard())],
+              ),
             )
           ],
         ),
@@ -342,5 +348,51 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 child: CircularProgressIndicator(),
               ),
             ));
+  }
+
+  Widget _buildPeakCapacityCard() {
+    return ref.watch(peakCapacityProvider(widget.dates)).maybeWhen(
+          data: (peakCapacity) {
+            return MyCard(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Peak Capacity",
+                      style: AppTextStyles.sectionHeaderStyle),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18.0, horizontal: 20.0),
+                    decoration: BoxDecoration(
+                      color: mainBlue.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: mainBlue.withAlpha(50), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$peakCapacity players',
+                        style: AppTextStyles.highlightedTextStyle.copyWith(
+                            fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+          orElse: () => MyCard(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
   }
 }

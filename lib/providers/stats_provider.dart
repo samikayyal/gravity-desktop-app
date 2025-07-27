@@ -253,8 +253,8 @@ final busiestHoursProvider = FutureProvider.autoDispose
     final int displayHour = hourInt % 12 == 0 ? 12 : hourInt % 12;
     final String period = hourInt < 12 ? 'AM' : 'PM';
     final String hours = '$displayHour $period';
-    hourlyCheckIns.add(BusiestHoursData(
-        hours: hours, playerCount: row['count'] as int));
+    hourlyCheckIns
+        .add(BusiestHoursData(hours: hours, playerCount: row['count'] as int));
   }
   // sort based on hour
   hourlyCheckIns.sort((a, b) => a.hours.compareTo(b.hours));
@@ -262,8 +262,58 @@ final busiestHoursProvider = FutureProvider.autoDispose
   return hourlyCheckIns;
 });
 
+// Peak capacity provider
+final peakCapacityProvider =
+    FutureProvider.autoDispose.family<int, List<DateTime>>((ref, dates) async {
+  final dbHelper = ref.watch(databaseProvider);
+  final db = await dbHelper.database;
+  final List<String> datesFormatted =
+      dates.map((date) => date.toYYYYMMDD()).toList();
+  final String placeholders = List.filled(dates.length, '?').join(',');
 
+  // Get all sessions within the date range
+  final sessionsQuery = await db.rawQuery(
+    '''
+      SELECT check_in_time, check_out_time
+      FROM player_sessions
+      WHERE DATE(check_in_time) IN ($placeholders)
+      OR (check_out_time IS NOT NULL AND DATE(check_out_time) IN ($placeholders))
+      ''',
+    [...datesFormatted, ...datesFormatted],
+  );
 
+  if (sessionsQuery.isEmpty) return 0;
+
+  int max = 0;
+
+  for (var session in sessionsQuery) {
+    final DateTime checkInTime =
+        DateTime.parse(session['check_in_time'] as String);
+    final DateTime? checkOutTime = session['check_out_time'] != null
+        ? DateTime.parse(session['check_out_time'] as String)
+        : null;
+    if (checkOutTime == null) continue;
+
+    // Check how many sessions overlap with this one
+    int count = 0;
+    for (var otherSession in sessionsQuery) {
+      final DateTime otherCheckInTime =
+          DateTime.parse(otherSession['check_in_time'] as String);
+      final DateTime? otherCheckOutTime = otherSession['check_out_time'] != null
+          ? DateTime.parse(otherSession['check_out_time'] as String)
+          : null;
+
+      if (otherCheckOutTime == null) continue;
+
+      if (checkInTime.isBefore(otherCheckOutTime) &&
+          otherCheckInTime.isBefore(checkOutTime)) {
+        count++;
+      }
+    }
+    max = count > max ? count : max;
+  }
+  return max;
+});
 
 final statsProvider = Provider<StatsNotifier>((ref) {
   final dbHelper = ref.watch(databaseProvider);
@@ -335,57 +385,6 @@ class StatsNotifier {
       'averageUtilization':
           utilizationQuery.first['avg_utilization'] as double? ?? 0.0,
     };
-  }
-
-  /// Get peak capacity (maximum concurrent players)
-  Future<int> getPeakCapacity(List<DateTime> dates) async {
-    final db = await _dbHelper.database;
-    final List<String> datesFormatted =
-        dates.map((date) => date.toYYYYMMDD()).toList();
-    final String placeholders = List.filled(dates.length, '?').join(',');
-
-    // Get all sessions within the date range
-    final sessionsQuery = await db.rawQuery(
-      '''
-      SELECT check_in_time, check_out_time
-      FROM player_sessions
-      WHERE DATE(check_in_time) IN ($placeholders)
-      OR (check_out_time IS NOT NULL AND DATE(check_out_time) IN ($placeholders))
-      ''',
-      [...datesFormatted, ...datesFormatted],
-    );
-
-    if (sessionsQuery.isEmpty) return 0;
-
-    // Create events list (check-in = +1, check-out = -1)
-    List<MapEntry<DateTime, int>> events = [];
-
-    for (final session in sessionsQuery) {
-      final checkIn = DateTime.parse(session['check_in_time'] as String);
-      events.add(MapEntry(checkIn, 1));
-
-      final checkOutStr = session['check_out_time'] as String?;
-      if (checkOutStr != null) {
-        final checkOut = DateTime.parse(checkOutStr);
-        events.add(MapEntry(checkOut, -1));
-      }
-    }
-
-    // Sort events by time
-    events.sort((a, b) => a.key.compareTo(b.key));
-
-    // Calculate peak capacity
-    int currentCapacity = 0;
-    int peakCapacity = 0;
-
-    for (final event in events) {
-      currentCapacity += event.value;
-      if (currentCapacity > peakCapacity) {
-        peakCapacity = currentCapacity;
-      }
-    }
-
-    return peakCapacity;
   }
 
   /// Get busiest hours (hours with most check-ins)
