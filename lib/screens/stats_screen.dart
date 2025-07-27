@@ -53,43 +53,57 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     return Scaffold(
       appBar: MyAppBar(),
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-                child: Text(
-              titleString,
-              style: AppTextStyles.pageTitleStyle,
-            )),
-            const SizedBox(height: 48),
-            FractionallySizedBox(
-              widthFactor: 0.56,
-              child: Row(
-                spacing: 16,
-                children: [
-                  Expanded(
-                      flex: 2, child: MyCard(child: RevenueCard(widget.dates))),
-                  Expanded(flex: 1, child: _buildSubscriptionRevenueCard())
-                ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                  child: Text(
+                titleString,
+                style: AppTextStyles.pageTitleStyle,
+              )),
+              const SizedBox(height: 48),
+              FractionallySizedBox(
+                widthFactor: 0.56,
+                child: Row(
+                  spacing: 16,
+                  children: [
+                    Expanded(
+                        flex: 2,
+                        child: MyCard(child: RevenueCard(widget.dates))),
+                    Expanded(flex: 1, child: _buildSubscriptionRevenueCard())
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            FractionallySizedBox(
-              widthFactor: 0.5,
-              child: Row(
-                children: [
-                  _buildAgePieChartCard(),
-                  Expanded(child: _buildBusiestHoursCard())
-                ],
+              const SizedBox(height: 16),
+              FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Row(
+                  children: [
+                    _buildAgePieChartCard(),
+                    Expanded(
+                      child: _buildBusiestHoursCard(),
+                    )
+                  ],
+                ),
               ),
-            ),
-            FractionallySizedBox(
-              widthFactor: 0.4,
-              child: Row(
-                children: [Expanded(child: _buildPeakCapacityCard())],
-              ),
-            )
-          ],
+              FractionallySizedBox(
+                widthFactor: 0.43,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: _buildPeakCapacityCard(),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDiscountsCard(),
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -394,5 +408,119 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             child: Center(child: CircularProgressIndicator()),
           ),
         );
+  }
+
+  Widget _buildDiscountsCard() {
+    return ref.watch(discountDataProvider(widget.dates)).maybeWhen(
+        data: (discountData) {
+      return MyCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Discounts", style: AppTextStyles.sectionHeaderStyle),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18.0, horizontal: 20.0),
+                    decoration: BoxDecoration(
+                      color: mainBlue.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: mainBlue.withAlpha(50), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.discount, color: mainBlue, size: 22),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Discount Amount',
+                              style: AppTextStyles.subtitleTextStyle
+                                  .copyWith(color: mainBlue),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          '${formatter.format(discountData.totalDiscountAmount)} SYP',
+                          style: AppTextStyles.highlightedTextStyle.copyWith(
+                              fontSize: 28, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  width: 8,
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18.0, horizontal: 20.0),
+                    decoration: BoxDecoration(
+                      color: mainBlue.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: mainBlue.withAlpha(50), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.numbers_outlined,
+                                color: mainBlue, size: 22),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Number of Discounts',
+                              style: AppTextStyles.subtitleTextStyle
+                                  .copyWith(color: mainBlue),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          formatter.format(discountData.totalNumberofDiscounts),
+                          style: AppTextStyles.highlightedTextStyle.copyWith(
+                              fontSize: 28, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }, orElse: () {
+      return MyCard(child: Center(child: CircularProgressIndicator()));
+    });
   }
 }

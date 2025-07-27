@@ -262,7 +262,7 @@ final busiestHoursProvider = FutureProvider.autoDispose
   return hourlyCheckIns;
 });
 
-// Peak capacity provider
+// ---------------- Peak capacity provider ----------------
 final peakCapacityProvider =
     FutureProvider.autoDispose.family<int, List<DateTime>>((ref, dates) async {
   final dbHelper = ref.watch(databaseProvider);
@@ -314,6 +314,57 @@ final peakCapacityProvider =
   }
   return max;
 });
+
+// ---------------- Discount data provider ----------------
+class DiscountData {
+  final int totalNumberofDiscounts;
+  final int totalDiscountAmount;
+
+  const DiscountData({
+    required this.totalNumberofDiscounts,
+    required this.totalDiscountAmount,
+  });
+}
+
+final discountDataProvider = FutureProvider.autoDispose
+    .family<DiscountData, List<DateTime>>((ref, dates) async {
+  final dbHelper = ref.watch(databaseProvider);
+  final db = await dbHelper.database;
+
+  final List<String> datesFormatted =
+      dates.map((date) => date.toYYYYMMDD()).toList();
+  final String placeholders = List.filled(dates.length, '?').join(',');
+
+  final query = await db.rawQuery(
+    '''
+      SELECT 
+        COUNT(*) AS total_discounts,
+        SUM(discount) AS total_discount_amount
+      FROM sales
+      WHERE DATE(sale_time) IN ($placeholders)
+      AND discount > 0
+    ''',
+    datesFormatted,
+  );
+  if (query.isEmpty) {
+    return DiscountData(
+      totalNumberofDiscounts: 0,
+      totalDiscountAmount: 0,
+    );
+  }
+
+  return DiscountData(
+      totalDiscountAmount: (query.first['total_discount_amount'] as int?) ?? 0,
+      totalNumberofDiscounts: (query.first['total_discounts'] as int?) ?? 0);
+});
+
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
 
 final statsProvider = Provider<StatsNotifier>((ref) {
   final dbHelper = ref.watch(databaseProvider);
@@ -386,8 +437,6 @@ class StatsNotifier {
           utilizationQuery.first['avg_utilization'] as double? ?? 0.0,
     };
   }
-
-  /// Get busiest hours (hours with most check-ins)
 
   /// Get product sales details
   Future<Map<String, dynamic>> getProductSalesDetails(
