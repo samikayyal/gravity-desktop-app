@@ -14,6 +14,9 @@ import 'package:gravity_desktop_app/screens/player_details.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/general.dart';
 import 'package:intl/intl.dart';
+import 'package:week_of_year/date_week_extensions.dart';
+
+enum LineChartSelection { players, products, all }
 
 class StatsScreen extends ConsumerStatefulWidget {
   final List<DateTime> dates;
@@ -26,6 +29,7 @@ class StatsScreen extends ConsumerStatefulWidget {
 class _StatsScreenState extends ConsumerState<StatsScreen> {
   final formatter = NumberFormat.decimalPattern();
   int _touchedPieChartIndex = -1;
+  LineChartSelection _lineChartSelection = LineChartSelection.all;
 
   bool _checkIsRange() {
     final dates = widget.dates;
@@ -118,6 +122,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     )
                   ],
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 70),
+                child: _buildPlayerLineChart(),
+              ),
+              const SizedBox(
+                height: 32,
               )
             ],
           ),
@@ -873,5 +884,268 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 child: CircularProgressIndicator(),
               ),
             ));
+  }
+
+  Widget _buildPlayerLineChart() {
+    return ref.watch(lineChartDataProvider(widget.dates)).maybeWhen(
+        data: (chartData) {
+          if (chartData.isEmpty) {
+            return Column(
+              children: [
+                Text('Check-ins Over Time',
+                    style: AppTextStyles.sectionHeaderStyle),
+                const SizedBox(height: 16),
+                const Text('No data available'),
+              ],
+            );
+          }
+          double maxY = 0;
+          for (var d in chartData) {
+            if (d.playerCount > maxY) maxY = d.playerCount.toDouble();
+            if (d.productSaleCount > maxY) maxY = d.productSaleCount.toDouble();
+          }
+
+          final LineChartBucketSize bucketSize;
+          if (widget.dates.length < minDatesForDailyBuckets) {
+            bucketSize = LineChartBucketSize.hourly;
+          } else if (widget.dates.length < minDatesForWeeklyBuckets) {
+            bucketSize = LineChartBucketSize.daily;
+          } else if (widget.dates.length < minDatesForMonthlyBuckets) {
+            bucketSize = LineChartBucketSize.weekly;
+          } else {
+            bucketSize = LineChartBucketSize.monthly;
+          }
+
+          return MyCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Check-ins and Product Sales Over Time',
+                      style: AppTextStyles.sectionHeaderStyle,
+                    ),
+
+                    // Legend
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_lineChartSelection ==
+                                  LineChartSelection.players) {
+                                _lineChartSelection = LineChartSelection.all;
+                              } else {
+                                _lineChartSelection =
+                                    LineChartSelection.players;
+                              }
+                            });
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: [
+                                    LineChartSelection.players,
+                                    LineChartSelection.all
+                                  ].contains(_lineChartSelection)
+                                      ? playersLineChartColor
+                                      : playersLineChartColor.withAlpha(100),
+                                  shape: BoxShape.circle,
+                                ),
+                                width: [
+                                  LineChartSelection.players,
+                                  LineChartSelection.all
+                                ].contains(_lineChartSelection)
+                                    ? 20
+                                    : 16,
+                                height: [
+                                  LineChartSelection.players,
+                                  LineChartSelection.all
+                                ].contains(_lineChartSelection)
+                                    ? 20
+                                    : 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Players',
+                                style: [
+                                  LineChartSelection.players,
+                                  LineChartSelection.all
+                                ].contains(_lineChartSelection)
+                                    ? AppTextStyles.regularTextStyle
+                                        .copyWith(fontWeight: FontWeight.bold)
+                                    : AppTextStyles.regularTextStyle
+                                        .copyWith(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_lineChartSelection ==
+                                  LineChartSelection.products) {
+                                _lineChartSelection = LineChartSelection.all;
+                              } else {
+                                _lineChartSelection =
+                                    LineChartSelection.products;
+                              }
+                            });
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: [
+                                    LineChartSelection.products,
+                                    LineChartSelection.all
+                                  ].contains(_lineChartSelection)
+                                      ? productsLineChartColor
+                                      : productsLineChartColor.withAlpha(100),
+                                  shape: BoxShape.circle,
+                                ),
+                                width: [
+                                  LineChartSelection.products,
+                                  LineChartSelection.all
+                                ].contains(_lineChartSelection)
+                                    ? 20
+                                    : 16,
+                                height: [
+                                  LineChartSelection.products,
+                                  LineChartSelection.all
+                                ].contains(_lineChartSelection)
+                                    ? 20
+                                    : 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Products',
+                                style: [
+                                  LineChartSelection.products,
+                                  LineChartSelection.all
+                                ].contains(_lineChartSelection)
+                                    ? AppTextStyles.regularTextStyle
+                                        .copyWith(fontWeight: FontWeight.bold)
+                                    : AppTextStyles.regularTextStyle
+                                        .copyWith(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                    height: 400,
+                    child: LineChart(
+                      LineChartData(
+                        lineBarsData: [
+                          if (_lineChartSelection ==
+                                  LineChartSelection.players ||
+                              _lineChartSelection == LineChartSelection.all)
+                            // Players
+                            LineChartBarData(
+                                spots: [
+                                  for (int i = 0; i < chartData.length; i++)
+                                    FlSpot(
+                                        chartData
+                                            .indexOf(chartData[i])
+                                            .toDouble(),
+                                        chartData[i].playerCount.toDouble())
+                                ],
+                                isCurved: true,
+                                curveSmoothness: 0.25,
+                                dotData: FlDotData(show: false),
+                                belowBarData: BarAreaData(show: false),
+                                color: playersLineChartColor),
+                          if (_lineChartSelection ==
+                                  LineChartSelection.products ||
+                              _lineChartSelection == LineChartSelection.all)
+                            // Products
+                            LineChartBarData(
+                              spots: [
+                                for (int i = 0; i < chartData.length; i++)
+                                  FlSpot(
+                                      chartData
+                                          .indexOf(chartData[i])
+                                          .toDouble(),
+                                      chartData[i].productSaleCount.toDouble())
+                              ],
+                              isCurved: true,
+                              curveSmoothness: 0.20,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(show: false),
+                              color: productsLineChartColor,
+                            ),
+                        ],
+                        minY: 0,
+                        maxY: maxY,
+                        titlesData: FlTitlesData(
+                            topTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false)),
+                            bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 100,
+                              minIncluded: true,
+                              maxIncluded: true,
+                              getTitlesWidget: (value, meta) {
+                                if (value.toInt() < 0 ||
+                                    value.toInt() > chartData.length) {
+                                  return Text('');
+                                }
+                                final time = chartData[value.toInt()].time;
+                                final String formattedTime;
+                                if (bucketSize == LineChartBucketSize.hourly) {
+                                  formattedTime =
+                                      DateFormat('hh:mm aa').format(time);
+                                } else if (bucketSize ==
+                                    LineChartBucketSize.daily) {
+                                  formattedTime =
+                                      DateFormat('MM/dd').format(time);
+                                } else if (bucketSize ==
+                                    LineChartBucketSize.weekly) {
+                                  formattedTime =
+                                      "${DateFormat('yyyy').format(time)}-${time.weekOfYear}";
+                                } else {
+                                  formattedTime =
+                                      DateFormat('MMM/yyyy').format(time);
+                                }
+
+                                return Transform.translate(
+                                  offset: const Offset(-10, 0),
+                                  child: Column(
+                                    children: [
+                                      const SizedBox(
+                                        height: 16,
+                                      ),
+                                      Transform.rotate(
+                                        // rotate -45 degrees
+                                        angle: -45 * 3.14 / 180,
+                                        child: Text(formattedTime),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ))),
+                      ),
+                    )),
+              ],
+            ),
+          );
+        },
+        orElse: () => MyCard(
+                child: Center(
+              child: CircularProgressIndicator(),
+            )));
   }
 }

@@ -5,6 +5,12 @@ const Color mainBlue = Color(0xFF3949AB);
 const int leewayMinutes = 10;
 const double fuzzyThreshold = 0.5;
 const int maxPlayersInGroup = 30;
+const int minDatesForDailyBuckets = 5;
+const int minDatesForWeeklyBuckets = 30;
+const int minDatesForMonthlyBuckets = 360;
+
+const Color playersLineChartColor = Colors.lightBlueAccent;
+const Color productsLineChartColor = Colors.deepOrange;
 
 final List<Color> groupColors = [
   // Reds & Pinks

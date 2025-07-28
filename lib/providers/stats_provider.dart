@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/database/database.dart';
+import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/general.dart';
 
 // ---------------- Product Income Provider ----------------
@@ -480,16 +481,142 @@ final productSalesProvider =
   },
 );
 
-// ---------------- ----------------
-// ---------------- ----------------
-// ---------------- ----------------
-// ---------------- ----------------
-// ---------------- ----------------
+// ---------------- Player Chart Data Provider ----------------
+class GravityLineChartData {
+  final DateTime time;
+  final int playerCount;
+  final int productSaleCount;
 
-final statsProvider = Provider<StatsNotifier>((ref) {
-  final dbHelper = ref.watch(databaseProvider);
-  return StatsNotifier(dbHelper);
-});
+  const GravityLineChartData(
+      {required this.time,
+      required this.playerCount,
+      required this.productSaleCount});
+}
+
+enum LineChartBucketSize { hourly, daily, weekly, monthly }
+
+final lineChartDataProvider = FutureProvider.autoDispose
+    .family<List<GravityLineChartData>, List<DateTime>>(
+  (ref, dates) async {
+    final dbHelper = ref.watch(databaseProvider);
+    final db = await dbHelper.database;
+    final List<String> datesFormatted =
+        dates.map((date) => date.toYYYYMMDD()).toList();
+    final String placeholders = List.filled(dates.length, '?').join(',');
+
+    // Determine granularity based on date range length
+    final LineChartBucketSize bucketSize;
+    if (dates.length < minDatesForDailyBuckets) {
+      bucketSize = LineChartBucketSize.hourly;
+    } else if (dates.length < minDatesForWeeklyBuckets) {
+      bucketSize = LineChartBucketSize.daily;
+    } else if (dates.length < minDatesForMonthlyBuckets) {
+      bucketSize = LineChartBucketSize.weekly;
+    } else {
+      // monthly
+      bucketSize = LineChartBucketSize.monthly;
+    }
+
+    String groupBy;
+    String productGroupBy;
+    if (bucketSize == LineChartBucketSize.hourly) {
+      groupBy = "strftime('%Y-%m-%d %H', check_in_time)";
+      productGroupBy = "strftime('%Y-%m-%d %H', s.sale_time)";
+    } else if (bucketSize == LineChartBucketSize.daily) {
+      groupBy = "DATE(check_in_time)";
+      productGroupBy = "DATE(s.sale_time)";
+    } else if (bucketSize == LineChartBucketSize.weekly) {
+      // Weekly: Group by year-week (e.g., "2025-30" for week 30 of 2025)
+      groupBy = "strftime('%Y-%W', check_in_time)";
+      productGroupBy = "strftime('%Y-%W', s.sale_time)";
+    } else {
+      // Monthly: Group by year-month (e.g., "2025-07" for July 2025)
+      groupBy = "strftime('%Y-%m', check_in_time)";
+      productGroupBy = "strftime('%Y-%m', s.sale_time)";
+    }
+
+    // Get player check-in data
+    final playerQuery = await db.rawQuery(
+      '''
+      SELECT 
+        $groupBy AS time_bucket,
+        COUNT(*) AS player_count
+      FROM player_sessions
+      WHERE DATE(check_in_time) IN ($placeholders)
+      GROUP BY time_bucket
+      ORDER BY time_bucket
+      ''',
+      datesFormatted,
+    );
+
+    // Get product sales data
+    final productQuery = await db.rawQuery(
+      '''
+      SELECT 
+        $productGroupBy AS time_bucket,
+        SUM(si.quantity) AS product_sale_count
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.sale_id
+      WHERE DATE(s.sale_time) IN ($placeholders)
+      GROUP BY time_bucket
+      ORDER BY time_bucket
+      ''',
+      datesFormatted,
+    );
+
+    // Create maps for easy lookup
+    Map<String, int> playerData = {};
+    for (final row in playerQuery) {
+      playerData[row['time_bucket'] as String] = row['player_count'] as int;
+    }
+
+    Map<String, int> productData = {};
+    for (final row in productQuery) {
+      productData[row['time_bucket'] as String] =
+          row['product_sale_count'] as int;
+    }
+
+    // Combine data for all time buckets
+    Set<String> allTimeBuckets = {...playerData.keys, ...productData.keys};
+
+    List<GravityLineChartData> chartData = [];
+    for (final timeBucket in allTimeBuckets) {
+      final playerCount = playerData[timeBucket] ?? 0;
+      final productSaleCount = productData[timeBucket] ?? 0;
+
+      DateTime timePoint;
+      if (bucketSize == LineChartBucketSize.hourly) {
+        timePoint = DateTime.parse('$timeBucket:00:00');
+      } else if (bucketSize == LineChartBucketSize.daily) {
+        timePoint = DateTime.parse(timeBucket);
+      } else {
+        // Weekly format is "YYYY-WW", convert to first day of that week
+        final parts = timeBucket.split('-');
+        final year = int.parse(parts[0]);
+        final week = int.parse(parts[1]);
+        // Calculate the first day of the week (Monday)
+        final firstDayOfYear = DateTime(year, 1, 1);
+        final daysToAdd = (week - 1) * 7 - firstDayOfYear.weekday + 1;
+        timePoint = firstDayOfYear.add(Duration(days: daysToAdd));
+      }
+
+      chartData.add(GravityLineChartData(
+        time: timePoint,
+        playerCount: playerCount,
+        productSaleCount: productSaleCount,
+      ));
+    }
+
+    // Sort by time
+    chartData.sort((a, b) => a.time.compareTo(b.time));
+
+    return chartData;
+  },
+);
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
+// ---------------- ----------------
 
 class StatsNotifier {
   final DatabaseHelper _dbHelper;
@@ -607,57 +734,5 @@ class StatsNotifier {
       'totalRevenue': totalRevenue,
       'totalQuantity': totalQuantity,
     };
-  }
-
-  /// Get line chart data for players checked in over time
-  Future<List<Map<String, dynamic>>> getPlayerCheckInChart(
-      List<DateTime> dates) async {
-    final db = await _dbHelper.database;
-    final List<String> datesFormatted =
-        dates.map((date) => date.toYYYYMMDD()).toList();
-    final String placeholders = List.filled(dates.length, '?').join(',');
-
-    // Determine granularity based on date range length
-    final isHourly = dates.length <= 4;
-
-    String groupBy;
-    if (isHourly) {
-      groupBy = "strftime('%Y-%m-%d %H', check_in_time)";
-    } else {
-      groupBy = "DATE(check_in_time)";
-    }
-
-    final query = await db.rawQuery(
-      '''
-      SELECT 
-        $groupBy AS time_bucket,
-        COUNT(*) AS check_in_count
-      FROM player_sessions
-      WHERE DATE(check_in_time) IN ($placeholders)
-      GROUP BY time_bucket
-      ORDER BY time_bucket
-      ''',
-      datesFormatted,
-    );
-
-    List<Map<String, dynamic>> chartData = [];
-    for (final row in query) {
-      final timeBucket = row['time_bucket'] as String;
-      final checkInCount = row['check_in_count'] as int;
-
-      DateTime timePoint;
-      if (isHourly) {
-        timePoint = DateTime.parse('$timeBucket:00:00');
-      } else {
-        timePoint = DateTime.parse(timeBucket);
-      }
-
-      chartData.add({
-        'time': timePoint,
-        'checkInCount': checkInCount,
-      });
-    }
-
-    return chartData;
-  }
+  }  
 }
