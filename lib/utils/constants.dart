@@ -5,8 +5,8 @@ const Color mainBlue = Color(0xFF3949AB);
 const int leewayMinutes = 10;
 const double fuzzyThreshold = 0.5;
 const int maxPlayersInGroup = 30;
-const int minDatesForDailyBuckets = 5;
-const int minDatesForWeeklyBuckets = 30;
+const int minDatesForDailyBuckets = 12;
+const int minDatesForWeeklyBuckets = 60;
 const int minDatesForMonthlyBuckets = 360;
 
 const Color playersLineChartColor = Colors.lightBlueAccent;
