@@ -69,10 +69,11 @@ class GravityApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: StatsScreen(List.generate(
-        DateTime.now().difference(DateTime(2024, 7, 29)).inDays,
-        (index) => DateTime(2024, 7, 29).add(Duration(days: index)),
-      )),
+      home: HomeScreen(),
+      // home: StatsScreen(List.generate(
+      //   DateTime.now().difference(DateTime(2024, 7, 29)).inDays,
+      //   (index) => DateTime(2024, 7, 29).add(Duration(days: index)),
+      // )),
     );
   }
 }

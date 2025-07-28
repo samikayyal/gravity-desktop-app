@@ -29,7 +29,7 @@ class StatsScreen extends ConsumerStatefulWidget {
 class _StatsScreenState extends ConsumerState<StatsScreen> {
   final formatter = NumberFormat.decimalPattern();
   int _touchedPieChartIndex = -1;
-  LineChartSelection _lineChartSelection = LineChartSelection.all;
+  LineChartSelection _lineChartSelection = LineChartSelection.players;
 
   bool _checkIsRange() {
     final dates = widget.dates;
@@ -77,29 +77,29 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     Expanded(
                         flex: 2,
                         child: MyCard(child: RevenueCard(widget.dates))),
-                    Expanded(flex: 1, child: _buildSubscriptionRevenueCard())
+                    Expanded(
+                        flex: 1,
+                        child: Column(
+                          children: [
+                            _buildPeakCapacityCard(),
+                            _buildSubscriptionRevenueCard(),
+                          ],
+                        ))
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               FractionallySizedBox(
-                widthFactor: 0.5,
+                widthFactor: 0.65,
                 child: Row(
                   children: [
-                    _buildAgePieChartCard(),
                     Expanded(
+                      flex: 3,
+                      child: _buildAgePieChartCard(),
+                    ),
+                    Expanded(
+                      flex: 3,
                       child: _buildBusiestHoursCard(),
-                    )
-                  ],
-                ),
-              ),
-              FractionallySizedBox(
-                widthFactor: 0.43,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: _buildPeakCapacityCard(),
                     ),
                     Expanded(
                       flex: 2,
@@ -352,6 +352,44 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   Widget _buildBusiestHoursCard() {
     return ref.watch(busiestHoursProvider(widget.dates)).maybeWhen(
         data: (hoursData) {
+          if (hoursData.isEmpty) {
+            return MyCard(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Busiest Hours",
+                    style: AppTextStyles.sectionHeaderStyle,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No data available',
+                            style: AppTextStyles.subtitleTextStyle.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return MyCard(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -361,26 +399,127 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   "Busiest Hours",
                   style: AppTextStyles.sectionHeaderStyle,
                 ),
-                const SizedBox(
-                  height: 16,
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    itemCount: hoursData.length,
+                    itemBuilder: (context, index) {
+                      final hourData = hoursData[index];
+                      final isTopHour =
+                          index < 3; // Highlight top 3 busiest hours
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isTopHour
+                              ? mainBlue.withAlpha(15)
+                              : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isTopHour
+                                ? mainBlue.withAlpha(40)
+                                : Colors.grey.withAlpha(40),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(5),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            // Rank indicator for top hours
+                            if (isTopHour) ...[
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: mainBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: AppTextStyles.subtitleTextStyle
+                                        .copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+
+                            // Time with icon
+                            Icon(
+                              Icons.access_time,
+                              size: 18,
+                              color: isTopHour ? mainBlue : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                hourData.hours,
+                                style: AppTextStyles.regularTextStyle.copyWith(
+                                  fontWeight: isTopHour
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  color: isTopHour ? mainBlue : null,
+                                ),
+                              ),
+                            ),
+
+                            // Player count with background
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isTopHour
+                                    ? mainBlue.withAlpha(25)
+                                    : Colors.grey.withAlpha(25),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.people,
+                                    size: 16,
+                                    color:
+                                        isTopHour ? mainBlue : Colors.grey[700],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${hourData.playerCount}",
+                                    style:
+                                        AppTextStyles.regularTextStyle.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: isTopHour
+                                          ? mainBlue
+                                          : Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                for (var hourData in hoursData)
-                  Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            hourData.hours,
-                            style: AppTextStyles.regularTextStyle,
-                          ),
-                          Text(
-                            "${hourData.playerCount} players",
-                            style: AppTextStyles.regularTextStyle
-                                .copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ))
               ],
             ),
           );
@@ -448,98 +587,90 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           children: [
             Text("Discounts", style: AppTextStyles.sectionHeaderStyle),
             const SizedBox(height: 16),
-            Row(
+            Column(
               children: [
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 18.0, horizontal: 20.0),
-                    decoration: BoxDecoration(
-                      color: mainBlue.withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: mainBlue.withAlpha(50), width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(10),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.discount, color: mainBlue, size: 22),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Discount Amount',
-                              style: AppTextStyles.subtitleTextStyle
-                                  .copyWith(color: mainBlue),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '${formatter.format(discountData.totalDiscountAmount)} SYP',
-                          style: AppTextStyles.highlightedTextStyle.copyWith(
-                              fontSize: 28, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 18.0, horizontal: 20.0),
+                  decoration: BoxDecoration(
+                    color: mainBlue.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: mainBlue.withAlpha(50), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.discount, color: mainBlue, size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Discount Amount',
+                            style: AppTextStyles.subtitleTextStyle
+                                .copyWith(color: mainBlue),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${formatter.format(discountData.totalDiscountAmount)} SYP',
+                        style: AppTextStyles.highlightedTextStyle.copyWith(
+                            fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(
-                  width: 8,
+                  height: 8,
                 ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 18.0, horizontal: 20.0),
-                    decoration: BoxDecoration(
-                      color: mainBlue.withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: mainBlue.withAlpha(50), width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(10),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.numbers_outlined,
-                                color: mainBlue, size: 22),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Number of Discounts',
-                              style: AppTextStyles.subtitleTextStyle
-                                  .copyWith(color: mainBlue),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          formatter.format(discountData.totalNumberofDiscounts),
-                          style: AppTextStyles.highlightedTextStyle.copyWith(
-                              fontSize: 28, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 18.0, horizontal: 20.0),
+                  decoration: BoxDecoration(
+                    color: mainBlue.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: mainBlue.withAlpha(50), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.numbers_outlined,
+                              color: mainBlue, size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Number of Discounts',
+                            style: AppTextStyles.subtitleTextStyle
+                                .copyWith(color: mainBlue),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        formatter.format(discountData.totalNumberofDiscounts),
+                        style: AppTextStyles.highlightedTextStyle.copyWith(
+                            fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1053,10 +1184,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             LineChartBarData(
                                 spots: [
                                   for (int i = 0; i < chartData.length; i++)
-                                    FlSpot(
-                                        chartData
-                                            .indexOf(chartData[i])
-                                            .toDouble(),
+                                    FlSpot(i.toDouble(),
                                         chartData[i].playerCount.toDouble())
                                 ],
                                 isCurved: true,
@@ -1071,10 +1199,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             LineChartBarData(
                               spots: [
                                 for (int i = 0; i < chartData.length; i++)
-                                  FlSpot(
-                                      chartData
-                                          .indexOf(chartData[i])
-                                          .toDouble(),
+                                  FlSpot(i.toDouble(),
                                       chartData[i].productSaleCount.toDouble())
                               ],
                               isCurved: true,
@@ -1095,11 +1220,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                                 sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 100,
-                              minIncluded: true,
-                              maxIncluded: true,
+                              interval: 1,
                               getTitlesWidget: (value, meta) {
                                 if (value.toInt() < 0 ||
-                                    value.toInt() > chartData.length) {
+                                    value.toInt() >= chartData.length) {
                                   return Text('');
                                 }
                                 final time = chartData[value.toInt()].time;

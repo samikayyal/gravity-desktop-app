@@ -548,6 +548,7 @@ final lineChartDataProvider = FutureProvider.autoDispose
       ''',
       datesFormatted,
     );
+    log(playerQuery.toString());
 
     // Get product sales data
     final productQuery = await db.rawQuery(
@@ -589,7 +590,7 @@ final lineChartDataProvider = FutureProvider.autoDispose
         timePoint = DateTime.parse('$timeBucket:00:00');
       } else if (bucketSize == LineChartBucketSize.daily) {
         timePoint = DateTime.parse(timeBucket);
-      } else {
+      } else if (bucketSize == LineChartBucketSize.weekly) {
         // Weekly format is "YYYY-WW", convert to first day of that week
         final parts = timeBucket.split('-');
         final year = int.parse(parts[0]);
@@ -598,6 +599,12 @@ final lineChartDataProvider = FutureProvider.autoDispose
         final firstDayOfYear = DateTime(year, 1, 1);
         final daysToAdd = (week - 1) * 7 - firstDayOfYear.weekday + 1;
         timePoint = firstDayOfYear.add(Duration(days: daysToAdd));
+      } else {
+        // Monthly format is "YYYY-MM", convert to first day of that month
+        final parts = timeBucket.split('-');
+        final year = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        timePoint = DateTime(year, month, 1);
       }
 
       chartData.add(GravityLineChartData(
@@ -734,5 +741,5 @@ class StatsNotifier {
       'totalRevenue': totalRevenue,
       'totalQuantity': totalQuantity,
     };
-  }  
+  }
 }
