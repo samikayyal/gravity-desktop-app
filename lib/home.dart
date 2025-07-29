@@ -1,6 +1,7 @@
 // ignore: unused_import
 import 'dart:developer';
 // ignore: unused_import
+import 'package:gravity_desktop_app/custom_widgets/debts_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/notes.dart';
 
 import 'package:flutter/material.dart';
@@ -329,7 +330,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
-                            child: Notes(),
+                            // child: Notes(),
+                            child: DebtsCard(),
                           ),
                         ),
                       ),

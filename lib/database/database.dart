@@ -213,6 +213,22 @@ class DatabaseHelper {
         last_modified TEXT NOT NULL
       )
       ''');
+
+    // Debt
+    await db.execute(
+      '''
+      CREATE TABLE IF NOT EXISTS debts(
+        debt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        player_id TEXT NOT NULL,
+        session_id INTEGER NOT NULL,
+        amount INTEGER NOT NULL,
+        reason TEXT,
+        created_at TEXT NOT NULL,
+        last_modified TEXT NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL
+      )
+      '''
+    );
   }
 
   // get the current players
