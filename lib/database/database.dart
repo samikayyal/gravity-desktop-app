@@ -553,6 +553,10 @@ class DatabaseHelper {
           throw Exception(
               'Subscription is not active, its status is ${sub['status']}');
         }
+        if (DateTime.parse(sub['expiry_date'] as String)
+            .isBefore(DateTime.now().toUtc())) {
+          throw Exception('Subscription has expired');
+        }
         if ((sub['remaining_minutes']! as int) < timeReservedMinutes) {
           throw Exception('Not enough remaining minutes in subscription');
         }
