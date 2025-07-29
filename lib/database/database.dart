@@ -29,6 +29,15 @@ class DatabaseHelper {
     return _database!;
   }
 
+  @visibleForTesting
+  Future<void> initForTest(Database db) async {
+    _database = db;
+    // Create the database schema on the in-memory database
+    await _createDB(db, 1);
+    // Note: We intentionally DO NOT call insertExampleRecords
+    // to keep tests clean and predictable.
+  }
+
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = p.join(dbPath, filePath);
