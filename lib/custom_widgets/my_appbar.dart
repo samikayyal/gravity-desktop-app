@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/main.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
-import 'package:gravity_desktop_app/providers/time_provider.dart';
+import 'package:gravity_desktop_app/providers/time_of_day_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:intl/intl.dart';
 
