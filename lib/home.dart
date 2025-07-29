@@ -1,6 +1,6 @@
-// ignore: unused_import
+// ignore_for_file: unused_import
+
 import 'dart:developer';
-// ignore: unused_import
 import 'package:gravity_desktop_app/custom_widgets/debts_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/notes.dart';
 
