@@ -81,7 +81,15 @@ class DebtNotifier extends StateNotifier<AsyncValue<List<Debt>>> {
     state = const AsyncValue.loading();
     try {
       final db = await dbHelper.database;
-      final debt = state.value?.firstWhere((d) => d.debtId == id);
+      final query = await db.rawQuery(
+        '''
+        SELECT d.*, p.name AS player_name
+        FROM debts d
+        JOIN players p ON d.player_id = p.id
+        WHERE debt_id = ?''',
+        [id],
+      );
+      final debt = query.isNotEmpty ? Debt.fromMap(query.first) : null;
       if (debt == null) {
         throw Exception('Debt not found');
       }

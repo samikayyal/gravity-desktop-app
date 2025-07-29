@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/debt_payment_dialog.dart';
+import 'package:gravity_desktop_app/custom_widgets/dialogs/my_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
@@ -210,14 +212,16 @@ class _DebtsCardState extends ConsumerState<DebtsCard> {
               const SizedBox(width: 8),
               IconButton(
                 onPressed: () {
-                  // TODO: Handle debt resolution/payment
+                  showDialog(
+                      context: context,
+                      builder: (context) => DebtPaymentDialog(debt));
                 },
                 icon: Icon(
                   Icons.payment,
                   color: Colors.red.shade600,
                   size: 20,
                 ),
-                tooltip: 'Mark as paid',
+                tooltip: 'Make Payment',
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.red.withAlpha(20),
                   minimumSize: const Size(32, 32),
