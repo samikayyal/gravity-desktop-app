@@ -267,7 +267,7 @@ void main() {
         });
 
         // check in a player with products
-        final productsBought = {1: 2, 2: 3};
+        final productsBought = {3: 2, 4: 3};
         await notifier.checkInPlayer(
           name: 'Test Player ',
           age: 6,
@@ -292,8 +292,8 @@ void main() {
         expect(productA['session_id'] as int, sessionId);
         expect(productB['session_id'] as int, sessionId);
 
-        expect(productA['product_id'] as int, 1);
-        expect(productB['product_id'] as int, 2);
+        expect(productA['product_id'] as int, 3);
+        expect(productB['product_id'] as int, 4);
 
         expect(productA['quantity'] as int, 2);
         expect(productB['quantity'] as int, 3);
