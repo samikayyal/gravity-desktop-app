@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'utils/fee_calculator_test.dart' as fee_calculator_tests;
 import 'utils/general_test.dart' as general_tests;
 import 'providers/check_in_player_test.dart' as check_in_player_tests;
+import 'providers/check_out_player_test.dart' as check_out_player_tests;
 
 void main() {
   group('Gravity Desktop App - Complete Test Suite', () {
@@ -14,6 +15,7 @@ void main() {
 
     group('Database Related Tests', () {
       group('Check-In Tests', check_in_player_tests.main);
+      group('Check-Out Tests', check_out_player_tests.main);
     });
   });
 }
