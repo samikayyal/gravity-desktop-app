@@ -4,7 +4,6 @@ class Debt {
   final String playerName;
   final int sessionId;
   final int amount;
-  final String reason;
   final DateTime createdAt;
 
   Debt({
@@ -13,7 +12,6 @@ class Debt {
     required this.playerName,
     required this.sessionId,
     required this.amount,
-    required this.reason,
     required this.createdAt,
   });
 
@@ -23,7 +21,6 @@ class Debt {
         playerName = map['player_name'] as String,
         sessionId = map['session_id'] as int,
         amount = map['amount'] as int,
-        reason = map['reason'] as String,
         createdAt = DateTime.parse(map['created_at'] as String);
 
   Map<String, dynamic> toMap() {
@@ -32,7 +29,6 @@ class Debt {
       'player_id': playerId,
       'session_id': sessionId,
       'amount': amount,
-      'reason': reason,
       'created_at': createdAt.toUtc().toIso8601String(),
     };
   }

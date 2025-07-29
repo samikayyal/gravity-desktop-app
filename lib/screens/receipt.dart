@@ -8,10 +8,12 @@ import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
+import 'package:gravity_desktop_app/custom_widgets/my_text_field.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/subscription.dart';
 import 'package:gravity_desktop_app/providers/combined_providers.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
+import 'package:gravity_desktop_app/providers/debt_provider.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:gravity_desktop_app/utils/provider_utils.dart';
@@ -47,10 +49,11 @@ class _ReceiptState extends ConsumerState<Receipt> {
   final formatter = NumberFormat.decimalPattern();
   late final String nowIso;
 
-  // player! variables
+  // player variables
   List<Player> players = [];
   late final List<Duration> timeSpentList;
   bool get isGroupCheckout => players.length > 1;
+  int _debtAmount = 0;
 
   // receipt variables
   int _change = 0;
@@ -548,77 +551,79 @@ class _ReceiptState extends ConsumerState<Receipt> {
   }
 
   Widget _buildDiscountOptions(int amountLeft) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Apply Discount",
-              style: AppTextStyles.regularTextStyle
-                  .copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.discount, size: 18),
-                  label: const Text("Discount"),
-                  onPressed: () {
-                    setState(() {
-                      if (_discountType == DiscountType.input) {
-                        _discountType = DiscountType.none;
-                        _discountAmount = 0;
-                      } else {
-                        _discountType = DiscountType.input;
-                        _discountAmount = 0;
-                      }
-                    });
-                  },
-                  style: _discountType == DiscountType.input
-                      ? AppButtonStyles.primaryButton
-                      : AppButtonStyles.secondaryButton,
+    return _debtAmount > 0
+        ? const SizedBox.shrink()
+        : Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Apply Discount",
+                    style: AppTextStyles.regularTextStyle
+                        .copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.discount, size: 18),
+                        label: const Text("Discount"),
+                        onPressed: () {
+                          setState(() {
+                            if (_discountType == DiscountType.input) {
+                              _discountType = DiscountType.none;
+                              _discountAmount = 0;
+                            } else {
+                              _discountType = DiscountType.input;
+                              _discountAmount = 0;
+                            }
+                          });
+                        },
+                        style: _discountType == DiscountType.input
+                            ? AppButtonStyles.primaryButton
+                            : AppButtonStyles.secondaryButton,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.card_giftcard, size: 18),
+                        label: const Text("Gift"),
+                        onPressed: () {
+                          setState(() {
+                            if (_discountType == DiscountType.gift) {
+                              _discountType = DiscountType.none;
+                              _discountAmount = 0;
+                            } else {
+                              _discountType = DiscountType.gift;
+                              _discountAmount = amountLeft;
+                              _amountReceivedController.clear();
+                            }
+                          });
+                        },
+                        style: _discountType == DiscountType.gift
+                            ? AppButtonStyles.primaryButton
+                            : AppButtonStyles.secondaryButton,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.card_giftcard, size: 18),
-                  label: const Text("Gift"),
-                  onPressed: () {
-                    setState(() {
-                      if (_discountType == DiscountType.gift) {
-                        _discountType = DiscountType.none;
-                        _discountAmount = 0;
-                      } else {
-                        _discountType = DiscountType.gift;
-                        _discountAmount = amountLeft;
-                        _amountReceivedController.clear();
-                      }
-                    });
-                  },
-                  style: _discountType == DiscountType.gift
-                      ? AppButtonStyles.primaryButton
-                      : AppButtonStyles.secondaryButton,
-                ),
-              ),
-            ],
-          ),
-          if (_discountType == DiscountType.input) ...[
-            const SizedBox(height: 16),
-            _buildDiscountAmountField(),
-          ],
-          if (_discountType != DiscountType.none) ...[
-            const SizedBox(height: 12),
-            _buildDiscountReasonField(),
-          ],
-        ],
-      ),
-    );
+                if (_discountType == DiscountType.input) ...[
+                  const SizedBox(height: 16),
+                  _buildDiscountAmountField(),
+                ],
+                if (_discountType != DiscountType.none) ...[
+                  const SizedBox(height: 12),
+                  _buildDiscountReasonField(),
+                ],
+              ],
+            ),
+          );
   }
 
   Widget _buildDiscountAmountField() {
@@ -742,28 +747,19 @@ class _ReceiptState extends ConsumerState<Receipt> {
   }
 
   Widget _buildAmountReceivedField(int amountLeft) {
-    return TextField(
+    return MyTextField(
       controller: _amountReceivedController,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      style: AppTextStyles.regularTextStyle,
-      enabled: _discountType != DiscountType.gift,
-      decoration: InputDecoration(
-        labelText: "Amount Received (SYP)",
-        filled: true,
-        fillColor: Colors.white,
-        prefixIcon: const Icon(Icons.attach_money),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      ),
+      labelText: "Amount Received (SYP)",
+      hintText: "Enter Amount Received",
+      isNumberInputOnly: true,
+      isDisabled: (_debtAmount > 0 && !isGroupCheckout) ||
+          _discountType == DiscountType.gift,
+      prefixIcon: const Icon(Icons.attach_money),
       onChanged: (value) {
         setState(() {
           int amountReceived = int.tryParse(value) ?? 0;
           _change = amountReceived - (amountLeft - _discountAmount);
+
           _isCheckoutEnabled =
               (amountReceived >= (amountLeft - _discountAmount) &&
                       (_change <= 0 || _tipType != null)) ||
@@ -871,22 +867,29 @@ class _ReceiptState extends ConsumerState<Receipt> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Expanded(
+          flex: 3,
           child: ElevatedButton.icon(
             icon: const Icon(Icons.cancel_outlined),
-            label: const Text("Cancel"),
+            label:
+                Text("Cancel", style: AppTextStyles.secondaryButtonTextStyle),
             onPressed: () => Navigator.of(context).pop(),
             style: AppButtonStyles.secondaryButton,
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
+          flex: 4,
           child: ElevatedButton.icon(
             icon: const Icon(Icons.check_circle_outline),
-            label: const Text("Complete Checkout"),
-            onPressed: _isCheckoutEnabled
-                ? () => _performCheckout(receiptData, totals)
-                : null,
-            style: _isCheckoutEnabled
+            label: Text(
+              "Complete Checkout",
+              style: AppTextStyles.primaryButtonTextStyle,
+            ),
+            onPressed:
+                _isCheckoutEnabled || (_debtAmount > 0 && !isGroupCheckout)
+                    ? () => _performCheckout(receiptData, totals)
+                    : null,
+            style: _isCheckoutEnabled || (_debtAmount > 0 && !isGroupCheckout)
                 ? AppButtonStyles.primaryButton
                 : ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(Colors.grey[300]),
@@ -910,7 +913,8 @@ class _ReceiptState extends ConsumerState<Receipt> {
 
     final int playersAmountPaid =
         players.fold(0, (sum, player) => sum + player.amountPaid);
-    if (amountReceived + playersAmountPaid < totals.totalFinalFee) {
+    if (amountReceived + playersAmountPaid < totals.totalFinalFee &&
+        _debtAmount == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -961,16 +965,16 @@ class _ReceiptState extends ConsumerState<Receipt> {
       final int playerDiscount = i == players.length - 1 ? _discountAmount : 0;
 
       await ref.read(currentPlayersProvider.notifier).checkOutPlayer(
-            sessionID: player.sessionID,
-            finalFee: playerFee,
-            amountPaid: playerAmountReceived,
-            tips: playerTip,
-            discount: playerDiscount,
-            discountReason: _discountReasonController.text.isNotEmpty
-                ? _discountReasonController.text
-                : null,
-            checkoutTime: nowIso,
-          );
+          sessionID: player.sessionID,
+          finalFee: playerFee,
+          amountPaid: playerAmountReceived,
+          tips: playerTip,
+          discount: playerDiscount,
+          discountReason: _discountReasonController.text.isNotEmpty
+              ? _discountReasonController.text
+              : null,
+          checkoutTime: nowIso,
+          debtAmount: 0);
     }
   }
 
@@ -978,16 +982,20 @@ class _ReceiptState extends ConsumerState<Receipt> {
       _ReceiptTotals totals, int amountReceived) async {
     final player = players.first;
     await ref.read(currentPlayersProvider.notifier).checkOutPlayer(
-          sessionID: player.sessionID,
-          finalFee: totals.totalFinalFee,
-          amountPaid: amountReceived + player.amountPaid,
-          tips: _tip,
-          discount: _discountAmount,
-          discountReason: _discountReasonController.text.isNotEmpty
-              ? _discountReasonController.text
-              : null,
-          checkoutTime: nowIso,
-        );
+        sessionID: player.sessionID,
+        finalFee: totals.totalFinalFee,
+        amountPaid: amountReceived + player.amountPaid,
+        tips: _tip,
+        discount: _discountAmount,
+        discountReason: _discountReasonController.text.isNotEmpty
+            ? _discountReasonController.text
+            : null,
+        checkoutTime: nowIso,
+        debtAmount: _debtAmount);
+
+    if (_debtAmount > 0) {
+      ref.read(debtProvider.notifier).refresh();
+    }
   }
 
   double _subTimeUsed(Duration timeSpent) {
@@ -1086,16 +1094,64 @@ class _ReceiptState extends ConsumerState<Receipt> {
           color: const Color(0xFFFFEBEE),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
           children: [
-            Text("Still Owed:", style: AppTextStyles.regularTextStyle),
-            Text(
-              "${-_change} SYP",
-              style: AppTextStyles.highlightedTextStyle.copyWith(
-                color: const Color(0xFFD32F2F),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_debtAmount > 0 ? "Player Debt:" : "Still Owed:",
+                    style: AppTextStyles.regularTextStyle),
+                Text(
+                  "${-_change} SYP",
+                  style: AppTextStyles.highlightedTextStyle.copyWith(
+                    color: const Color(0xFFD32F2F),
+                  ),
+                ),
+              ],
             ),
+            if (_debtAmount == 0) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text("Confirm Debt"),
+                          content: const Text(
+                              "Are you sure you want to record this as a debt?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text("Confirm"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirm == true) {
+                      // "if (confirm)" doesnt work idk why
+                      setState(() {
+                        _debtAmount = -_change;
+                      });
+                    }
+                  },
+                  style: AppButtonStyles.dangerButton,
+                  child: Text(
+                    "Debt",
+                    style: AppTextStyles.dangerButtonTextStyle,
+                  ),
+                ),
+              )
+            ]
           ],
         ),
       );

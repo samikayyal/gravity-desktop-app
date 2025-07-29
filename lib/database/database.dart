@@ -215,20 +215,17 @@ class DatabaseHelper {
       ''');
 
     // Debt
-    await db.execute(
-      '''
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS debts(
         debt_id INTEGER PRIMARY KEY AUTOINCREMENT,
         player_id TEXT NOT NULL,
         session_id INTEGER NOT NULL,
         amount INTEGER NOT NULL,
-        reason TEXT,
         created_at TEXT NOT NULL,
         last_modified TEXT NOT NULL,
         FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE SET NULL
       )
-      '''
-    );
+      ''');
   }
 
   // get the current players
@@ -288,6 +285,7 @@ class DatabaseHelper {
       required int amountPaid,
       required int tips,
       required String checkoutTime,
+      required int debtAmount,
       int? discount,
       String? discountReason}) async {
     final db = await database;
@@ -318,6 +316,20 @@ class DatabaseHelper {
       await txn.update('player_sessions',
           {'check_out_time': nowIso, 'last_modified': nowIso},
           where: 'session_id = ?', whereArgs: [sessionID]);
+
+      if (debtAmount > 0) {
+        final playerId = await txn.query('player_sessions',
+            columns: ['player_id'],
+            where: 'session_id = ?',
+            whereArgs: [sessionID]);
+        await txn.insert('debts', {
+          'player_id': playerId.first['player_id'],
+          'session_id': sessionID,
+          'amount': debtAmount,
+          'created_at': nowIso,
+          'last_modified': nowIso,
+        });
+      }
 
       // create a final sales record
       final saleId = await txn.insert(

@@ -65,4 +65,11 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     color: const Color(0xFF757575),
   );
+
+  // Style for danger button text
+  static TextStyle dangerButtonTextStyle = GoogleFonts.notoSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+  );
 }

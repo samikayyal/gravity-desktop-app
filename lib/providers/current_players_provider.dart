@@ -49,6 +49,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
     required int amountPaid,
     required int tips,
     required String checkoutTime,
+    required int debtAmount,
     int? discount,
     String? discountReason,
   }) async {
@@ -60,6 +61,7 @@ class CurrentPlayersNotifier extends StateNotifier<AsyncValue<List<Player>>> {
       discount: discount,
       discountReason: discountReason,
       checkoutTime: checkoutTime,
+      debtAmount: debtAmount,
     );
     await refresh();
   }

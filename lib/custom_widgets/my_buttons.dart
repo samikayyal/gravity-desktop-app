@@ -30,15 +30,27 @@ class AppButtonStyles {
 
   // Danger button style (for destructive actions)
   static ButtonStyle dangerButton = ElevatedButton.styleFrom(
-    backgroundColor: Colors.white, // Clean white background
-    foregroundColor: const Color(0xFFE53935), // Red text
+    backgroundColor: const Color(0xFFE53935), // Bold red background
+    foregroundColor: Colors.white, // White text for contrast
     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
     minimumSize: const Size(150, 48), // Bigger target for desktop
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8.0),
-      side: const BorderSide(color: Color(0xFFE53935), width: 1.5),
+      side: const BorderSide(color: Color(0xFFD32F2F), width: 2.0),
     ),
-    elevation: 0,
+    elevation: 2,
+  ).copyWith(
+    overlayColor: WidgetStateProperty.resolveWith<Color?>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.hovered)) {
+          return const Color(0xFFD32F2F); // Darker red on hover
+        }
+        if (states.contains(WidgetState.pressed)) {
+          return const Color(0xFFB71C1C); // Even darker red on press
+        }
+        return null;
+      },
+    ),
   );
 
   // Icon button style with a refined circular shape and subtle hover/splash effect
