@@ -22,7 +22,7 @@ class DebtNotifier extends StateNotifier<AsyncValue<List<Debt>>> {
       final db = await dbHelper.database;
       final query = await db.rawQuery('''
         SELECT d.debt_id, d.player_id, p.name AS player_name,
-               d.session_id, d.amount, d.reason, d.created_at
+               d.session_id, d.amount, d.created_at
         FROM debts d
         JOIN players p ON d.player_id = p.id
         WHERE d.amount > 0

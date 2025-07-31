@@ -199,7 +199,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         }
         // 1. Create a map to store assigned colors for each group number.
         final Map<int, Color> groupColorMap = {};
-        int colorIndex = math.Random().nextInt(groupColors.length - 1);
+        int colorIndex = 0;
 
         // Find all unique, non-null group numbers and assign a color.
         for (final player in currentPlayers) {
@@ -207,7 +207,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
               !groupColorMap.containsKey(player.groupNumber)) {
             groupColorMap[player.groupNumber!] =
                 groupColors[colorIndex % groupColors.length];
-            colorIndex++;
+            colorIndex += 4;
           }
         }
 

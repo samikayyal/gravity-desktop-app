@@ -129,7 +129,7 @@ class _DebtsCardState extends ConsumerState<DebtsCard> {
 
   Widget _buildEmptyState() {
     return SizedBox(
-      height: 200,
+      height: 150,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -141,7 +141,7 @@ class _DebtsCardState extends ConsumerState<DebtsCard> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No outstanding debts',
+              'No debts',
               style: AppTextStyles.subtitleTextStyle.copyWith(
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w500,
