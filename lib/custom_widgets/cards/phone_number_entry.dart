@@ -29,13 +29,6 @@ class PhoneNumberEntryCard extends ConsumerStatefulWidget {
 }
 
 class _PhoneNumberEntryCardState extends ConsumerState<PhoneNumberEntryCard> {
-  void _onReorder(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-    widget.onReorder(oldIndex, newIndex);
-  }
-
   @override
   Widget build(BuildContext context) {
     return MyCard(
@@ -76,9 +69,7 @@ class _PhoneNumberEntryCardState extends ConsumerState<PhoneNumberEntryCard> {
                         labelText: "Phone Number #$index",
                         hintText: "Enter a phone number (starting with 09)",
                         isNumberInputOnly: true,
-                        isDisabled: widget.isDisabled ||
-                            (widget.controllers[index].text.isNotEmpty &&
-                                !widget.disableListModification),
+                        isDisabled: widget.isDisabled,
                         validator: (value) {
                           if (value != null && value.isNotEmpty) {
                             final phone = value.trim();
@@ -150,5 +141,12 @@ class _PhoneNumberEntryCardState extends ConsumerState<PhoneNumberEntryCard> {
             )
       ],
     ));
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    widget.onReorder(oldIndex, newIndex);
   }
 }

@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/phone_number_entry.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/time_reservation_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_appbar.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
-import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_materialbanner.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
-import 'package:gravity_desktop_app/custom_widgets/cards/phone_number_entry.dart';
 import 'package:gravity_desktop_app/database/database.dart';
 import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
@@ -26,16 +26,16 @@ import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:gravity_desktop_app/utils/provider_utils.dart';
 import 'package:intl/intl.dart';
 
-enum TimeIncrement { hour, halfHour }
-
-enum ScreenState { single, group }
-
 class AddPlayerScreen extends ConsumerStatefulWidget {
   const AddPlayerScreen({super.key});
 
   @override
   ConsumerState<AddPlayerScreen> createState() => _AddPlayerScreenState();
 }
+
+enum ScreenState { single, group }
+
+enum TimeIncrement { hour, halfHour }
 
 class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
   final formatter = NumberFormat.decimalPattern();
@@ -58,105 +58,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
 
   bool _detailsReadOnly = false;
   bool _inEditMode = false;
-
-  Future<void> _fillPlayerDetails(Player selection) async {
-    final playerPhones = await ref
-        .read(pastPlayersProvider.notifier)
-        .getPhoneNumbers(selection.playerID);
-
-    setState(() {
-      _detailsReadOnly = true;
-
-      _selectedPlayer = selection;
-      nameController.text = selection.name;
-      ageController.text = selection.age.toString();
-      phoneControllers.clear();
-
-      // player phones
-      if (playerPhones.isEmpty) {
-        phoneControllers.add(TextEditingController());
-      } else {
-        for (var phone in playerPhones) {
-          phoneControllers.add(TextEditingController(text: phone.number));
-        }
-      }
-    });
-  }
-
-  void _incrementTime(TimeIncrement increment, PricesProductsSubs data) {
-    final Subscription? sub = _selectedPlayer?.subscriptionId != null
-        ? data.allSubs.firstWhere(
-            (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
-            orElse: () => throw Exception('Subscription not found'),
-          )
-        : null;
-
-    setState(() {
-      if (!isOpenTime) {
-        if (increment == TimeIncrement.hour) {
-          if (sub != null) {
-            if (sub.remainingMinutes <
-                ((hoursReserved + 1) * 60 + minutesReserved + 60)) {
-              MyMaterialBanner.showBanner(context,
-                  message: 'Not enough remaining time in subscription',
-                  type: MessageType.error,
-                  durationInSeconds: 2);
-              return;
-            }
-          }
-          if (hoursReserved < 12) {
-            hoursReserved++;
-          }
-        } else if (increment == TimeIncrement.halfHour) {
-          final oldMinutes = minutesReserved;
-          if (minutesReserved == 0) {
-            minutesReserved = 30;
-          } else if (minutesReserved == 30 && hoursReserved < 12) {
-            hoursReserved++;
-            minutesReserved = 0;
-          }
-
-          if (sub != null) {
-            if (sub.remainingMinutes <
-                (hoursReserved * 60 + minutesReserved + 60)) {
-              MyMaterialBanner.showBanner(context,
-                  message: 'Not enough remaining time in subscription',
-                  type: MessageType.error,
-                  durationInSeconds: 2);
-              // Reset to old value if not enough time
-              minutesReserved = oldMinutes;
-              return;
-            }
-          }
-        }
-      }
-    });
-
-    _updateTotalFee(data.prices, data.allProducts);
-  }
-
-  void _updateTotalFee(Map<TimeSlice, int> prices, List<Product> allProducts) {
-    setState(() {
-      initialFee = _selectedPlayer?.subscriptionId == null
-          ? calculatePreCheckInFee(
-              hoursReserved: hoursReserved,
-              minutesReserved: minutesReserved,
-              timeExtendedMinutes: 0,
-              prices: prices,
-              isOpenTime: isOpenTime,
-            )
-          : 0;
-
-      // add products cart total to initial fee
-      for (var entry in _productsCart.entries) {
-        final Product product = allProducts.firstWhere(
-          (p) => p.id == entry.key,
-        );
-
-        initialFee += entry.value * product.price;
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -236,45 +137,6 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
             body: const Center(child: CircularProgressIndicator()),
           ),
         );
-  }
-
-  Future<void> _handleCheckIn(Map<TimeSlice, int> prices) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    final name = nameController.text;
-    final age = int.parse(ageController.text);
-    final phoneNumbers = phoneControllers
-        .map((controller) => controller.text)
-        .where((phone) => phone.isNotEmpty)
-        .toList();
-
-    final int totalMinutesReserved = hoursReserved * 60 + minutesReserved;
-
-    await ref.read(currentPlayersProvider.notifier).checkInPlayer(
-          existingPlayerID: _selectedPlayer?.playerID,
-          name: name,
-          age: age,
-          timeReservedMinutes: totalMinutesReserved,
-          isOpenTime: isOpenTime,
-          totalFee: initialFee,
-          amountPaid: _selectedPlayer?.subscriptionId == null
-              ? int.parse(amountPaidController.text)
-              : 0,
-          phoneNumbers: phoneNumbers,
-          subscriptionId: _selectedPlayer?.subscriptionId,
-          productsBought: _productsCart.isNotEmpty ? _productsCart : const {},
-        );
-    refreshAllProviders(ref);
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Player added successfully!'),
-        ),
-      );
-    }
   }
 
   @override
@@ -371,6 +233,162 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  MyCard _buildPaymentCard(Map<TimeSlice, int> prices) {
+    return MyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Payment Summary',
+            style:
+                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
+          ),
+          const SizedBox(height: 32),
+
+          // Fee summary display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Total Fee',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _selectedPlayer?.subscriptionId != null
+                      ? initialFee == 0
+                          ? 'Subscription Active'
+                          : 'Subscription - ${formatter.format(initialFee)} SYP'
+                      : isOpenTime
+                          ? initialFee == 0
+                              ? 'Open Time'
+                              : 'Open Time - ${formatter.format(initialFee)} SYP'
+                          : '${formatter.format(initialFee)}  SYP',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                style: AppButtonStyles.primaryButton,
+                onPressed: () {
+                  setState(() {
+                    amountPaidController.text = '$initialFee';
+                  });
+                },
+                child: Text("Pay in Full",
+                    style: AppTextStyles.primaryButtonTextStyle),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Input for amount paid on check-in
+          FocusTraversalOrder(
+            order: NumericFocusOrder(phoneControllers.length + 7.0),
+            child: TextFormField(
+              controller: amountPaidController,
+              style: AppTextStyles.regularTextStyle,
+              enabled:
+                  _selectedPlayer?.subscriptionId == null || initialFee > 0,
+              decoration: InputDecoration(
+                  labelText:
+                      _selectedPlayer?.subscriptionId != null && initialFee == 0
+                          ? 'Subscription Active'
+                          : 'Amount Paid on Check-in',
+                  labelStyle: AppTextStyles.regularTextStyle,
+                  hintText: 'Enter amount paid',
+                  hintStyle: AppTextStyles.subtitleTextStyle,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  prefixText: 'SYP   ',
+                  prefixStyle: AppTextStyles.regularTextStyle
+                      .copyWith(color: Colors.black)),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter an amount';
+                }
+                final amount = int.tryParse(value);
+                if (amount == null || amount < 0) {
+                  return 'Please enter a valid amount';
+                }
+                if (_selectedPlayer?.subscriptionId != null) {
+                  return null; // No validation needed for subscription
+                }
+                if (amount > initialFee) {
+                  return 'Amount cannot be greater than fee';
+                }
+
+                return null;
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          // Submit Button
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: FocusTraversalOrder(
+              order: NumericFocusOrder(phoneControllers.length + 8.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed:
+                    // make sure time is not 0
+                    (minutesReserved == 0 &&
+                                hoursReserved == 0 &&
+                                !isOpenTime) ||
+                            _inEditMode
+                        ? null
+                        : () async => await _handleCheckIn(prices),
+                child: const Text("Add Player"),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -624,202 +642,52 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
     );
   }
 
-  Widget _buildTimeReservationCard(PricesProductsSubs data) {
-    final Subscription? sub = _selectedPlayer?.subscriptionId != null
-        ? data.allSubs.firstWhere(
-            (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
-            orElse: () => throw Exception('Subscription not found'),
-          )
-        : null;
-    return TimeReservationCard(
-      title: "Time Reservation",
-      time: Duration(hours: hoursReserved, minutes: minutesReserved),
-      isOpenTime: isOpenTime,
-      oneHourOnPressed: () {
-        setState(() {
-          _incrementTime(TimeIncrement.hour, data);
-        });
-      },
-      halfHourOnPressed: () {
-        setState(() {
-          _incrementTime(TimeIncrement.halfHour, data);
-        });
-      },
-      resetOnPressed: () {
-        setState(() {
-          hoursReserved = 0;
-          minutesReserved = 0;
-          isOpenTime = false;
-        });
-        _updateTotalFee(data.prices, data.allProducts);
-      },
-      isOpenTimeOnChanged: (value) {
-        setState(() {
-          isOpenTime = value ?? false;
-          if (isOpenTime) {
-            hoursReserved = 0;
-            minutesReserved = 0;
-          }
-          _updateTotalFee(data.prices, data.allProducts);
-        });
-      },
-      warningCondition: ((sub != null &&
-              sub.remainingMinutes < (hoursReserved * 60 + minutesReserved) &&
-              !isOpenTime) ||
-          sub != null && isOpenTime),
-      warningText: sub != null
-          ? 'Warning: This player has only ${sub.remainingMinutes ~/ 60} hours and ${sub.remainingMinutes % 60} minutes remaining in their subscription.'
-          : null,
-    );
-  }
-
-  MyCard _buildPaymentCard(Map<TimeSlice, int> prices) {
+  MyCard _buildProductsCard(
+      List<Product> allProducts, Map<TimeSlice, int> prices) {
     return MyCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Payment Summary',
-            style:
-                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
-          ),
-          const SizedBox(height: 32),
-
-          // Fee summary display
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.blue.shade100),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  'Total Fee',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+          Text("Products", style: AppTextStyles.sectionHeaderStyle),
+          allProducts.isEmpty
+              ? Center(
+                  heightFactor: 3,
+                  child: Text(
+                    'No products available for purchase.',
+                    style: AppTextStyles.subtitleTextStyle,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _selectedPlayer?.subscriptionId != null
-                      ? initialFee == 0
-                          ? 'Subscription Active'
-                          : 'Subscription - ${formatter.format(initialFee)} SYP'
-                      : isOpenTime
-                          ? initialFee == 0
-                              ? 'Open Time'
-                              : 'Open Time - ${formatter.format(initialFee)} SYP'
-                          : '${formatter.format(initialFee)}  SYP',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade900,
-                  ),
-                ),
-              ],
-            ),
-          ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: allProducts.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final product = allProducts[index];
+                    final quantityInCart = _productsCart[product.id] ?? 0;
+                    return ProductListItem(
+                      product: product,
+                      quantity: quantityInCart,
+                      onQuantityChanged: (newQuantity) {
+                        // Ensure the new quantity is within valid bounds
+                        if (newQuantity < 0 ||
+                            newQuantity > product.effectiveStock) {
+                          return;
+                        }
 
-          const SizedBox(height: 12),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton(
-                style: AppButtonStyles.primaryButton,
-                onPressed: () {
-                  setState(() {
-                    amountPaidController.text = '$initialFee';
-                  });
-                },
-                child: Text("Pay in Full",
-                    style: AppTextStyles.primaryButtonTextStyle),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Input for amount paid on check-in
-          FocusTraversalOrder(
-            order: NumericFocusOrder(phoneControllers.length + 7.0),
-            child: TextFormField(
-              controller: amountPaidController,
-              style: AppTextStyles.regularTextStyle,
-              enabled:
-                  _selectedPlayer?.subscriptionId == null || initialFee > 0,
-              decoration: InputDecoration(
-                  labelText:
-                      _selectedPlayer?.subscriptionId != null && initialFee == 0
-                          ? 'Subscription Active'
-                          : 'Amount Paid on Check-in',
-                  labelStyle: AppTextStyles.regularTextStyle,
-                  hintText: 'Enter amount paid',
-                  hintStyle: AppTextStyles.subtitleTextStyle,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                  prefixText: 'SYP   ',
-                  prefixStyle: AppTextStyles.regularTextStyle
-                      .copyWith(color: Colors.black)),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (value) {
-                if (_selectedPlayer?.subscriptionId != null) {
-                  return null; // No validation needed for subscription
-                }
-                if (value == null || value.isEmpty) {
-                  return 'Please enter an amount';
-                }
-                final amount = int.tryParse(value);
-                if (amount == null || amount < 0) {
-                  return 'Please enter a valid amount';
-                }
-                return null;
-              },
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-
-          // Submit Button
-          SizedBox(
-            width: double.infinity,
-            height: 60,
-            child: FocusTraversalOrder(
-              order: NumericFocusOrder(phoneControllers.length + 8.0),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed:
-                    // make sure time is not 0
-                    (minutesReserved == 0 &&
-                                hoursReserved == 0 &&
-                                !isOpenTime) ||
-                            _inEditMode
-                        ? null
-                        : () async => await _handleCheckIn(prices),
-                child: const Text("Add Player"),
-              ),
-            ),
-          ),
+                        setState(() {
+                          if (newQuantity > 0) {
+                            _productsCart[product.id] = newQuantity;
+                          } else {
+                            // Remove from cart if quantity becomes zero
+                            _productsCart.remove(product.id);
+                          }
+                          // Recalculate total fee
+                          _updateTotalFee(prices, allProducts);
+                        });
+                      },
+                    );
+                  },
+                )
         ],
       ),
     );
@@ -987,54 +855,190 @@ class _AddPlayerScreenState extends ConsumerState<AddPlayerScreen> {
             ));
   }
 
-  MyCard _buildProductsCard(
-      List<Product> allProducts, Map<TimeSlice, int> prices) {
-    return MyCard(
-      child: Column(
-        children: [
-          Text("Products", style: AppTextStyles.sectionHeaderStyle),
-          allProducts.isEmpty
-              ? Center(
-                  heightFactor: 3,
-                  child: Text(
-                    'No products available for purchase.',
-                    style: AppTextStyles.subtitleTextStyle,
-                  ),
-                )
-              : ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: allProducts.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final product = allProducts[index];
-                    final quantityInCart = _productsCart[product.id] ?? 0;
-                    return ProductListItem(
-                      product: product,
-                      quantity: quantityInCart,
-                      onQuantityChanged: (newQuantity) {
-                        // Ensure the new quantity is within valid bounds
-                        if (newQuantity < 0 ||
-                            newQuantity > product.effectiveStock) {
-                          return;
-                        }
-
-                        setState(() {
-                          if (newQuantity > 0) {
-                            _productsCart[product.id] = newQuantity;
-                          } else {
-                            // Remove from cart if quantity becomes zero
-                            _productsCart.remove(product.id);
-                          }
-                          // Recalculate total fee
-                          _updateTotalFee(prices, allProducts);
-                        });
-                      },
-                    );
-                  },
-                )
-        ],
-      ),
+  Widget _buildTimeReservationCard(PricesProductsSubs data) {
+    final Subscription? sub = _selectedPlayer?.subscriptionId != null
+        ? data.allSubs.firstWhere(
+            (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
+            orElse: () => throw Exception('Subscription not found'),
+          )
+        : null;
+    return TimeReservationCard(
+      title: "Time Reservation",
+      time: Duration(hours: hoursReserved, minutes: minutesReserved),
+      isOpenTime: isOpenTime,
+      oneHourOnPressed: () {
+        setState(() {
+          _incrementTime(TimeIncrement.hour, data);
+        });
+      },
+      halfHourOnPressed: () {
+        setState(() {
+          _incrementTime(TimeIncrement.halfHour, data);
+        });
+      },
+      resetOnPressed: () {
+        setState(() {
+          hoursReserved = 0;
+          minutesReserved = 0;
+          isOpenTime = false;
+        });
+        _updateTotalFee(data.prices, data.allProducts);
+      },
+      isOpenTimeOnChanged: (value) {
+        setState(() {
+          isOpenTime = value ?? false;
+          if (isOpenTime) {
+            hoursReserved = 0;
+            minutesReserved = 0;
+          }
+          _updateTotalFee(data.prices, data.allProducts);
+        });
+      },
+      warningCondition: ((sub != null &&
+              sub.remainingMinutes < (hoursReserved * 60 + minutesReserved) &&
+              !isOpenTime) ||
+          sub != null && isOpenTime),
+      warningText: sub != null
+          ? 'Warning: This player has only ${sub.remainingMinutes ~/ 60} hours and ${sub.remainingMinutes % 60} minutes remaining in their subscription.'
+          : null,
     );
+  }
+
+  Future<void> _fillPlayerDetails(Player selection) async {
+    final playerPhones = await ref
+        .read(pastPlayersProvider.notifier)
+        .getPhoneNumbers(selection.playerID);
+
+    setState(() {
+      _detailsReadOnly = true;
+
+      _selectedPlayer = selection;
+      nameController.text = selection.name;
+      ageController.text = selection.age.toString();
+      phoneControllers.clear();
+
+      // player phones
+      if (playerPhones.isEmpty) {
+        phoneControllers.add(TextEditingController());
+      } else {
+        for (var phone in playerPhones) {
+          phoneControllers.add(TextEditingController(text: phone.number));
+        }
+      }
+    });
+  }
+
+  Future<void> _handleCheckIn(Map<TimeSlice, int> prices) async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    final name = nameController.text;
+    final age = int.parse(ageController.text);
+    final phoneNumbers = phoneControllers
+        .map((controller) => controller.text)
+        .where((phone) => phone.isNotEmpty)
+        .toList();
+
+    final int totalMinutesReserved = hoursReserved * 60 + minutesReserved;
+
+    await ref.read(currentPlayersProvider.notifier).checkInPlayer(
+          existingPlayerID: _selectedPlayer?.playerID,
+          name: name,
+          age: age,
+          timeReservedMinutes: totalMinutesReserved,
+          isOpenTime: isOpenTime,
+          totalFee: initialFee,
+          amountPaid: _selectedPlayer?.subscriptionId == null
+              ? int.parse(amountPaidController.text)
+              : 0,
+          phoneNumbers: phoneNumbers,
+          subscriptionId: _selectedPlayer?.subscriptionId,
+          productsBought: _productsCart.isNotEmpty ? _productsCart : const {},
+        );
+    refreshAllProviders(ref);
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Player added successfully!'),
+        ),
+      );
+    }
+  }
+
+  void _incrementTime(TimeIncrement increment, PricesProductsSubs data) {
+    final Subscription? sub = _selectedPlayer?.subscriptionId != null
+        ? data.allSubs.firstWhere(
+            (s) => s.subscriptionId == _selectedPlayer!.subscriptionId,
+            orElse: () => throw Exception('Subscription not found'),
+          )
+        : null;
+
+    setState(() {
+      if (!isOpenTime) {
+        if (increment == TimeIncrement.hour) {
+          if (sub != null) {
+            if (sub.remainingMinutes <
+                ((hoursReserved + 1) * 60 + minutesReserved + 60)) {
+              MyMaterialBanner.showBanner(context,
+                  message: 'Not enough remaining time in subscription',
+                  type: MessageType.error,
+                  durationInSeconds: 2);
+              return;
+            }
+          }
+          if (hoursReserved < 12) {
+            hoursReserved++;
+          }
+        } else if (increment == TimeIncrement.halfHour) {
+          final oldMinutes = minutesReserved;
+          if (minutesReserved == 0) {
+            minutesReserved = 30;
+          } else if (minutesReserved == 30 && hoursReserved < 12) {
+            hoursReserved++;
+            minutesReserved = 0;
+          }
+
+          if (sub != null) {
+            if (sub.remainingMinutes <
+                (hoursReserved * 60 + minutesReserved + 60)) {
+              MyMaterialBanner.showBanner(context,
+                  message: 'Not enough remaining time in subscription',
+                  type: MessageType.error,
+                  durationInSeconds: 2);
+              // Reset to old value if not enough time
+              minutesReserved = oldMinutes;
+              return;
+            }
+          }
+        }
+      }
+    });
+
+    _updateTotalFee(data.prices, data.allProducts);
+  }
+
+  void _updateTotalFee(Map<TimeSlice, int> prices, List<Product> allProducts) {
+    setState(() {
+      initialFee = _selectedPlayer?.subscriptionId == null
+          ? calculatePreCheckInFee(
+              hoursReserved: hoursReserved,
+              minutesReserved: minutesReserved,
+              timeExtendedMinutes: 0,
+              prices: prices,
+              isOpenTime: isOpenTime,
+            )
+          : 0;
+
+      // add products cart total to initial fee
+      for (var entry in _productsCart.entries) {
+        final Product product = allProducts.firstWhere(
+          (p) => p.id == entry.key,
+        );
+
+        initialFee += entry.value * product.price;
+      }
+    });
   }
 }

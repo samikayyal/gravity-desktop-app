@@ -11,7 +11,7 @@ import 'package:gravity_desktop_app/models/player.dart';
 import 'package:gravity_desktop_app/models/product.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
-import 'package:gravity_desktop_app/screens/receipt.dart';
+import 'package:gravity_desktop_app/screens/receipt_old.dart';
 import 'package:intl/intl.dart';
 
 class ProductPurchaseDialog extends ConsumerStatefulWidget {

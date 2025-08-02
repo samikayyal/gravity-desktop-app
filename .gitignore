@@ -48,3 +48,4 @@ app.*.map.json
 notes.txt
 .github/
 lib/database/random_inserter.dart
+lib/screens/receipt_old.dart

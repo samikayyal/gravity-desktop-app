@@ -6,16 +6,23 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// A helper function to create a testable ProviderContainer.
 /// It sets up an in-memory database and overrides the databaseProvider.
-Future<(ProviderContainer, Database)> createTestContainer() async {
+Future<(ProviderContainer, Database)> createTestContainer(
+    {List<Override> overrides = const []}) async {
+  print("A");
   final db = await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
+  print("B");
   final dbHelper = DatabaseHelper.instance;
+  print("C");
   await dbHelper.initForTest(db);
+  print("D");
 
   final container = ProviderContainer(
-    overrides: [
-      databaseProvider.overrideWithValue(dbHelper),
-    ],
+    overrides: [databaseProvider.overrideWithValue(dbHelper), ...overrides],
   );
+  print("E");
+
+  // await Future.value();
+  print("F");
 
   addTearDown(() {
     db.close();

@@ -1,13 +1,12 @@
 // ignore_for_file: unused_import
 
 import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/database/database.dart';
+import 'package:gravity_desktop_app/home.dart';
 import 'package:gravity_desktop_app/providers/current_players_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
-import 'package:gravity_desktop_app/home.dart';
 import 'package:gravity_desktop_app/screens/stats_screen.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:gravity_desktop_app/utils/general.dart';
@@ -92,24 +91,6 @@ class _TestScreenState extends ConsumerState<TestScreen> {
   final minuteController = TextEditingController();
   int price = 0;
 
-  void _calculateFee(Map<TimeSlice, int> prices) {
-    final hoursReserved = int.tryParse(hoursReservedController.text) ?? 0;
-    final minutesReserved = int.tryParse(minutesReservedController.text) ?? 0;
-    final hours = int.tryParse(hourController.text) ?? 0;
-    final minutes = int.tryParse(minuteController.text) ?? 0;
-
-    // Calculate the fee based on the hours and minutes
-    setState(() {
-      price = calculateFinalFee(
-          timeReserved:
-              Duration(hours: hoursReserved, minutes: minutesReserved),
-          isOpenTime: false,
-          timeExtendedMinutes: 0,
-          timeSpent: Duration(hours: hours, minutes: minutes),
-          prices: prices);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,5 +167,23 @@ class _TestScreenState extends ConsumerState<TestScreen> {
                 ),
               );
             }));
+  }
+
+  void _calculateFee(Map<TimeSlice, int> prices) {
+    final hoursReserved = int.tryParse(hoursReservedController.text) ?? 0;
+    final minutesReserved = int.tryParse(minutesReservedController.text) ?? 0;
+    final hours = int.tryParse(hourController.text) ?? 0;
+    final minutes = int.tryParse(minuteController.text) ?? 0;
+
+    // Calculate the fee based on the hours and minutes
+    setState(() {
+      price = calculateFinalFee(
+          timeReserved:
+              Duration(hours: hoursReserved, minutes: minutesReserved),
+          isOpenTime: false,
+          timeExtendedMinutes: 0,
+          timeSpent: Duration(hours: hours, minutes: minutes),
+          prices: prices);
+    });
   }
 }
