@@ -819,6 +819,9 @@ class _AddGroupState extends ConsumerState<AddGroup> {
           // Players List - expand and scroll as needed
           ...List.generate(groupPlayers.length, (index) {
             return Column(
+              // the key exists so that when i remove a player, the selected
+              // player is removed instead of the last one
+              key: ValueKey(groupPlayers[index]),
               children: [
                 _buildPlayerForm(index),
                 if (index < groupPlayers.length - 1) const Divider(height: 24),

@@ -302,7 +302,7 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                 ),
               ],
             ),
-            if (_debtAmount == 0) ...[
+            if (_debtAmount == 0 && !isGroupCheckout) ...[
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
@@ -373,7 +373,13 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.discount, size: 18),
+                        icon: Icon(
+                          Icons.discount,
+                          size: 18,
+                          color: _discountType == DiscountType.input
+                              ? mainBlue
+                              : Colors.grey,
+                        ),
                         label: Text(
                           "Discount",
                           style: _discountType == DiscountType.input
@@ -398,7 +404,11 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.card_giftcard, size: 18),
+                        icon: Icon(Icons.card_giftcard,
+                            size: 18,
+                            color: _discountType == DiscountType.gift
+                                ? mainBlue
+                                : Colors.grey),
                         label: Text(
                           "Gift",
                           style: _discountType == DiscountType.gift
