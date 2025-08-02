@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/phone_number_entry.dart';
 import 'package:gravity_desktop_app/custom_widgets/cards/time_reservation_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/product_purchase_dialog.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_buttons.dart';
-import 'package:gravity_desktop_app/custom_widgets/cards/my_card.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text.dart';
 import 'package:gravity_desktop_app/custom_widgets/my_text_field.dart';
 import 'package:gravity_desktop_app/models/player.dart';
@@ -17,6 +17,14 @@ import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:gravity_desktop_app/utils/provider_utils.dart';
 import 'package:intl/intl.dart';
+
+class AddGroup extends ConsumerStatefulWidget {
+  final PricesProductsSubs data;
+  const AddGroup(this.data, {super.key});
+
+  @override
+  ConsumerState<AddGroup> createState() => _AddGroupState();
+}
 
 class GroupPlayer {
   final TextEditingController firstNameController;
@@ -46,6 +54,8 @@ class GroupPlayer {
     _data = data;
   }
 
+  int get age => int.tryParse(ageController.text) ?? -1;
+
   String get fullName {
     if (isSibling) {
       return '${firstNameController.text.trim()} ${lastNameController.text.trim()}'
@@ -55,7 +65,12 @@ class GroupPlayer {
     }
   }
 
-  int get age => int.tryParse(ageController.text) ?? -1;
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    fullNameController.dispose();
+    ageController.dispose();
+  }
 
   int getFee(int timeReservedMinutes, bool isOpenTime) {
     return calculateGroupPlayerFee(
@@ -66,21 +81,6 @@ class GroupPlayer {
         prices: _data.prices,
         allProducts: _data.allProducts);
   }
-
-  void dispose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
-    fullNameController.dispose();
-    ageController.dispose();
-  }
-}
-
-class AddGroup extends ConsumerStatefulWidget {
-  final PricesProductsSubs data;
-  const AddGroup(this.data, {super.key});
-
-  @override
-  ConsumerState<AddGroup> createState() => _AddGroupState();
 }
 
 class _AddGroupState extends ConsumerState<AddGroup> {
@@ -104,231 +104,6 @@ class _AddGroupState extends ConsumerState<AddGroup> {
 
   // misc
   final formatter = NumberFormat.decimalPattern();
-
-  @override
-  void initState() {
-    groupPlayers = [
-      GroupPlayer(
-          firstNameController: TextEditingController(),
-          lastNameController: TextEditingController(),
-          fullNameController: TextEditingController(),
-          ageController: TextEditingController(),
-          data: widget.data)
-    ];
-    super.initState();
-  }
-
-  void _incrementTime(TimeIncrement increment) {
-    if (timeReservedMinutes > 60 * 12) return;
-
-    setState(() {
-      if (!isOpenTime) {
-        if (increment == TimeIncrement.hour) {
-          timeReservedMinutes += 60;
-        } else if (increment == TimeIncrement.halfHour) {
-          timeReservedMinutes += 30;
-        }
-      }
-    });
-    _updateTotalFee();
-  }
-
-  void _updateTotalFee() {
-    int total = 0;
-    for (var player in groupPlayers) {
-      total += player.getFee(timeReservedMinutes, isOpenTime);
-    }
-
-    setState(() {
-      totalFee = total;
-    });
-  }
-
-  void _addPlayer() {
-    if (groupPlayers.length >= maxPlayersInGroup) return;
-
-    setState(() {
-      groupPlayers.add(GroupPlayer(
-          firstNameController: TextEditingController(),
-          lastNameController: TextEditingController(),
-          fullNameController: TextEditingController(),
-          ageController: TextEditingController(),
-          data: widget.data));
-    });
-    _updateTotalFee();
-  }
-
-  void _removePlayer(int index) {
-    if (groupPlayers.length <= 1 || index < 0 || index >= groupPlayers.length) {
-      return;
-    }
-
-    setState(() {
-      final removedPlayer = groupPlayers[index];
-
-      // If removing the main sibling, reassign main role
-      if (removedPlayer.isMainSibling) {
-        _reassignMainSibling(excludeIndex: index);
-      }
-
-      // Dispose controllers
-      removedPlayer.dispose();
-      groupPlayers.removeAt(index);
-
-      // If the selected player is removed, select the first one
-      if (selectedPlayerIndex == index) {
-        selectedPlayerIndex = 0;
-      } else if (selectedPlayerIndex >= groupPlayers.length) {
-        selectedPlayerIndex = groupPlayers.length - 1;
-      }
-    });
-    _updateTotalFee();
-  }
-
-  void _toggleSibling(int index) {
-    if (index < 0 || index >= groupPlayers.length) return;
-
-    setState(() {
-      final player = groupPlayers[index];
-
-      if (player.isSibling) {
-        // Unchecking sibling - preserve combined name in full name field
-        final combinedName =
-            '${player.firstNameController.text.trim()} ${player.lastNameController.text.trim()}'
-                .trim();
-        player.fullNameController.text = combinedName;
-        player.firstNameController.clear();
-        player.lastNameController.clear();
-        player.isSibling = false;
-
-        // If this was the main sibling, reassign main role
-        if (player.isMainSibling) {
-          player.isMainSibling = false;
-          _reassignMainSibling();
-        }
-      } else {
-        // Checking sibling
-        final fullName = player.fullNameController.text.trim();
-        final nameParts = fullName.split(' ');
-
-        if (nameParts.length >= 2) {
-          player.firstNameController.text = nameParts.first;
-          player.lastNameController.text = nameParts.sublist(1).join(' ');
-        } else if (nameParts.length == 1) {
-          player.firstNameController.text = nameParts.first;
-        }
-
-        player.fullNameController.clear();
-        player.isSibling = true;
-
-        // Set as main sibling if no main sibling exists
-        if (!_hasMainSibling()) {
-          player.isMainSibling = true;
-          sharedLastName = player.lastNameController.text;
-        } else {
-          // Use shared last name
-          player.lastNameController.text = sharedLastName;
-        }
-      }
-
-      _updateSharedLastName();
-    });
-  }
-
-  void _reassignMainSibling({int? excludeIndex}) {
-    // Find first sibling that's not the excluded index
-    for (int i = 0; i < groupPlayers.length; i++) {
-      if (excludeIndex != null && i == excludeIndex) continue;
-
-      if (groupPlayers[i].isSibling) {
-        groupPlayers[i].isMainSibling = true;
-        sharedLastName = groupPlayers[i].lastNameController.text;
-        _updateAllSiblingLastNames();
-        return;
-      }
-    }
-
-    // No siblings left
-    sharedLastName = '';
-  }
-
-  bool _hasMainSibling() {
-    return groupPlayers.any((player) => player.isMainSibling);
-  }
-
-  void _updateSharedLastName() {
-    final mainSibling = groupPlayers.firstWhere(
-      (player) => player.isMainSibling,
-      orElse: () => groupPlayers.first,
-    );
-
-    if (mainSibling.isMainSibling) {
-      sharedLastName = mainSibling.lastNameController.text;
-      _updateAllSiblingLastNames();
-    }
-  }
-
-  void _updateAllSiblingLastNames() {
-    for (final player in groupPlayers) {
-      if (player.isSibling && !player.isMainSibling) {
-        player.lastNameController.text = sharedLastName;
-      }
-    }
-  }
-
-  Future<void> _fillPlayerDetails(Player selection, int index) async {
-    final List<PlayerPhone> playerPhones =
-        await ref.read(playerPhonesProvider(selection.playerID).future);
-
-    final player = groupPlayers[index];
-
-    // set sibling to false
-    if (player.isSibling) {
-      _toggleSibling(index);
-    }
-
-    setState(() {
-      player.fullNameController.text = selection.name;
-      player.ageController.text = selection.age.toString();
-
-      for (var playerPhone in playerPhones) {
-        if (playerPhone.number.isEmpty) continue;
-        // Add phone number only if it's not already in the list
-        if (!phoneControllers
-            .any((controller) => controller.text == playerPhone.number)) {
-          // Find an empty controller to fill, otherwise add a new one.
-          final emptyControllerIndex =
-              phoneControllers.indexWhere((c) => c.text.isEmpty);
-
-          if (emptyControllerIndex != -1) {
-            // An empty controller is available, so use it.
-            phoneControllers[emptyControllerIndex].text = playerPhone.number;
-          } else {
-            // All controllers are full, so add a new one.
-            phoneControllers
-                .add(TextEditingController(text: playerPhone.number));
-          }
-        }
-      }
-
-      player.isReadOnly = true;
-    });
-  }
-
-  Future<void> _handleCheckIn() async {
-    if (!_formKey.currentState!.validate()) return;
-    await ref.read(currentPlayersProvider.notifier).checkInGroup(
-        groupPlayers: groupPlayers,
-        timeReservedMinutes: timeReservedMinutes,
-        isOpenTime: isOpenTime,
-        amountPaid: int.parse(amountPaidController.text));
-
-    refreshAllProviders(ref);
-
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -408,153 +183,157 @@ class _AddGroupState extends ConsumerState<AddGroup> {
     );
   }
 
-  MyCard _buildProductsCard() {
-    final selectedPlayer = groupPlayers[selectedPlayerIndex];
+  @override
+  void dispose() {
+    for (final player in groupPlayers) {
+      player.dispose();
+    }
+    super.dispose();
+  }
 
+  @override
+  void initState() {
+    groupPlayers = [
+      GroupPlayer(
+          firstNameController: TextEditingController(),
+          lastNameController: TextEditingController(),
+          fullNameController: TextEditingController(),
+          ageController: TextEditingController(),
+          data: widget.data)
+    ];
+    super.initState();
+  }
+
+  void _addPlayer() {
+    if (groupPlayers.length >= maxPlayersInGroup) return;
+
+    setState(() {
+      groupPlayers.add(GroupPlayer(
+          firstNameController: TextEditingController(),
+          lastNameController: TextEditingController(),
+          fullNameController: TextEditingController(),
+          ageController: TextEditingController(),
+          data: widget.data));
+    });
+    _updateTotalFee();
+  }
+
+  MyCard _buildPaymentCard() {
     return MyCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Products', style: AppTextStyles.sectionHeaderStyle),
-          const SizedBox(height: 16),
-          if (groupPlayers.length > 1) ...[
+          Text(
+            'Payment Summary',
+            style:
+                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
+          ),
+
+          // detailed fee for each player
+          for (var player in groupPlayers)
             Text(
-              'Buying for: ${selectedPlayer.fullName.isNotEmpty ? selectedPlayer.fullName : 'Player ${selectedPlayerIndex + 1}'}',
-              style: AppTextStyles.regularTextStyle
-                  .copyWith(fontWeight: FontWeight.bold),
+                "${player.fullName.isNotEmpty ? player.fullName : 'Player ${groupPlayers.indexOf(player) + 1}'} Fee: ${player.getFee(timeReservedMinutes, isOpenTime)}",
+                style: AppTextStyles.regularTextStyle
+                    .copyWith(fontWeight: FontWeight.bold)),
+
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.blue.shade100),
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-          ],
-          widget.data.allProducts.isEmpty
-              ? Center(
-                  heightFactor: 3,
-                  child: Text(
-                    'No products available for purchase.',
-                    style: AppTextStyles.subtitleTextStyle,
-                  ),
-                )
-              : ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: widget.data.allProducts.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final product = widget.data.allProducts[index];
-                    final quantityInCart =
-                        selectedPlayer.productsCart[product.id] ?? 0;
-                    return ProductListItem(
-                      product: product,
-                      quantity: quantityInCart,
-                      onQuantityChanged: (newQuantity) {
-                        if (newQuantity < 0 ||
-                            newQuantity > product.effectiveStock) {
-                          return;
-                        }
-                        setState(() {
-                          if (newQuantity > 0) {
-                            selectedPlayer.productsCart[product.id] =
-                                newQuantity;
-                          } else {
-                            selectedPlayer.productsCart.remove(product.id);
-                          }
-                        });
-                        _updateTotalFee();
-                      },
-                    );
-                  },
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeReservationCard() {
-    return TimeReservationCard(
-        title: "Time Reservation (All Players)",
-        time: Duration(minutes: timeReservedMinutes),
-        isOpenTime: isOpenTime,
-        oneHourOnPressed: () => _incrementTime(TimeIncrement.hour),
-        halfHourOnPressed: () => _incrementTime(TimeIncrement.halfHour),
-        resetOnPressed: () {
-          setState(() {
-            timeReservedMinutes = 0;
-            isOpenTime = false;
-          });
-          _updateTotalFee();
-        },
-        isOpenTimeOnChanged: (value) {
-          setState(() {
-            isOpenTime = value ?? false;
-            if (isOpenTime) {
-              timeReservedMinutes = 0;
-            }
-          });
-          _updateTotalFee();
-        });
-  }
-
-  MyCard _buildPlayersCard() {
-    return MyCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with improved styling
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.groups,
-                      color: Colors.black,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Players',
-                      style: AppTextStyles.sectionHeaderStyle.copyWith(
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: groupPlayers.length < maxPlayersInGroup
-                      ? _addPlayer
-                      : null,
-                  style: AppButtonStyles.primaryButton,
-                  icon: const Icon(
-                    Icons.add,
-                    size: 20,
-                    color: mainBlue,
+                const Text(
+                  'Total Fee',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
                   ),
-                  label: Text(
-                    'Add Player',
-                    style: AppTextStyles.primaryButtonTextStyle,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isOpenTime
+                      ? totalFee == 0
+                          ? 'Open Time'
+                          : 'Open Time - ${formatter.format(totalFee)} SYP'
+                      : '${formatter.format(totalFee)}  SYP',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade900,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          // pay in full button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                style: AppButtonStyles.primaryButton,
+                onPressed: () {
+                  setState(() {
+                    amountPaidController.text = '$totalFee';
+                  });
+                },
+                child: Text("Pay in Full",
+                    style: AppTextStyles.primaryButtonTextStyle),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          MyTextField(
+            controller: amountPaidController,
+            labelText: 'Amount Paid on Check-in',
+            hintText: 'Enter amount paid',
+            prefixText: 'SYP   ',
+            isNumberInputOnly: true,
+            borderRadius: 10.0,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter an amount';
+              }
+              final amount = int.tryParse(value);
+              if (amount == null || amount < 0) {
+                return 'Please enter a valid amount';
+              }
+              return null;
+            },
+          ),
 
-          // Players List - expand and scroll as needed
-          ...groupPlayers.asMap().entries.map((entry) {
-            final index = entry.key;
-            return Column(
-              children: [
-                _buildPlayerForm(index),
-                if (index < groupPlayers.length - 1) const Divider(height: 24),
-              ],
-            );
-          }),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed:
+                  // make sure time is not 0
+                  timeReservedMinutes == 0 && !isOpenTime
+                      ? null
+                      : () async => await _handleCheckIn(),
+              child: const Text("Add Player"),
+            ),
+          ),
         ],
       ),
     );
@@ -988,132 +767,352 @@ class _AddGroupState extends ConsumerState<AddGroup> {
     );
   }
 
-  MyCard _buildPaymentCard() {
+  MyCard _buildPlayersCard() {
     return MyCard(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Payment Summary',
-            style:
-                AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.black),
-          ),
-
-          // detailed fee for each player
-          for (var player in groupPlayers)
-            Text(
-                "${player.fullName.isNotEmpty ? player.fullName : 'Player ${groupPlayers.indexOf(player) + 1}'} Fee: ${player.getFee(timeReservedMinutes, isOpenTime)}",
-                style: AppTextStyles.regularTextStyle
-                    .copyWith(fontWeight: FontWeight.bold)),
-
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.blue.shade100),
-            ),
-            child: Column(
+          // Header with improved styling
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Total Fee',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.groups,
+                      color: Colors.black,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Players',
+                      style: AppTextStyles.sectionHeaderStyle.copyWith(
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  isOpenTime
-                      ? totalFee == 0
-                          ? 'Open Time'
-                          : 'Open Time - ${formatter.format(totalFee)} SYP'
-                      : '${formatter.format(totalFee)}  SYP',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade900,
+                ElevatedButton.icon(
+                  onPressed: groupPlayers.length < maxPlayersInGroup
+                      ? _addPlayer
+                      : null,
+                  style: AppButtonStyles.primaryButton,
+                  icon: const Icon(
+                    Icons.add,
+                    size: 20,
+                    color: mainBlue,
+                  ),
+                  label: Text(
+                    'Add Player',
+                    style: AppTextStyles.primaryButtonTextStyle,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          // pay in full button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton(
-                style: AppButtonStyles.primaryButton,
-                onPressed: () {
-                  setState(() {
-                    amountPaidController.text = '$totalFee';
-                  });
-                },
-                child: Text("Pay in Full",
-                    style: AppTextStyles.primaryButtonTextStyle),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          MyTextField(
-            controller: amountPaidController,
-            labelText: 'Amount Paid on Check-in',
-            hintText: 'Enter amount paid',
-            prefixText: 'SYP   ',
-            isNumberInputOnly: true,
-            borderRadius: 10.0,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter an amount';
-              }
-              final amount = int.tryParse(value);
-              if (amount == null || amount < 0) {
-                return 'Please enter a valid amount';
-              }
-              return null;
-            },
-          ),
-
           const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 16),
 
-          SizedBox(
-            width: double.infinity,
-            height: 60,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed:
-                  // make sure time is not 0
-                  timeReservedMinutes == 0 && !isOpenTime
-                      ? null
-                      : () async => await _handleCheckIn(),
-              child: const Text("Add Player"),
-            ),
-          ),
+          // Players List - expand and scroll as needed
+          ...List.generate(groupPlayers.length, (index) {
+            return Column(
+              children: [
+                _buildPlayerForm(index),
+                if (index < groupPlayers.length - 1) const Divider(height: 24),
+              ],
+            );
+          }),
         ],
       ),
     );
   }
 
-  @override
-  void dispose() {
-    for (final player in groupPlayers) {
-      player.dispose();
+  MyCard _buildProductsCard() {
+    final selectedPlayer = groupPlayers[selectedPlayerIndex];
+
+    return MyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Products', style: AppTextStyles.sectionHeaderStyle),
+          const SizedBox(height: 16),
+          if (groupPlayers.length > 1) ...[
+            Text(
+              'Buying for: ${selectedPlayer.fullName.isNotEmpty ? selectedPlayer.fullName : 'Player ${selectedPlayerIndex + 1}'}',
+              style: AppTextStyles.regularTextStyle
+                  .copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+          ],
+          widget.data.allProducts.isEmpty
+              ? Center(
+                  heightFactor: 3,
+                  child: Text(
+                    'No products available for purchase.',
+                    style: AppTextStyles.subtitleTextStyle,
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: widget.data.allProducts.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final product = widget.data.allProducts[index];
+                    final quantityInCart =
+                        selectedPlayer.productsCart[product.id] ?? 0;
+                    return ProductListItem(
+                      product: product,
+                      quantity: quantityInCart,
+                      onQuantityChanged: (newQuantity) {
+                        if (newQuantity < 0 ||
+                            newQuantity > product.effectiveStock) {
+                          return;
+                        }
+                        setState(() {
+                          if (newQuantity > 0) {
+                            selectedPlayer.productsCart[product.id] =
+                                newQuantity;
+                          } else {
+                            selectedPlayer.productsCart.remove(product.id);
+                          }
+                        });
+                        _updateTotalFee();
+                      },
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeReservationCard() {
+    return TimeReservationCard(
+        title: "Time Reservation (All Players)",
+        time: Duration(minutes: timeReservedMinutes),
+        isOpenTime: isOpenTime,
+        oneHourOnPressed: () => _incrementTime(TimeIncrement.hour),
+        halfHourOnPressed: () => _incrementTime(TimeIncrement.halfHour),
+        resetOnPressed: () {
+          setState(() {
+            timeReservedMinutes = 0;
+            isOpenTime = false;
+          });
+          _updateTotalFee();
+        },
+        isOpenTimeOnChanged: (value) {
+          setState(() {
+            isOpenTime = value ?? false;
+            if (isOpenTime) {
+              timeReservedMinutes = 0;
+            }
+          });
+          _updateTotalFee();
+        });
+  }
+
+  Future<void> _fillPlayerDetails(Player selection, int index) async {
+    final List<PlayerPhone> playerPhones =
+        await ref.read(playerPhonesProvider(selection.playerID).future);
+
+    final player = groupPlayers[index];
+
+    // set sibling to false
+    if (player.isSibling) {
+      _toggleSibling(index);
     }
-    super.dispose();
+
+    setState(() {
+      player.fullNameController.text = selection.name;
+      player.ageController.text = selection.age.toString();
+
+      for (var playerPhone in playerPhones) {
+        if (playerPhone.number.isEmpty) continue;
+        // Add phone number only if it's not already in the list
+        if (!phoneControllers
+            .any((controller) => controller.text == playerPhone.number)) {
+          // Find an empty controller to fill, otherwise add a new one.
+          final emptyControllerIndex =
+              phoneControllers.indexWhere((c) => c.text.isEmpty);
+
+          if (emptyControllerIndex != -1) {
+            // An empty controller is available, so use it.
+            phoneControllers[emptyControllerIndex].text = playerPhone.number;
+          } else {
+            // All controllers are full, so add a new one.
+            phoneControllers
+                .add(TextEditingController(text: playerPhone.number));
+          }
+        }
+      }
+
+      player.isReadOnly = true;
+    });
+  }
+
+  Future<void> _handleCheckIn() async {
+    if (!_formKey.currentState!.validate()) return;
+    await ref.read(currentPlayersProvider.notifier).checkInGroup(
+        groupPlayers: groupPlayers,
+        timeReservedMinutes: timeReservedMinutes,
+        isOpenTime: isOpenTime,
+        amountPaid: int.parse(amountPaidController.text));
+
+    refreshAllProviders(ref);
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  bool _hasMainSibling() {
+    return groupPlayers.any((player) => player.isMainSibling);
+  }
+
+  void _incrementTime(TimeIncrement increment) {
+    if (timeReservedMinutes > 60 * 12) return;
+
+    setState(() {
+      if (!isOpenTime) {
+        if (increment == TimeIncrement.hour) {
+          timeReservedMinutes += 60;
+        } else if (increment == TimeIncrement.halfHour) {
+          timeReservedMinutes += 30;
+        }
+      }
+    });
+    _updateTotalFee();
+  }
+
+  void _reassignMainSibling({int? excludeIndex}) {
+    // Find first sibling that's not the excluded index
+    for (int i = 0; i < groupPlayers.length; i++) {
+      if (excludeIndex != null && i == excludeIndex) continue;
+
+      if (groupPlayers[i].isSibling) {
+        groupPlayers[i].isMainSibling = true;
+        sharedLastName = groupPlayers[i].lastNameController.text;
+        _updateAllSiblingLastNames();
+        return;
+      }
+    }
+
+    // No siblings left
+    sharedLastName = '';
+  }
+
+  void _removePlayer(int index) {
+    if (groupPlayers.length <= 1 || index < 0 || index >= groupPlayers.length) {
+      return;
+    }
+
+    setState(() {
+      final removedPlayer = groupPlayers[index];
+
+      // If removing the main sibling, reassign main role
+      if (removedPlayer.isMainSibling) {
+        _reassignMainSibling(excludeIndex: index);
+      }
+
+      // Dispose controllers
+      removedPlayer.dispose();
+      groupPlayers.removeAt(index);
+
+      // If the selected player is removed, select the first one
+      if (selectedPlayerIndex == index) {
+        selectedPlayerIndex = 0;
+      } else if (selectedPlayerIndex >= groupPlayers.length) {
+        selectedPlayerIndex = groupPlayers.length - 1;
+      }
+    });
+    _updateTotalFee();
+  }
+
+  void _toggleSibling(int index) {
+    if (index < 0 || index >= groupPlayers.length) return;
+
+    setState(() {
+      final player = groupPlayers[index];
+
+      if (player.isSibling) {
+        // Unchecking sibling - preserve combined name in full name field
+        final combinedName =
+            '${player.firstNameController.text.trim()} ${player.lastNameController.text.trim()}'
+                .trim();
+        player.fullNameController.text = combinedName;
+        player.firstNameController.clear();
+        player.lastNameController.clear();
+        player.isSibling = false;
+
+        // If this was the main sibling, reassign main role
+        if (player.isMainSibling) {
+          player.isMainSibling = false;
+          _reassignMainSibling();
+        }
+      } else {
+        // Checking sibling
+        final fullName = player.fullNameController.text.trim();
+        final nameParts = fullName.split(' ');
+
+        if (nameParts.length >= 2) {
+          player.firstNameController.text = nameParts.first;
+          player.lastNameController.text = nameParts.sublist(1).join(' ');
+        } else if (nameParts.length == 1) {
+          player.firstNameController.text = nameParts.first;
+        }
+
+        player.fullNameController.clear();
+        player.isSibling = true;
+
+        // Set as main sibling if no main sibling exists
+        if (!_hasMainSibling()) {
+          player.isMainSibling = true;
+          sharedLastName = player.lastNameController.text;
+        } else {
+          // Use shared last name
+          player.lastNameController.text = sharedLastName;
+        }
+      }
+
+      _updateSharedLastName();
+    });
+  }
+
+  void _updateAllSiblingLastNames() {
+    for (final player in groupPlayers) {
+      if (player.isSibling && !player.isMainSibling) {
+        player.lastNameController.text = sharedLastName;
+      }
+    }
+  }
+
+  void _updateSharedLastName() {
+    final mainSibling = groupPlayers.firstWhere(
+      (player) => player.isMainSibling,
+      orElse: () => groupPlayers.first,
+    );
+
+    if (mainSibling.isMainSibling) {
+      sharedLastName = mainSibling.lastNameController.text;
+      _updateAllSiblingLastNames();
+    }
+  }
+
+  void _updateTotalFee() {
+    int total = 0;
+    for (var player in groupPlayers) {
+      total += player.getFee(timeReservedMinutes, isOpenTime);
+    }
+
+    setState(() {
+      totalFee = total;
+    });
   }
 }

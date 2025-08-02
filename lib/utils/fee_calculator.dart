@@ -87,8 +87,6 @@ int calculateFinalFee({
         isOpenTime: isOpenTime,
       );
 
-      log("Total here: $total");
-
       // If the player stayed more than the reserved time, charge for the
       // additional time spent
       if (timeSpent > timeReserved) {

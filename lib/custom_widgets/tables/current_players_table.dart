@@ -1,7 +1,8 @@
+import 'dart:async';
 // ignore: unused_import
 import 'dart:developer';
-import 'dart:math' as math;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gravity_desktop_app/custom_widgets/dialogs/extend_time_dialog.dart';
@@ -19,12 +20,10 @@ import 'package:gravity_desktop_app/providers/past_players_provider.dart';
 import 'package:gravity_desktop_app/providers/product_provider.dart';
 import 'package:gravity_desktop_app/providers/time_prices_provider.dart';
 import 'package:gravity_desktop_app/screens/player_details.dart';
-import 'package:gravity_desktop_app/screens/receipt.dart';
+import 'package:gravity_desktop_app/screens/receipt_new.dart';
 import 'package:gravity_desktop_app/utils/constants.dart';
 import 'package:gravity_desktop_app/utils/fee_calculator.dart';
 import 'package:intl/intl.dart';
-import 'dart:async';
-import 'package:audioplayers/audioplayers.dart';
 
 // Provider that emits a value every second to update the timer
 final tickerProvider = StreamProvider.autoDispose<void>((ref) {
@@ -43,119 +42,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
   late final AudioPlayer _audioPlayer;
   final Set<String> _alertedPlayerIds = {};
   final Set<String> _almostTimeAlertedPlayerIds = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _audioPlayer = AudioPlayer();
-  }
-
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    super.dispose();
-  }
-
-  void _handlePurchase(BuildContext context, Player player) {
-    showDialog(
-        context: context,
-        builder: (context) {
-          return ProductPurchaseDialog(
-            player: player,
-          );
-        });
-  }
-
-  void _handleTimeUp(BuildContext context, Player player) {
-    setState(() {
-      _alertedPlayerIds.add(player.playerID);
-    });
-
-    // Play sound
-    _audioPlayer.play(AssetSource('short-beep.mp3'));
-
-    // Show popup dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            "Time's Up!",
-            style: AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.red),
-          ),
-          content: Text(
-            "Time for player ${player.name} has expired.",
-            style: AppTextStyles.regularTextStyle,
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              style: AppButtonStyles.primaryButton,
-              child: Text('Check Out',
-                  style: AppTextStyles.primaryButtonTextStyle),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                // Trigger the check out dialog
-                await _goToReceipt(context, player);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _handleTimeAlmostUp(BuildContext context, Player player) {
-    setState(() {
-      _almostTimeAlertedPlayerIds.add(player.playerID);
-    });
-    // Play sound
-    _audioPlayer.play(AssetSource('almost-beep.mp3'));
-
-    // Show a banner at the bottom
-    MyMaterialBanner.showFloatingBanner(context,
-        message: "Time for player ${player.name} is almost up!");
-  }
-
-  Future<void> _goToReceipt(BuildContext context, Player? player) async {
-    // if no player is provided and no selected players, throw an error
-    final playersSelected = ref.read(selectedPlayersProvider);
-    if (player == null && playersSelected.isEmpty) {
-      MyMaterialBanner.showFloatingBanner(context,
-          message: "No player selected for checkout.");
-      return;
-    }
-
-    await ref.read(pricesProvider.notifier).refresh();
-    await ref.read(productsProvider.notifier).refresh();
-    // ONE PLAYER CHECKOUT
-    if (playersSelected.isEmpty) {
-      if (context.mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => Receipt([player!.sessionID]),
-          ),
-        );
-      }
-    }
-    // PLAYER GROUP CHECKOUT
-    else {
-      final List<int> sessionIds =
-          playersSelected.map((p) => p.sessionID).toList();
-      if (context.mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => Receipt(sessionIds),
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -274,6 +160,7 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                         ref
                             .read(selectedPlayersProvider.notifier)
                             .clearSelection();
+                        setState(() {});
                       },
                     )
                   ],
@@ -283,6 +170,18 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
   }
 
   // Create a table row for each player
@@ -544,8 +443,6 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
                               productsBought: player.productsBought,
                               allProducts: data.allProducts);
 
-                          log("${player.name} - Fee: $playerFee, Paid: ${player.amountPaid}");
-
                           if (player.isOpenTime ||
                               playerFee <= player.amountPaid) {
                             return const SizedBox.shrink();
@@ -574,6 +471,109 @@ class _CurrentPlayersTableState extends ConsumerState<CurrentPlayersTable> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _goToReceipt(BuildContext context, Player? player) async {
+    // if no player is provided and no selected players, throw an error
+    final playersSelected = ref.read(selectedPlayersProvider);
+    if (player == null && playersSelected.isEmpty) {
+      MyMaterialBanner.showFloatingBanner(context,
+          message: "No player selected for checkout.");
+      return;
+    }
+
+    await ref.read(pricesProvider.notifier).refresh();
+    await ref.read(productsProvider.notifier).refresh();
+    // ONE PLAYER CHECKOUT
+    if (playersSelected.isEmpty && player != null) {
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ReceiptScreen([player.sessionID]),
+          ),
+        );
+      }
+    }
+    // PLAYER GROUP CHECKOUT
+    else {
+      final List<int> sessionIds =
+          playersSelected.map((p) => p.sessionID).toList();
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ReceiptScreen(sessionIds),
+          ),
+        );
+      }
+    }
+
+    ref.read(selectedPlayersProvider.notifier).clearSelection();
+  }
+
+  void _handlePurchase(BuildContext context, Player player) {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return ProductPurchaseDialog(
+            player: player,
+          );
+        });
+  }
+
+  void _handleTimeAlmostUp(BuildContext context, Player player) {
+    setState(() {
+      _almostTimeAlertedPlayerIds.add(player.playerID);
+    });
+    // Play sound
+    _audioPlayer.play(AssetSource('almost-beep.mp3'));
+
+    // Show a banner at the bottom
+    MyMaterialBanner.showFloatingBanner(context,
+        message: "Time for player ${player.name} is almost up!");
+  }
+
+  void _handleTimeUp(BuildContext context, Player player) {
+    setState(() {
+      _alertedPlayerIds.add(player.playerID);
+    });
+
+    // Play sound
+    _audioPlayer.play(AssetSource('short-beep.mp3'));
+
+    // Show popup dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            "Time's Up!",
+            style: AppTextStyles.sectionHeaderStyle.copyWith(color: Colors.red),
+          ),
+          content: Text(
+            "Time for player ${player.name} has expired.",
+            style: AppTextStyles.regularTextStyle,
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: AppButtonStyles.primaryButton,
+              child: Text('Check Out',
+                  style: AppTextStyles.primaryButtonTextStyle),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                // Trigger the check out dialog
+                await _goToReceipt(context, player);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
