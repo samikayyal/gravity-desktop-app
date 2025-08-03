@@ -7,8 +7,11 @@ import 'package:gravity_desktop_app/custom_widgets/my_text_field.dart';
 class PhoneNumberEntryCard extends ConsumerStatefulWidget {
   final String title;
   final List<TextEditingController> controllers;
+  final List<FocusNode>? focusNodes;
   final bool isDisabled;
   final bool disableListModification;
+  final List<bool>?
+      isPhoneReadOnly; // New field to control individual phone read-only state
 
   final VoidCallback addOnPressed;
   final void Function(int index) removeOnPressed;
@@ -16,12 +19,14 @@ class PhoneNumberEntryCard extends ConsumerStatefulWidget {
   const PhoneNumberEntryCard(
       {super.key,
       required this.controllers,
+      this.focusNodes,
       required this.addOnPressed,
       required this.removeOnPressed,
       required this.onReorder,
       this.title = 'Phone Numbers',
       this.isDisabled = false,
-      this.disableListModification = false});
+      this.disableListModification = false,
+      this.isPhoneReadOnly});
 
   @override
   ConsumerState<PhoneNumberEntryCard> createState() =>
@@ -64,27 +69,34 @@ class _PhoneNumberEntryCardState extends ConsumerState<PhoneNumberEntryCard> {
                       ),
                     ),
                     Expanded(
-                      child: MyTextField(
-                        controller: widget.controllers[index],
-                        labelText: "Phone Number #$index",
-                        hintText: "Enter a phone number (starting with 09)",
-                        isNumberInputOnly: true,
-                        isDisabled: widget.isDisabled,
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            final phone = value.trim();
-                            if (phone.length != 10) {
-                              return 'Please enter a valid phone number';
+                      child: FocusTraversalOrder(
+                        order: NumericFocusOrder(1000.0 + index),
+                        child: MyTextField(
+                          controller: widget.controllers[index],
+                          focusNode: widget.focusNodes?[index],
+                          labelText: "Phone Number #$index",
+                          hintText: "Enter a phone number (starting with 09)",
+                          isNumberInputOnly: true,
+                          isDisabled: widget.isDisabled ||
+                              (widget.isPhoneReadOnly != null &&
+                                  index < widget.isPhoneReadOnly!.length &&
+                                  widget.isPhoneReadOnly![index]),
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              final phone = value.trim();
+                              if (phone.length != 10) {
+                                return 'Please enter a valid phone number';
+                              }
+                              if (!phone.startsWith("09")) {
+                                return 'Phone number must start with 09';
+                              }
+                              if (phone.contains(RegExp(r'\D'))) {
+                                return 'Phone number must contain only digits';
+                              }
                             }
-                            if (!phone.startsWith("09")) {
-                              return 'Phone number must start with 09';
-                            }
-                            if (phone.contains(RegExp(r'\D'))) {
-                              return 'Phone number must contain only digits';
-                            }
-                          }
-                          return null;
-                        },
+                            return null;
+                          },
+                        ),
                       ),
                     ),
                     if (index == widget.controllers.length - 1)
@@ -113,27 +125,34 @@ class _PhoneNumberEntryCardState extends ConsumerState<PhoneNumberEntryCard> {
               child: Row(
                 children: [
                   Expanded(
-                    child: MyTextField(
-                      controller: widget.controllers[i],
-                      labelText: "Phone Number #$i",
-                      hintText: "Enter a phone number (starting with 09)",
-                      isNumberInputOnly: true,
-                      isDisabled: widget.isDisabled,
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty) {
-                          final phone = value.trim();
-                          if (phone.length != 10) {
-                            return 'Please enter a valid phone number';
+                    child: FocusTraversalOrder(
+                      order: NumericFocusOrder(1000.0 + i),
+                      child: MyTextField(
+                        controller: widget.controllers[i],
+                        focusNode: widget.focusNodes?[i],
+                        labelText: "Phone Number #$i",
+                        hintText: "Enter a phone number (starting with 09)",
+                        isNumberInputOnly: true,
+                        isDisabled: widget.isDisabled ||
+                            (widget.isPhoneReadOnly != null &&
+                                i < widget.isPhoneReadOnly!.length &&
+                                widget.isPhoneReadOnly![i]),
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            final phone = value.trim();
+                            if (phone.length != 10) {
+                              return 'Please enter a valid phone number';
+                            }
+                            if (!phone.startsWith("09")) {
+                              return 'Phone number must start with 09';
+                            }
+                            if (phone.contains(RegExp(r'\D'))) {
+                              return 'Phone number must contain only digits';
+                            }
                           }
-                          if (!phone.startsWith("09")) {
-                            return 'Phone number must start with 09';
-                          }
-                          if (phone.contains(RegExp(r'\D'))) {
-                            return 'Phone number must contain only digits';
-                          }
-                        }
-                        return null;
-                      },
+                          return null;
+                        },
+                      ),
                     ),
                   ),
                 ],
