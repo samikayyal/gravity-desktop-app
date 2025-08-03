@@ -74,7 +74,7 @@ class _PhoneNumberEntryCardState extends ConsumerState<PhoneNumberEntryCard> {
                         child: MyTextField(
                           controller: widget.controllers[index],
                           focusNode: widget.focusNodes?[index],
-                          labelText: "Phone Number #$index",
+                          labelText: "Phone Number #${index + 1}",
                           hintText: "Enter a phone number (starting with 09)",
                           isNumberInputOnly: true,
                           isDisabled: widget.isDisabled ||
